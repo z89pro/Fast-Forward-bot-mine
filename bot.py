@@ -5,13 +5,15 @@ then the Pyrogram bot starts in the same asyncio event loop.
 """
 import asyncio
 import logging
-import pyromod  # noqa: F401 — patches Client with .listen()
 from pyrogram import Client
 from pyrogram.types import BotCommand
 from config import API_ID, API_HASH, BOT_TOKEN
 from utils.flood_manager import FloodManager
+from utils.listener import patch_client, register_listener
 from keep_alive import keep_alive
 
+# Patch Pyrogram Client to add .listen() natively
+patch_client()
 # ── Logging ────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -37,6 +39,9 @@ async def main():
     import plugins.forward as forward_plugin
     import plugins.clone as clone_plugin
 
+    # Register our native listener to handle .listen() events
+    register_listener(bot)
+    
     start_plugin.register(bot)
     login_plugin.register(bot)
     forward_plugin.register(bot)
