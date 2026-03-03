@@ -219,6 +219,9 @@ async def run_forward(
                     except (MessageIdInvalid, ChannelPrivate):
                         pass  # deleted/inaccessible — skip silently
                     except Exception as e:
+                        # Could be PeerIdInvalid (e.g. forward restricted on a private chat)
+                        # We don't want to stop the whole loop on one bad message, but if it keeps happening,
+                        # the chunk error handler below will catch it.
                         last_err = str(e)
 
                 if flood_mgr.stopped or forward_restricted:
