@@ -21,8 +21,12 @@ async def resolve_chat(client: Client, chat_id: str):
     """
     # Normalize: convert numeric string to int
     try:
-        chat_input = int(chat_id) if chat_id.lstrip('-').isdigit() else chat_id
-    except Exception:
+        # If it's digits or starts with '-' followed by digits
+        if str(chat_id).lstrip('-').isdigit():
+            chat_input = int(chat_id)
+        else:
+            chat_input = chat_id
+    except ValueError:
         chat_input = chat_id
 
     # First attempt
