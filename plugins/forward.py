@@ -93,97 +93,92 @@ def register(bot: Client):
             await msg.reply("⚠️ A forward task is already running!\nSend /stop to cancel it first.")
             return
 
-        # ── Step 1: Ask source channel numeric ID ──────────────
+        # ── Step 1: Ask for forwarded first message ──────────
         ask1 = await msg.reply(
-            "📥 **Step 1 of 3 — Source Chat**\n\n"
-            "Send the **numeric ID** of the source channel/group:\n"
-            "Example: `-1001234567890`\n\n"
-            "_(To get a group ID: forward any message from it to @userinfobot)_\n"
+            "📤 **Step 1 of 2 — First Message**\n\n"
+            "**Forward the first message** from the source channel to me.\n\n"
+            "_I will automatically detect the channel and start ID._\n"
             "_Send /cancel to abort._"
         )
 
         try:
-            src_msg: Message = await client.listen(
-                filters.text & filters.private & filters.user(user_id),
+            fwd_first: Message = await client.listen(
+                filters.private & filters.user(user_id),
                 timeout=120
             )
         except asyncio.TimeoutError:
             await ask1.reply("⌛ Timed out. Send /forward to try again.")
             return
 
-        if src_msg.text.strip().lower() == "/cancel":
-            await src_msg.reply("❌ Cancelled.")
+        if fwd_first.text and fwd_first.text.strip().lower() == "/cancel":
+            await fwd_first.reply("❌ Cancelled.")
             return
 
-        source_input = src_msg.text.strip()
-
-        # Verify source is accessible
-        try:
-            source_chat = await resolve_chat(user_client, source_input)
-        except Exception as e:
-            await src_msg.reply(f"❌ Cannot access source: `{e}`\nTry again with /forward")
+        # Extract source and start ID
+        if not fwd_first.forward_from_chat:
+            await fwd_first.reply("❌ This message is **not forwarded** or the source is private.\n"
+                                  "Please forward a message from a public channel or a channel where your account is a member.")
             return
 
-        # ── Step 2: Ask start message ID ──────────────────────
-        ask2 = await src_msg.reply(
-            f"✅ Source: **{source_chat.title}** (`{source_chat.id}`)\n\n"
-            f"📩 **Step 2 of 3 — Start Message ID**\n\n"
-            f"Send the **message ID to start from**:\n"
-            f"_(Right-click any message → Copy Message Link → last number is the ID)_\n"
-            f"_Send `1` to start from the very beginning._"
+        source_chat_id = fwd_first.forward_from_chat.id
+        start_id = fwd_first.forward_from_message_id
+
+        if not start_id:
+            await fwd_first.reply("❌ Could not extract message ID. Make sure 'Forwarded from' is visible.")
+            return
+
+        # ── Step 2: Ask for forwarded last message or '0' ─────
+        ask2 = await fwd_first.reply(
+            f"✅ Source: **{fwd_first.forward_from_chat.title}** (`{source_chat_id}`)\n"
+            f"🔢 Start ID: `{start_id}`\n\n"
+            f"📥 **Step 2 of 2 — Last Message**\n\n"
+            f"**Forward the last message** to forward until,\n"
+            f"OR send `0` to forward until the very latest message.\n\n"
+            f"_Send /cancel to abort._"
         )
 
         try:
-            start_msg: Message = await client.listen(
-                filters.text & filters.private & filters.user(user_id),
+            fwd_last: Message = await client.listen(
+                filters.private & filters.user(user_id),
                 timeout=120
             )
         except asyncio.TimeoutError:
             await ask2.reply("⌛ Timed out. Send /forward to try again.")
             return
 
-        if start_msg.text.strip().lower() == "/cancel":
-            await start_msg.reply("❌ Cancelled.")
+        if fwd_last.text and fwd_last.text.strip().lower() == "/cancel":
+            await fwd_last.reply("❌ Cancelled.")
             return
 
-        try:
-            start_id = int(start_msg.text.strip())
-        except ValueError:
-            await start_msg.reply("❌ Invalid message ID. Must be a number. Try /forward again.")
-            return
-
-        # ── Step 3: Ask end message ID ─────────────────────────
-        ask3 = await start_msg.reply(
-            f"📩 **Step 3 of 3 — End Message ID**\n\n"
-            f"Send the **message ID to stop at**:\n"
-            f"_Send `0` to forward till the last message._"
-        )
-
-        try:
-            end_msg: Message = await client.listen(
-                filters.text & filters.private & filters.user(user_id),
-                timeout=120
-            )
-        except asyncio.TimeoutError:
-            await ask3.reply("⌛ Timed out. Send /forward to try again.")
-            return
-
-        if end_msg.text.strip().lower() == "/cancel":
-            await end_msg.reply("❌ Cancelled.")
-            return
-
-        try:
-            end_id = int(end_msg.text.strip())
-        except ValueError:
-            await end_msg.reply("❌ Invalid message ID. Must be a number. Try /forward again.")
-            return
+        end_id = 0
+        if fwd_last.text and fwd_last.text.strip() == "0":
+            end_id = 0
+        elif fwd_last.forward_from_chat:
+            if fwd_last.forward_from_chat.id != source_chat_id:
+                await fwd_last.reply("❌ Error: You forwarded a message from a **different channel**.\nTry /forward again.")
+                return
+            end_id = fwd_last.forward_from_message_id
+            if not end_id:
+                await fwd_last.reply("❌ Could not extract end message ID. Try /forward again.")
+                return
+        else:
+            try:
+                end_id = int(fwd_last.text.strip())
+            except (ValueError, AttributeError):
+                await fwd_last.reply("❌ Invalid input. Forward a message or send `0`.")
+                return
 
         # ── Confirm and launch ─────────────────────────────────
-        target_chat = await resolve_chat(user_client, target)
+        try:
+            target_chat = await resolve_chat(user_client, target)
+        except Exception as e:
+            await fwd_last.reply(f"❌ Cannot access target: `{e}`\nCheck /target and try again.")
+            return
+        source_chat_title = fwd_first.forward_from_chat.title
 
-        status_msg = await end_msg.reply(
+        status_msg = await fwd_last.reply(
             f"🚀 **Forward Starting!**\n\n"
-            f"📥 From: **{source_chat.title}** (`{source_chat.id}`)\n"
+            f"📥 From: **{source_chat_title}** (`{source_chat_id}`)\n"
             f"📨 To:   **{target_chat.title}** (`{target_chat.id}`)\n"
             f"🔢 Range: `{start_id}` → `{'last' if end_id == 0 else end_id}`\n\n"
             f"Scanning messages...",
@@ -197,7 +192,7 @@ def register(bot: Client):
                 user_id=user_id,
                 user_client=user_client,
                 bot=client,
-                source_chat=str(source_chat.id),
+                source_chat=str(source_chat_id),
                 target_chat=str(target_chat.id),
                 status_msg=status_msg,
                 start_msg_id=start_id,
