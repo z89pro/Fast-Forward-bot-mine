@@ -92,10 +92,15 @@ async def get_user_client(user_id: int) -> Client | None:
             _clients[user_id] = client
             return client
         except (AuthKeyUnregistered, UserDeactivated):
-            # Session expired — clean up
+            # Session expired — clean up so /login works again
             await db.delete_session(user_id)
+            _clients.pop(user_id, None)
             return None
         except Exception:
+            # Any other failure (DC issue, network, bad session string, etc.)
+            # Also clean up the session so /login asks for re-login
+            await db.delete_session(user_id)
+            _clients.pop(user_id, None)
             return None
 
 
