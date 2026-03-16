@@ -19,9 +19,9 @@ load_dotenv(override=False)
 _DEFAULTS = {
     "API_ID":          "34439627",
     "API_HASH":        "e5c7efb57949e742889aa96bf64c4552",
-    "BOT_TOKEN":       "8241066268:AAFw3dtCxmE8kVba16StjK9xiv9UKuWY3c4",
+    "BOT_TOKEN":       "8225255242:AAFmXKLf5sldLXK5eaaQGolQsTszOi7lV58",
     "MONGO_URI":       "mongodb+srv://rajaualkhan33729_db_user:hlYTpjnHZzGDljKX@cluster0.vylyp51.mongodb.net/?appName=Cluster0",
-    "OWNER_ID":        "7208112327",
+    "OWNER_ID":        "8349955493",
     # Optional: set to your log channel numeric ID (e.g. "-1001234567890")
     # Leave empty to disable logging — bot will still run fine.
     "LOG_CHANNEL_ID":  "-1003584084546",
