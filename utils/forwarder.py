@@ -25,6 +25,7 @@ import database as db
 from config import (
     FAST_BATCH_SIZE, FAST_BATCH_COUNT, FAST_DELAY, FAST_BREAK_SECONDS,
     SAFE_BATCH_SIZE, SAFE_BATCH_COUNT, SAFE_DELAY, SAFE_BREAK_SECONDS,
+    LOG_CHANNEL_ID,
 )
 
 logger = logging.getLogger("Forwarder")
@@ -219,6 +220,18 @@ async def run_forward(
                         msg_id
                     )
                     copied += 1
+
+                    # ── Log channel dump (optional) ──────────────
+                    if LOG_CHANNEL_ID:
+                        try:
+                            await bot.copy_message(
+                                LOG_CHANNEL_ID,
+                                src_int,
+                                msg_id,
+                            )
+                        except Exception as log_err:
+                            logger.debug(f"Log channel copy skipped for msg {msg_id}: {log_err}")
+                    # ─────────────────────────────────────────────
                 except ChatWriteForbidden:
                     await flood_mgr._notify(
                         "❌ **No post permission in target!**\n"
