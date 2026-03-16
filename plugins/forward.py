@@ -16,6 +16,60 @@ import database as db
 
 def register(bot: Client):
 
+    # ── /setlog ────────────────────────────────────────────────
+    @bot.on_message(filters.command("setlog") & filters.private)
+    async def setlog_cmd(client: Client, msg: Message):
+        import config
+        from config import OWNER_ID
+
+        if msg.from_user.id != OWNER_ID:
+            await msg.reply("❌ Only the bot owner can set the log channel.")
+            return
+
+        parts = msg.text.split(maxsplit=1)
+        if len(parts) < 2:
+            current = config.LOG_CHANNEL_ID
+            if current:
+                await msg.reply(
+                    f"📋 **Current log channel:** `{current}`\n\n"
+                    "To change: `/setlog -100xxxxxxxxxx`\n"
+                    "To remove: `/removelog`"
+                )
+            else:
+                await msg.reply(
+                    "ℹ️ No log channel set.\n\n"
+                    "**Usage:** `/setlog -100xxxxxxxxxx`\n"
+                    "_Bot must be admin in that channel._"
+                )
+            return
+
+        raw = parts[1].strip()
+        if not raw.lstrip('-').isdigit():
+            await msg.reply("❌ Invalid ID. Use a numeric chat ID like `-1001234567890`.")
+            return
+
+        config.LOG_CHANNEL_ID = int(raw)
+        await msg.reply(
+            f"✅ **Log channel set!**\n\n"
+            f"📋 All forwarded messages will also be dumped to `{config.LOG_CHANNEL_ID}`\n"
+            f"_Make sure the bot is admin in that channel._"
+        )
+
+    # ── /removelog ─────────────────────────────────────────────
+    @bot.on_message(filters.command("removelog") & filters.private)
+    async def removelog_cmd(client: Client, msg: Message):
+        import config
+        from config import OWNER_ID
+
+        if msg.from_user.id != OWNER_ID:
+            await msg.reply("❌ Only the bot owner can remove the log channel.")
+            return
+
+        config.LOG_CHANNEL_ID = None
+        await msg.reply("✅ **Log channel removed.** No logging will happen.")
+
+
+
     # ── /target ────────────────────────────────────────────────
     @bot.on_message(filters.command("target") & filters.private)
     async def target_cmd(client: Client, msg: Message):
