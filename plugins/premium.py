@@ -191,7 +191,7 @@ async def build_plans_view(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
 @Client.on_message(filters.private & filters.command(["plans", "premium", "buy", "vip"]))
 async def plans_cmd(bot: Client, message: Message):
     text, reply_markup = await build_plans_view(message.from_user.id)
-    await message.reply_text(text, reply_markup=reply_markup, disable_web_page_preview=True)
+    await message.reply_text(text, reply_markup=reply_markup, disable_web_page_preview=True, quote=True)
 
 
 @Client.on_message(filters.private & filters.command(["myplan", "plan"]))
@@ -242,7 +242,7 @@ async def myplan_cmd(bot: Client, message: Message):
         row(btn("💎 View VIP Plans", "prem_plans", "green")),
         row(btn("🔙 Back to Home", "back", "red"))
     ]
-    await message.reply_text(txt, reply_markup=markup(*btn_list))
+    await message.reply_text(txt, reply_markup=markup(*btn_list), quote=True)
 
 
 # ── Admin Manual Premium Commands ─────────────────────────────────────
@@ -250,13 +250,14 @@ async def myplan_cmd(bot: Client, message: Message):
 @Client.on_message(filters.private & filters.command(["addpremium", "addvip"]))
 async def admin_add_premium(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Admin only command.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Admin only command.", quote=True)
 
     args = message.command[1:]
     if len(args) < 2:
         return await message.reply_text(
             "<b>Usage:</b> <code>/addpremium &lt;user_id&gt; &lt;days&gt; [plan: starter/pro/ultra]</code>\n\n"
-            "Example: <code>/addpremium 123456789 30 pro</code>"
+            "Example: <code>/addpremium 123456789 30 pro</code>",
+            quote=True
         )
 
     try:
@@ -266,7 +267,7 @@ async def admin_add_premium(bot: Client, message: Message):
         if plan_key not in PLANS:
             plan_key = "pro"
     except ValueError:
-        return await message.reply_text("❌ Invalid User ID or Days. Must be integers.")
+        return await message.reply_text("❌ Invalid User ID or Days. Must be integers.", quote=True)
 
     new_expires = await db.set_premium_user(target_uid, days, plan_key, activated_by=message.from_user.id)
     exp_str = _format_time_ist(new_expires)
@@ -277,7 +278,8 @@ async def admin_add_premium(bot: Client, message: Message):
         f"👤 <b>User:</b> <code>{target_uid}</code>\n"
         f"💎 <b>Plan:</b> {plan_name}\n"
         f"⏳ <b>Validity:</b> <code>{days} Days</code>\n"
-        f"📅 <b>Expires:</b> <code>{exp_str} IST</code>"
+        f"📅 <b>Expires:</b> <code>{exp_str} IST</code>",
+        quote=True
     )
 
     try:
@@ -300,19 +302,19 @@ async def admin_add_premium(bot: Client, message: Message):
 @Client.on_message(filters.private & filters.command(["delpremium", "delvip"]))
 async def admin_del_premium(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Admin only command.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Admin only command.", quote=True)
 
     args = message.command[1:]
     if not args:
-        return await message.reply_text("<b>Usage:</b> <code>/delpremium &lt;user_id&gt;</code>")
+        return await message.reply_text("<b>Usage:</b> <code>/delpremium &lt;user_id&gt;</code>", quote=True)
 
     try:
         target_uid = int(args[0])
     except ValueError:
-        return await message.reply_text("❌ Invalid User ID.")
+        return await message.reply_text("❌ Invalid User ID.", quote=True)
 
     await db.remove_premium_user(target_uid)
-    await message.reply_text(f"✅ Premium access revoked for user <code>{target_uid}</code>.")
+    await message.reply_text(f"✅ Premium access revoked for user <code>{target_uid}</code>.", quote=True)
 
 
 # ── Callback Handlers ─────────────────────────────────────────────────

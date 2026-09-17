@@ -128,7 +128,7 @@ async def referral_cmd(client: Client, message: Message):
     user_id = message.from_user.id
     text, _, _ = await build_referral_text(client, user_id)
     reply_markup = await build_referral_keyboard(client, user_id)
-    await message.reply_text(text, reply_markup=reply_markup, disable_web_page_preview=True)
+    await message.reply_text(text, reply_markup=reply_markup, disable_web_page_preview=True, quote=True)
 
 @Client.on_message(filters.private & filters.command(["topref", "leaderboard"]))
 async def topref_cmd(client: Client, message: Message):
@@ -146,7 +146,7 @@ async def topref_cmd(client: Client, message: Message):
             lines.append(f"{medals[i]} <b>{name}</b> — <code>{count} invites</code> ({pts} pts)")
     
     lines.append("\n<i>💡 Invite friends using /referral to climb the ranks!</i>")
-    await message.reply_text("\n".join(lines), disable_web_page_preview=True)
+    await message.reply_text("\n".join(lines), disable_web_page_preview=True, quote=True)
 
 @Client.on_message(filters.private & filters.command(["refadmin"]) & filters.user(Config.BOT_OWNER_ID))
 async def refadmin_cmd(client: Client, message: Message):
@@ -176,7 +176,7 @@ async def refadmin_cmd(client: Client, message: Message):
         [InlineKeyboardButton("➕ ᴀᴅᴅ ᴘᴏɪɴᴛs ᴛᴏ ᴜsᴇʀ", callback_data="referral#admin_add")],
         [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ʀᴇғᴇʀʀᴀʟ", callback_data="referral#main")]
     ])
-    await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True)
+    await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True, quote=True)
 
 
 # ================= CALLBACK QUERIES =================

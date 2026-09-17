@@ -12,7 +12,6 @@ CLIENT = CLIENT()
 
 @Client.on_message(filters.command('settings'))
 async def settings(client, message):
-   await message.delete()
    text = (
       "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴄᴏɴᴛʀᴏʟ ᴘᴀɴᴇʟ & sᴇᴛᴛɪɴɢs</u></b></blockquote>\n\n"
       "Customize your bots, destinations, captions, speed limits, and content sanitization filters.\n\n"
@@ -21,7 +20,8 @@ async def settings(client, message):
    )
    await message.reply_text(
      text,
-     reply_markup=main_buttons(message.from_user.id)
+     reply_markup=main_buttons(message.from_user.id),
+     quote=True
    )
     
 @Client.on_callback_query(filters.regex(r'^settings'))

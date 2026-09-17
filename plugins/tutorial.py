@@ -293,7 +293,8 @@ async def tutorial_cmd(client: Client, message: Message):
     await message.reply_text(
         text,
         reply_markup=tutorial_menu_keyboard(),
-        disable_web_page_preview=True
+        disable_web_page_preview=True,
+        quote=True
     )
 
 @Client.on_message(filters.private & filters.command(['skinet', 'modifier', 'ftm']))
@@ -302,7 +303,8 @@ async def ftm_cmd(client: Client, message: Message):
     await message.reply_text(
         mod["text"],
         reply_markup=tutorial_page_keyboard(10),
-        disable_web_page_preview=True
+        disable_web_page_preview=True,
+        quote=True
     )
 
 @Client.on_message(filters.private & filters.command(['courseseller', 'seller']))
@@ -311,7 +313,8 @@ async def seller_cmd(client: Client, message: Message):
     await message.reply_text(
         mod["text"],
         reply_markup=tutorial_page_keyboard(5),
-        disable_web_page_preview=True
+        disable_web_page_preview=True,
+        quote=True
     )
 
 

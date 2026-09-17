@@ -152,10 +152,10 @@ async def userstats_cmd(client: Client, message: Message):
         if raw_target.isdigit():
             target_id = int(raw_target)
             text, buttons = await build_user_profile(target_id)
-            return await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True)
+            return await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True, quote=True)
 
     text, buttons = await build_userstats_overview()
-    await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True)
+    await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True, quote=True)
 
 
 # ================= CALLBACKS =================

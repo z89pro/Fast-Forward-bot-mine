@@ -121,10 +121,11 @@ async def start(client, message):
 
     reply_markup = get_main_buttons(user.id)
     extra_welcome = "\n\n🎁 <i>You joined via an invite link! Claim your welcome bonus in /referral!</i>" if (is_new and ref_id) else ""
-    await client.send_message(
-        chat_id=message.chat.id,
+    await message.reply_text(
+        text=Translation.START_TXT.format(message.from_user.first_name) + extra_welcome,
         reply_markup=reply_markup,
-        text=Translation.START_TXT.format(message.from_user.first_name) + extra_welcome)
+        quote=True
+    )
 
 #==================Restart Function==================#
 
@@ -132,7 +133,7 @@ async def start(client, message):
 async def restart(client, message):
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> This command is restricted to Bot Administrators.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> This command is restricted to Bot Administrators.", quote=True)
 
     from datetime import datetime, timezone, timedelta
     ist = timezone(timedelta(hours=5, minutes=30))
@@ -140,7 +141,8 @@ async def restart(client, message):
     user_name = message.from_user.first_name or "Admin"
 
     msg = await message.reply_text(
-        text=Translation.RESTART_TXT.format(user_name, stamp)
+        text=Translation.RESTART_TXT.format(user_name, stamp),
+        quote=True
     )
     try:
         await db.set_restart_status(message.chat.id, msg.id)
@@ -182,10 +184,10 @@ def get_help_buttons():
 
 @Client.on_message(filters.private & filters.command(['help']))
 async def help_command(client, message):
-    await client.send_message(
-        chat_id=message.chat.id,
+    await message.reply_text(
         text=Translation.HELP_TXT,
-        reply_markup=get_help_buttons()
+        reply_markup=get_help_buttons(),
+        quote=True
     )
 
 #==================Terms & Privacy Commands==================#
@@ -198,7 +200,8 @@ async def terms_command(client, message):
             row(btn('🔒 ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ', 'privacy_btn', 'blue')),
             row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red'))
         ),
-        disable_web_page_preview=True
+        disable_web_page_preview=True,
+        quote=True
     )
 
 @Client.on_message(filters.private & filters.command(['privacy']))
@@ -209,7 +212,8 @@ async def privacy_command(client, message):
             row(btn('📜 ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ', 'terms_btn', 'blue')),
             row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red'))
         ),
-        disable_web_page_preview=True
+        disable_web_page_preview=True,
+        quote=True
     )
 
 #==================Callback Functions==================#
@@ -347,7 +351,8 @@ async def server_status(bot, query):
 @Client.on_message(filters.private & filters.command(['donate']))
 async def donate_cmd(client, message):
     await message.reply_text(
-        text=Translation.DONATE_TXT
+        text=Translation.DONATE_TXT,
+        quote=True
     )
 
 #===================Clone Command===================#
@@ -357,10 +362,10 @@ async def clone_cmd(client, message):
     user_id = message.from_user.id
     _bot = await db.get_bot(user_id)
     if not _bot:
-        return await message.reply_text("<b>❌ Please add a bot or login a UserBot in /settings first!</b>")
+        return await message.reply_text("<b>❌ Please add a bot or login a UserBot in /settings first!</b>", quote=True)
     channels = await db.get_user_channels(user_id)
     if not channels:
-        return await message.reply_text("<b>❌ Please set a target channel in /settings first!</b>")
+        return await message.reply_text("<b>❌ Please set a target channel in /settings first!</b>", quote=True)
     await message.reply_text(
         "<b>⚡ <u>Channel Cloning Guide:</u></b>\n\n"
         "To forward or clone messages from a source channel to your target:\n"
@@ -370,9 +375,10 @@ async def clone_cmd(client, message):
         reply_markup=markup(
             row(
                 btn("⚙️ Settings", "settings#main", "blue"),
-                btn("🚀 AutoSave", "autosave#main", "green")
+                btn("📚 Tutorial", "tutorial#menu", "blue")
             )
-        )
+        ),
+        quote=True
     )
 
 #===================Verify Menu Callback===================#
@@ -394,4 +400,99 @@ async def verify_menu_callback(bot, query):
     else:
         await query.answer()
         await send_verify_prompt(bot, query.message, user_id)
+
+
+#===================Non-Command & Unknown Message Handler===================#
+
+KNOWN_COMMANDS = {
+    "start", "help", "settings", "forward", "fwd", "autosave", "live", "monitor",
+    "broadcast", "bcast", "cancelbroadcast", "bcastcancel", "broadcastrestart", "bcastrestart",
+    "restart", "reboot", "terms", "tos", "privacy", "donate", "clone", "plans",
+    "premium", "buy", "vip", "myplan", "plan", "addpremium", "addvip", "delpremium",
+    "delvip", "referral", "refer", "earn", "topref", "leaderboard", "refadmin",
+    "stop", "pause", "resume", "reset", "resetall", "tutorial", "guide", "skinet",
+    "modifier", "ftm", "courseseller", "seller", "unequify", "userstats", "track",
+    "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
+    "deladmin", "admins", "cancel"
+}
+
+@Client.on_message(filters.private & ~filters.service, group=100)
+async def non_command_handler(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+
+    # 1. Skip if there is an active listener (like bot.ask) for this chat/user
+    if hasattr(client, "get_listener_matching_with_data"):
+        try:
+            if client.get_listener_matching_with_data(chat_id=message.chat.id, user_id=user_id):
+                return
+        except Exception:
+            pass
+    if hasattr(client, "listeners") and client.listeners:
+        for k in client.listeners.keys():
+            if str(message.chat.id) in str(k) or str(user_id) in str(k):
+                return
+
+    # 2. Skip if user is submitting payment proof
+    try:
+        from plugins.premium import _SUBMIT_STATE
+        if user_id in _SUBMIT_STATE:
+            return
+    except Exception:
+        pass
+
+    raw_text = (message.text or message.caption or "").strip()
+
+    # 3. Check if it's a known command -> let registered handlers execute
+    if raw_text.startswith("/"):
+        cmd_word = raw_text.split()[0].lstrip("/").split("@")[0].lower()
+        if cmd_word in KNOWN_COMMANDS:
+            return
+
+        # Unknown command response
+        return await message.reply_text(
+            f"<blockquote><b>❓ <u>ᴜɴᴋɴᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ: /{cmd_word}</u></b></blockquote>\n\n"
+            f"ᴛʜᴇ ᴄᴏᴍᴍᴀɴᴅ <code>/{cmd_word}</code> ɪs ɴᴏᴛ ʀᴇᴄᴏɢɴɪᴢᴇᴅ ʙʏ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ.\n\n"
+            f"👉 ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ <code>/help</code> ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs!",
+            quote=True,
+            reply_markup=markup(
+                row(btn("📖 ᴠɪᴇᴡ ᴄᴏᴍᴍᴀɴᴅs", "help", "blue"), btn("🔙 ʜᴏᴍᴇ", "back", "red"))
+            )
+        )
+
+    # 4. Check if it's a link forward attempt
+    if raw_text.startswith("https://t.me/") or raw_text.startswith("http://t.me/") or raw_text.startswith("t.me/"):
+        return await message.reply_text(
+            "<blockquote><b>🔗 <u>ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ ᴅᴇᴛᴇᴄᴛᴇᴅ</u></b></blockquote>\n\n"
+            "ᴛᴏ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇs ᴜsɪɴɢ ʟɪɴᴋs, ᴜsᴇ ᴛʜᴇ <code>/fwd</code> ʀᴀɴɢᴇ ᴄᴏᴍᴍᴀɴᴅ:\n"
+            "• <code>/fwd &lt;start_link&gt; &lt;end_link&gt;</code>\n\n"
+            "ᴏʀ ʟᴀᴜɴᴄʜ ᴛʜᴇ ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ғᴏʀᴡᴀʀᴅɪɴɢ ᴡɪᴢᴀʀᴅ ᴡɪᴛʜ <code>/forward</code>!",
+            quote=True,
+            reply_markup=markup(
+                row(
+                    btn("🚀 ʜᴏᴡ ᴛᴏ ғᴏʀᴡᴀʀᴅ", "how_to_use", "blue"),
+                    btn("⚙️ sᴇᴛᴛɪɴɢs", "settings#main", "blue")
+                )
+            )
+        )
+
+    # 5. Friendly non-command response
+    user_name = message.from_user.first_name if message.from_user else "Friend"
+    reply_markup = get_main_buttons(user_id)
+
+    await message.reply_text(
+        text=(
+            f"<blockquote><b>👋 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴀssɪsᴛᴀɴᴛ</u></b></blockquote>\n\n"
+            f"👋 <b>ʜᴇʟʟᴏ, {user_name}!</b>\n\n"
+            f"ɪ ᴀᴍ <b>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ</b>, ʏᴏᴜʀ ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴍᴇᴅɪᴀ ᴍɪɢʀᴀᴛɪᴏɴ ᴀɴᴅ ᴄʜᴀɴɴᴇʟ ᴄʟᴏɴɪɴɢ ᴇɴɢɪɴᴇ.\n\n"
+            f"💡 <b>ǫᴜɪᴄᴋ sᴛᴀʀᴛ:</b>\n"
+            f"• <code>/start</code> — ᴏᴘᴇɴ ᴍᴀɪɴ ᴅᴀsʜʙᴏᴀʀᴅ\n"
+            f"• <code>/forward</code> — ʟᴀᴜɴᴄʜ ғᴏʀᴡᴀʀᴅɪɴɢ ᴡɪᴢᴀʀᴅ\n"
+            f"• <code>/autosave</code> — 24/7 ᴄʜᴀɴɴᴇʟ ᴍᴏɴɪᴛᴏʀ\n"
+            f"• <code>/help</code> — ᴠɪᴇᴡ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs\n"
+            f"• <code>/settings</code> — ᴄᴏɴғɪɢᴜʀᴇ ʙᴏᴛs & ᴄʜᴀɴɴᴇʟs\n\n"
+            f"👇 <i>ᴄʜᴏᴏsᴇ ᴀɴ ᴏᴘᴛɪᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ:</i>"
+        ),
+        reply_markup=reply_markup,
+        quote=True
+    )
 

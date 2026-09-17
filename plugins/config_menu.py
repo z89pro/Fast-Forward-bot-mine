@@ -105,7 +105,7 @@ async def config_cmd(bot: Client, message: Message):
         )
     text = await build_config_view()
     vcfg = await db.get_verify_config()
-    await message.reply_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
+    await message.reply_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True, quote=True)
 
 
 # ================= CALLBACK QUERY ROUTER =================
@@ -582,34 +582,34 @@ async def config_callback(bot: Client, query: CallbackQuery):
 @Client.on_message(filters.private & filters.command(["addadmin"]))
 async def cmd_add_admin(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.", quote=True)
     args = message.command[1:]
     if not args or not args[0].isdigit():
-        return await message.reply_text("<b>Usage:</b> <code>/addadmin &lt;user_id&gt;</code>\n\nExample: <code>/addadmin 987654321</code>")
+        return await message.reply_text("<b>Usage:</b> <code>/addadmin &lt;user_id&gt;</code>\n\nExample: <code>/addadmin 987654321</code>", quote=True)
     new_uid = int(args[0])
     await db.add_admin(new_uid)
-    await message.reply_text(f"✅ User <code>{new_uid}</code> has been granted Administrator privileges.")
+    await message.reply_text(f"✅ User <code>{new_uid}</code> has been granted Administrator privileges.", quote=True)
 
 
 @Client.on_message(filters.private & filters.command(["deladmin"]))
 async def cmd_del_admin(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.", quote=True)
     args = message.command[1:]
     if not args or not args[0].isdigit():
-        return await message.reply_text("<b>Usage:</b> <code>/deladmin &lt;user_id&gt;</code>\n\nExample: <code>/deladmin 987654321</code>")
+        return await message.reply_text("<b>Usage:</b> <code>/deladmin &lt;user_id&gt;</code>\n\nExample: <code>/deladmin 987654321</code>", quote=True)
     del_uid = int(args[0])
     primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
     if primary_owner and del_uid == primary_owner:
-        return await message.reply_text("⚠️ <b>Cannot remove primary Bot Owner.</b>")
+        return await message.reply_text("⚠️ <b>Cannot remove primary Bot Owner.</b>", quote=True)
     await db.remove_admin(del_uid)
-    await message.reply_text(f"✅ User <code>{del_uid}</code> removed from Administrator privileges.")
+    await message.reply_text(f"✅ User <code>{del_uid}</code> removed from Administrator privileges.", quote=True)
 
 
 @Client.on_message(filters.private & filters.command(["admins"]))
 async def cmd_admins(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.", quote=True)
     admins = await db.get_all_admins()
     primary = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
     lines = []
@@ -620,5 +620,5 @@ async def cmd_admins(bot: Client, message: Message):
         "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs</u></b></blockquote>\n\n"
         f"<b>Total Count:</b> <code>{len(admins)}</code>\n\n" + "\n".join(lines)
     )
-    await message.reply_text(admin_text)
+    await message.reply_text(admin_text, quote=True)
 

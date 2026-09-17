@@ -58,7 +58,7 @@ async def build_autosave_text(user_id: int):
 async def autosave_cmd(bot, message):
     user_id = message.from_user.id
     text, is_running, count = await build_autosave_text(user_id)
-    await message.reply_text(text, reply_markup=get_autosave_markup(is_running, count))
+    await message.reply_text(text, reply_markup=get_autosave_markup(is_running, count), quote=True)
 
 # ================= CALLBACK HANDLER =================
 

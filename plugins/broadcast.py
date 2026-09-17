@@ -53,12 +53,13 @@ def _format_time(seconds: float) -> str:
 async def broadcast_handler(bot: Client, message: Message):
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.", quote=True)
 
     if BROADCAST_STATE["is_running"]:
         return await message.reply_text(
             "<blockquote><b>⚠️ A broadcast is already running!</b>\n\n"
-            "Use <code>/cancelbroadcast</code> to halt the active process.</blockquote>"
+            "Use <code>/cancelbroadcast</code> to halt the active process.</blockquote>",
+            quote=True
         )
 
     b_msg = message.reply_to_message
@@ -264,13 +265,13 @@ async def broadcast_handler(bot: Client, message: Message):
 async def cancel_broadcast_cmd(bot: Client, message: Message):
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.", quote=True)
 
     if not BROADCAST_STATE["is_running"]:
-        return await message.reply_text("ℹ️ <b>No broadcast is currently running.</b>")
+        return await message.reply_text("ℹ️ <b>No broadcast is currently running.</b>", quote=True)
 
     BROADCAST_STATE["should_cancel"] = True
-    await message.reply_text("🛑 <b>Cancellation signal sent!</b> The broadcast will halt shortly.")
+    await message.reply_text("🛑 <b>Cancellation signal sent!</b> The broadcast will halt shortly.", quote=True)
 
 
 @Client.on_callback_query(filters.regex("^bcast_cancel$"))
@@ -291,10 +292,10 @@ async def broadcast_restart_notice(bot: Client, message: Message):
     """Convenience command: One-click broadcast announcing system restart & resumption."""
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.")
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.", quote=True)
 
     if BROADCAST_STATE["is_running"]:
-        return await message.reply_text("⚠️ A broadcast is already in progress.")
+        return await message.reply_text("⚠️ A broadcast is already in progress.", quote=True)
 
     bot_user = getattr(bot, "username", "codexup_bot")
     notice_text = (

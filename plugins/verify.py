@@ -465,7 +465,8 @@ async def verify_command(bot: Client, message: Message):
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🚀 sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ", callback_data="settings#main")],
                 [InlineKeyboardButton("🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ", callback_data="referral#main")]
-            ])
+            ]),
+            quote=True
         )
 
     await send_verify_prompt(bot, message, user_id, step=1)
@@ -475,7 +476,7 @@ async def verify_command(bot: Client, message: Message):
 async def setverify_command(bot: Client, message: Message):
     user_id = message.from_user.id
     if user_id not in Config.BOT_OWNER_ID:
-        return await message.reply_text("⛔ <b>This command is restricted to Bot Administrators only.</b>")
+        return await message.reply_text("⛔ <b>This command is restricted to Bot Administrators only.</b>", quote=True)
 
     args = message.text.split()[1:]
     cfg = await db.get_verify_config()
@@ -508,60 +509,60 @@ async def setverify_command(bot: Client, message: Message):
             "• <code>/setverify give &lt;user_id&gt; &lt;hours&gt;</code> — Grant free pass to user\n"
             "• <code>/setverify reset &lt;user_id&gt;</code> — Revoke user verification"
         )
-        return await message.reply_text(text)
+        return await message.reply_text(text, quote=True)
 
     sub = args[0].lower()
 
     if sub == "on":
         await db.update_verify_config("enabled", True)
-        return await message.reply_text("✅ <b>Token verification gate has been ENABLED!</b>")
+        return await message.reply_text("✅ <b>Token verification gate has been ENABLED!</b>", quote=True)
 
     elif sub == "off":
         await db.update_verify_config("enabled", False)
-        return await message.reply_text("🛑 <b>Token verification gate has been DISABLED!</b>")
+        return await message.reply_text("🛑 <b>Token verification gate has been DISABLED!</b>", quote=True)
 
     elif sub == "time":
         if len(args) < 2 or not args[1].isdigit():
-            return await message.reply_text("<b>Usage:</b> <code>/setverify time 24</code> (in hours)")
+            return await message.reply_text("<b>Usage:</b> <code>/setverify time 24</code> (in hours)", quote=True)
         hours = int(args[1])
         await db.update_verify_config("duration", hours)
-        return await message.reply_text(f"✅ <b>Pass duration set to {hours} Hours!</b>")
+        return await message.reply_text(f"✅ <b>Pass duration set to {hours} Hours!</b>", quote=True)
 
     elif sub == "steps":
         if len(args) < 2 or not args[1].isdigit() or int(args[1]) not in (1, 2, 3):
-            return await message.reply_text("<b>Usage:</b> <code>/setverify steps 1</code> (1, 2, or 3)")
+            return await message.reply_text("<b>Usage:</b> <code>/setverify steps 1</code> (1, 2, or 3)", quote=True)
         steps = int(args[1])
         await db.update_verify_config("steps", steps)
-        return await message.reply_text(f"✅ <b>Verification steps set to {steps}!</b>")
+        return await message.reply_text(f"✅ <b>Verification steps set to {steps}!</b>", quote=True)
 
     elif sub in ("s1", "s2", "s3"):
         if len(args) < 3:
-            return await message.reply_text(f"<b>Usage:</b> <code>/setverify {sub} shareus.io my_api_key</code>")
+            return await message.reply_text(f"<b>Usage:</b> <code>/setverify {sub} shareus.io my_api_key</code>", quote=True)
         domain, api_key = args[1].strip(), args[2].strip()
         idx_suffix = "" if sub == "s1" else sub[-1]
         await db.update_verify_config(f"shortener_url{idx_suffix}", domain)
         await db.update_verify_config(f"shortener_api{idx_suffix}", api_key)
-        return await message.reply_text(f"✅ <b>Shortener {sub.upper()} set to:</b> <code>{domain}</code>")
+        return await message.reply_text(f"✅ <b>Shortener {sub.upper()} set to:</b> <code>{domain}</code>", quote=True)
 
     elif sub == "give":
         if len(args) < 3 or not args[1].lstrip("-").isdigit() or not args[2].isdigit():
-            return await message.reply_text("<b>Usage:</b> <code>/setverify give &lt;user_id&gt; &lt;hours&gt;</code>")
+            return await message.reply_text("<b>Usage:</b> <code>/setverify give &lt;user_id&gt; &lt;hours&gt;</code>", quote=True)
         target_uid = int(args[1])
         hours = int(args[2])
         expires_at = time.time() + (hours * 3600)
         await db.set_user_verify_status(target_uid, expires_at)
         _VERIFIED_CACHE[target_uid] = expires_at
-        return await message.reply_text(f"✅ <b>Granted {hours}h verification pass to user <code>{target_uid}</code>!</b>")
+        return await message.reply_text(f"✅ <b>Granted {hours}h verification pass to user <code>{target_uid}</code>!</b>", quote=True)
 
     elif sub == "reset":
         if len(args) < 2 or not args[1].lstrip("-").isdigit():
-            return await message.reply_text("<b>Usage:</b> <code>/setverify reset &lt;user_id&gt;</code>")
+            return await message.reply_text("<b>Usage:</b> <code>/setverify reset &lt;user_id&gt;</code>", quote=True)
         target_uid = int(args[1])
         await db.set_user_verify_status(target_uid, 0)
         _VERIFIED_CACHE.pop(target_uid, None)
-        return await message.reply_text(f"✅ <b>Verification pass revoked for user <code>{target_uid}</code>.</b>")
+        return await message.reply_text(f"✅ <b>Verification pass revoked for user <code>{target_uid}</code>.</b>", quote=True)
 
-    await message.reply_text("❓ <b>Unknown argument. Type <code>/setverify</code> for help.</b>")
+    await message.reply_text("❓ <b>Unknown argument. Type <code>/setverify</code> for help.</b>", quote=True)
 
 
 @Client.on_callback_query(filters.regex(r"^verify#check_(\d+)"))
