@@ -159,12 +159,14 @@ class _Btn:
     __slots__ = ("text", "data", "url", "color")
 
     def __init__(self, text, data=None, url=None, color=None):
-        self.text = str(text or "")
+        from font_styler import style_button
+        raw_text = str(text or "")
+        self.text = style_button(raw_text)
         if isinstance(data, str):
             data = data.encode("utf-8", "replace")
         self.data = data
         self.url = str(url) if url else None
-        self.color = color or auto_color(self.text, data or url)
+        self.color = color or auto_color(raw_text, data or url)
 
     def high_level(self):
         if self.url is not None:
@@ -196,6 +198,8 @@ class StyledMarkup(InlineKeyboardMarkup):
                     norm_row.append(item)
                     hl_row.append(item.high_level())
                 elif isinstance(item, InlineKeyboardButton):
+                    from font_styler import style_button
+                    item.text = style_button(item.text)
                     btn_color = auto_color(item.text, item.callback_data or item.url)
                     btn_spec = _Btn(item.text, data=item.callback_data, url=item.url, color=btn_color)
                     norm_row.append(btn_spec)

@@ -198,3 +198,11 @@ Your privacy, data confidentiality, and account security are our highest archite
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <i>💡 You retain full sovereignty over your data and can reset your account at any moment.</i>"""
+
+
+# ── Universal Small Caps Post-Processor ──────────────────────────────
+from font_styler import to_small_caps
+
+for _attr, _val in list(Translation.__dict__.items()):
+    if isinstance(_val, str) and not _attr.startswith("__"):
+        setattr(Translation, _attr, to_small_caps(_val))

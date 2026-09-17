@@ -25,6 +25,10 @@ from pyrogram.types import BotCommand
 from config import Config, temp
 from database import db
 from keep_alive import keep_alive
+from font_styler import patch_pyrogram_font
+
+# Initialize Universal Small Caps Font Engine
+patch_pyrogram_font()
 
 # Setup logging
 logging.basicConfig(
