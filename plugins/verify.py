@@ -25,7 +25,8 @@ from datetime import datetime, timedelta
 
 import aiohttp
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
+from pyrogram.types import InlineKeyboardButton, Message, CallbackQuery
+from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 from config import Config
 from database import db

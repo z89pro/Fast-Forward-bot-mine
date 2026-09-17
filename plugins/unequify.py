@@ -5,7 +5,8 @@ from config import temp
 from .test import CLIENT, start_clone_bot
 from translation import Translation
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardButton
+from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 CLIENT = CLIENT()
 COMPLETED_BTN = InlineKeyboardMarkup(

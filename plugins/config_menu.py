@@ -5,7 +5,8 @@ import logging
 from config import Config, temp
 from database import db
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from pyrogram.types import InlineKeyboardButton, CallbackQuery, Message
+from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 logger = logging.getLogger("SkinetConfig")
 

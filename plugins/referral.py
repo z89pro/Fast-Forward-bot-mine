@@ -2,7 +2,8 @@ import logging
 from config import Config, temp
 from database import db
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from pyrogram.types import InlineKeyboardButton, CallbackQuery, Message
+from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 logger = logging.getLogger("SkinetReferral")
 
@@ -24,20 +25,20 @@ REDEEM_PERKS = [
         "val": True
     },
     {
-        "id": "autosave_pro",
-        "title": "🚀 Smart AutoSave 24/7 Monitor Pass",
-        "cost": 40,
-        "desc": "Real-time channel post monitoring & multi-channel auto-forward.",
-        "key": "autosave_unlocked",
+        "id": "ad_remover",
+        "title": "🛠 Skinet Clean Sanitizer Pass",
+        "cost": 15,
+        "desc": "Custom text & link replace rules with automated ad stripper.",
+        "key": "clean_caption",
         "val": True
     },
     {
-        "id": "all_access",
-        "title": "💎 Skinet Verse VIP All-Access Pass",
+        "id": "verify_bypass",
+        "title": "🛡️ 7-Day VIP Verification Pass",
         "cost": 50,
-        "desc": "All perks unlocked: Turbo Speed + Course Seller + AutoSave + Clean Captions!",
-        "key": "all_vip",
-        "val": True
+        "desc": "Bypasses all token verification steps freely for 7 full days.",
+        "key": "vip_pass_7d",
+        "val": 7 * 86400
     }
 ]
 
@@ -46,7 +47,7 @@ def is_owner(user_id: int) -> bool:
 
 async def get_bot_username(client: Client) -> str:
     me = getattr(client, "me", None)
-    if me is None or not getattr(me, "username", None):
+    if not me:
         me = await client.get_me()
     return getattr(me, "username", None) or "bot"
 
@@ -63,19 +64,21 @@ async def build_referral_text(client: Client, user_id: int):
     welcome_bonus = getattr(Config, "REFERRAL_WELCOME_BONUS", 5)
 
     text = (
-        "🎁 <b><u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ʀᴇғᴇʀ & ᴇᴀʀɴ</u></b> 🎁\n\n"
+        "<blockquote><b>🎁 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ʀᴇғᴇʀ & ᴇᴀʀɴ</u></b></blockquote>\n\n"
         "Invite your friends or channel subscribers and earn rewards for every user who joins!\n\n"
-        f"<b>🔗 Your Personal Invite Link:</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🔗 <b>Your Personal Invite Link:</b>\n"
         f"<code>{ref_link}</code>\n\n"
-        "<b>🌟 Benefits for You (The Referrer):</b>\n"
+        "🌟 <b>Benefits for You (The Referrer):</b>\n"
         f"• Earn <b>+{per_join} Points</b> instantly for every friend who joins.\n"
         "• Redeem points directly for Turbo Speed, Course Seller Mode, and VIP perks!\n\n"
-        "<b>🎉 Benefits for Your Friends:</b>\n"
+        "🎉 <b>Benefits for Your Friends:</b>\n"
         f"• Every new friend joining via your link claims a <b>+{welcome_bonus} Points</b> welcome bonus.\n\n"
-        "<b>📊 Your Referral Statistics:</b>\n"
-        f"• Total Friends Referred: <b>{count}</b>\n"
-        f"• Available Points: <b>{points} pts</b>\n"
-        f"• Lifetime Earned: <b>{earned} pts</b> | Redeemed: <b>{redeemed} pts</b>"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "📊 <b>Your Referral Statistics:</b>\n"
+        f"• Total Friends Referred: <code>{count}</code>\n"
+        f"• Available Points: <code>{points} pts</code>\n"
+        f"• Lifetime Earned: <code>{earned} pts</code> | Redeemed: <code>{redeemed} pts</code>"
     )
     return text, ref_link, data
 

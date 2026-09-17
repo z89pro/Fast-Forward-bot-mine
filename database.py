@@ -220,6 +220,39 @@ class Database:
             {'$set': {'dump_channel': dump_channel, 'dump_enabled': dump_enabled}},
             upsert=True
         ) 
+
+    async def get_effective_dump_channel(self):
+        """
+        Determines the active channel to dump any forwarded, autosaved, or copied media/content.
+        Priority:
+          1. MongoDB admin_config ('dump_settings') if enabled and channel set
+          2. Config.DUMP_CHANNEL if configured
+          3. Config.LOG_CHANNEL as permanent fallback so any content is safely dumped
+        """
+        try:
+            doc = await self.db.admin_config.find_one({'_id': 'dump_settings'})
+            if doc and doc.get('dump_enabled') and doc.get('dump_channel'):
+                chan = doc.get('dump_channel')
+                try:
+                    return int(chan)
+                except (ValueError, TypeError):
+                    return chan
+        except Exception:
+            pass
+
+        if Config.DUMP_CHANNEL and str(Config.DUMP_CHANNEL) not in ("0", ""):
+            try:
+                return int(Config.DUMP_CHANNEL)
+            except (ValueError, TypeError):
+                return Config.DUMP_CHANNEL
+
+        if Config.LOG_CHANNEL and str(Config.LOG_CHANNEL) not in ("0", ""):
+            try:
+                return int(Config.LOG_CHANNEL)
+            except (ValueError, TypeError):
+                return Config.LOG_CHANNEL
+
+        return None 
        
     async def add_bot(self, datas):
        await self.bot.delete_many({'user_id': int(datas['user_id'])})

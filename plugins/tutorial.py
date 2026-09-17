@@ -1,6 +1,7 @@
 import os
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from pyrogram.types import InlineKeyboardButton, CallbackQuery, Message
+from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 TUTORIAL_MODULES = {
     1: {
@@ -283,9 +284,10 @@ def tutorial_page_keyboard(mod_id: int):
 @Client.on_message(filters.private & filters.command(['tutorial', 'guide']))
 async def tutorial_cmd(client: Client, message: Message):
     text = (
-        "<b><u>📚 SKINET VERSE MASTER TUTORIAL HUB</u></b>\n\n"
+        "<blockquote><b>📚 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ᴍᴀsᴛᴇʀ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ</u></b></blockquote>\n\n"
         "Welcome to the official interactive knowledge base for <b>Skinet Verse Forward Bot</b>.\n"
         "Master channel cloning, Skinet text & media sanitization, course automation, and private channel forwarding!\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "👇 <b>Select any module below to start learning:</b>"
     )
     await message.reply_text(
@@ -322,9 +324,10 @@ async def tutorial_callback(bot: Client, query: CallbackQuery):
 
     if action == "menu":
         text = (
-            "<b><u>📚 SKINET VERSE MASTER TUTORIAL HUB</u></b>\n\n"
+            "<blockquote><b>📚 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ᴍᴀsᴛᴇʀ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ</u></b></blockquote>\n\n"
             "Welcome to the official interactive knowledge base for <b>Skinet Verse Forward Bot</b>.\n"
             "Master channel cloning, Skinet text & media sanitization, course automation, and private channel forwarding!\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "👇 <b>Select any module below to start learning:</b>"
         )
         await query.message.edit_text(

@@ -7,36 +7,38 @@ try:
 except ImportError:
     psutil = None
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from buttons import btn, btn_url, row, markup, colored_markup
 from database import db, mongodb_version
 from config import Config, temp
 from platform import python_version
 from translation import Translation
 from pyrogram import Client, filters, enums, __version__ as pyrogram_version
+
 def get_main_buttons(user_id=None):
     is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
-    buttons = [
-        [
-            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
-            InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs', callback_data='settings#main')
-        ],
-        [
-            InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu'),
-            InlineKeyboardButton('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', callback_data='referral#main')
-        ],
-        [
-            InlineKeyboardButton('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', callback_data='verify_menu_btn'),
-            InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status')
-        ],
-        [
-            InlineKeyboardButton('ℹ️ ᴀʙᴏᴜᴛ', callback_data='about')
-        ]
+    rows = [
+        row(
+            btn('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', 'autosave#main', 'green'),
+            btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue')
+        ),
+        row(
+            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue'),
+            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'green')
+        ),
+        row(
+            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green'),
+            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue')
+        ),
+        row(
+            btn('ℹ️ ᴀʙᴏᴜᴛ', 'about', 'blue')
+        )
     ]
     if is_admin:
-        buttons.append([
-            InlineKeyboardButton('📈 ᴜsᴇʀ ᴛʀᴀᴄᴋɪɴɢ', callback_data='utr_overview'),
-            InlineKeyboardButton('⚙️ sʏsᴛᴇᴍ ᴄᴏɴғɪɢ', callback_data='config#main')
-        ])
-    return InlineKeyboardMarkup(buttons)
+        rows.append(row(
+            btn('📈 ᴜsᴇʀ ᴛʀᴀᴄᴋɪɴɢ', 'utr_overview', 'blue'),
+            btn('⚙️ sʏsᴛᴇᴍ ᴄᴏɴғɪɢ', 'config#main', 'green')
+        ))
+    return markup(*rows)
 
 main_buttons = get_main_buttons()
 
@@ -143,6 +145,25 @@ async def restart(client, message):
     await asyncio.sleep(2)
     os.execl(sys.executable, sys.executable, *sys.argv)
     
+def get_help_buttons():
+    return markup(
+        row(
+            btn('📖 ʜᴏᴡ ᴛᴏ ᴜsᴇ ᴍᴇ', 'how_to_use', 'blue'),
+            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue')
+        ),
+        row(
+            btn('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', 'autosave#main', 'green'),
+            btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue')
+        ),
+        row(
+            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue'),
+            btn('ℹ️ ᴀʙᴏᴜᴛ', 'about', 'blue')
+        ),
+        row(
+            btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red')
+        )
+    )
+
 #==================Help Command==================#
 
 @Client.on_message(filters.private & filters.command(['help']))
@@ -150,20 +171,7 @@ async def help_command(client, message):
     await client.send_message(
         chat_id=message.chat.id,
         text=Translation.HELP_TXT,
-        reply_markup=InlineKeyboardMarkup(
-            [[
-            InlineKeyboardButton('• ʜᴏᴡ ᴛᴏ ᴜsᴇ ᴍᴇ ❓', callback_data='how_to_use'),
-            InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu')
-            ],[
-            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
-            InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs ', callback_data='settings#main')
-            ],[
-            InlineKeyboardButton('• sᴛᴀᴛᴜs ', callback_data='status'),
-            InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about')
-            ],[
-            InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back')
-            ]]
-        )
+        reply_markup=get_help_buttons()
     )
 
 #==================Callback Functions==================#
@@ -172,29 +180,17 @@ async def help_command(client, message):
 async def helpcb(bot, query):
     await query.message.edit_text(
         text=Translation.HELP_TXT,
-        reply_markup=InlineKeyboardMarkup(
-            [[
-            InlineKeyboardButton('• ʜᴏᴡ ᴛᴏ ᴜsᴇ ᴍᴇ ❓', callback_data='how_to_use'),
-            InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu')
-            ],[
-            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
-            InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs ', callback_data='settings#main')
-            ],[
-            InlineKeyboardButton('• sᴛᴀᴛᴜs ', callback_data='status'),
-            InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about')
-            ],[
-            InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back')
-            ]]
-        ))
+        reply_markup=get_help_buttons()
+    )
 
 @Client.on_callback_query(filters.regex(r'^how_to_use'))
 async def how_to_use(bot, query):
     await query.message.edit_text(
         text=Translation.HOW_USE_TXT,
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton('📚 ᴏᴘᴇɴ ꜰᴜʟʟ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu')],
-            [InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='help')]
-        ]),
+        reply_markup=markup(
+            row(btn('📚 ᴏᴘᴇɴ ꜰᴜʟʟ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'green')),
+            row(btn('🔙 ʙᴀᴄᴋ', 'help', 'red'))
+        ),
         disable_web_page_preview=True
     )
 
@@ -210,7 +206,7 @@ async def back(bot, query):
 async def about(bot, query):
     await query.message.edit_text(
         text=Translation.ABOUT_TXT,
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back')]]),
+        reply_markup=markup(row(btn('🔙 ʙᴀᴄᴋ', 'back', 'red'))),
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML,
     )
@@ -258,9 +254,12 @@ async def status(bot, query):
 
     await query.message.edit_text(
         text=Translation.STATUS_TXT.format(users_count, bots_count, temp.forwardings, total_channels),
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='help'),
-             InlineKeyboardButton('• sᴇʀᴠᴇʀ sᴛᴀᴛs', callback_data='server_status')
-]]),
+        reply_markup=markup(
+            row(
+                btn('• ʙᴀᴄᴋ', 'help', 'red'),
+                btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue')
+            )
+        ),
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
     )
@@ -272,7 +271,7 @@ async def server_status(bot, query):
 
     await query.message.edit_text(
         text=Translation.SERVER_TXT.format(cpu, ram),
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='status')]]),
+        reply_markup=markup(row(btn('• ʙᴀᴄᴋ', 'status', 'red'))),
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
     )
@@ -302,10 +301,12 @@ async def clone_cmd(client, message):
         "• Use <code>/forward</code> for interactive wizard\n"
         "• Use <code>/fwd &lt;start_link&gt; &lt;end_link&gt;</code> for direct range forward\n"
         "• Use <code>/autosave</code> to automatically monitor channels in real-time.",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⚙️ Settings", callback_data="settings#main"),
-             InlineKeyboardButton("🚀 AutoSave", callback_data="autosave#main")]
-        ])
+        reply_markup=markup(
+            row(
+                btn("⚙️ Settings", "settings#main", "blue"),
+                btn("🚀 AutoSave", "autosave#main", "green")
+            )
+        )
     )
 
 #===================Verify Menu Callback===================#

@@ -19,6 +19,7 @@ from translation import Translation
 from pyrogram import Client, filters 
 from pyrogram.errors import FloodWait, MessageNotModified, RPCError
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message 
+from buttons import colored_markup 
 
 CLIENT = CLIENT()
 logger = logging.getLogger(__name__)
@@ -72,12 +73,7 @@ async def pub_(bot, message):
     user_configs = await db.get_configs(user)
     clean_caption = user_configs.get('clean_caption', False)
     replace_words = user_configs.get('replace_words', {})
-    dump_target, dump_enabled = await db.get_admin_dump()
-    if not dump_enabled:
-       dump_target = None
-    elif dump_target:
-       try: dump_target = int(dump_target)
-       except Exception: pass
+    dump_target = await db.get_effective_dump_channel()
     speed_cfg = user_configs.get('speed_cfg') or {'mode': 'fast', 'delay': 1.0, 'jitter': True, 'batch_size': 100}
     base_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
     jitter_enabled = bool(speed_cfg.get('jitter', True))
@@ -196,7 +192,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
               caption=msg.get("caption"),
               reply_markup=msg.get('button'),
               protect_content=msg.get("protect"))
-        if dump_target:
+        if dump_target and str(dump_target) != str(sts.get('TO')):
            try:
               await bot.send_cached_media(
                     chat_id=dump_target,
@@ -210,7 +206,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
               text=msg.get("caption"),
               reply_markup=msg.get('button'),
               protect_content=msg.get("protect"))
-        if dump_target:
+        if dump_target and str(dump_target) != str(sts.get('TO')):
            try:
               await bot.send_message(
                     chat_id=dump_target,
@@ -225,7 +221,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
               message_id=msg.get("msg_id"),
               reply_markup=msg.get('button'),
               protect_content=msg.get("protect"))
-        if dump_target:
+        if dump_target and str(dump_target) != str(sts.get('TO')):
            try:
               await bot.copy_message(
                     chat_id=dump_target,
@@ -296,7 +292,7 @@ async def forward(bot, msg, m, sts, protect, dump_target=None):
            from_chat_id=sts.get('FROM'), 
            protect_content=protect,
            message_ids=msg)
-     if dump_target:
+     if dump_target and str(dump_target) != str(sts.get('TO')):
         try:
            await bot.forward_messages(
                  chat_id=dump_target,
@@ -370,7 +366,7 @@ async def edit(msg, title, status, sts):
          pause_btn,
          InlineKeyboardButton('🛑 ᴄᴀɴᴄᴇʟ', callback_data='terminate_frwd')
       ])
-   await msg_edit(msg, text, InlineKeyboardMarkup(button))
+   await msg_edit(msg, text, colored_markup(button))
 
 async def is_cancelled(client, user, msg, sts):
    if temp.CANCEL.get(user) == True:
@@ -550,7 +546,7 @@ def TimeFormatter(milliseconds: int) -> str:
     return tmp[:-2] if tmp else "0s"
 
 def retry_btn(id):
-    return InlineKeyboardMarkup([[InlineKeyboardButton('♻️ ʀᴇᴛʀʏ ♻️', f"start_public_{id}")]])
+    return colored_markup([[InlineKeyboardButton('♻️ ʀᴇᴛʀʏ ♻️', f"start_public_{id}")]])
 
 @Client.on_callback_query(filters.regex(r'^terminate_frwd$'))
 async def terminate_frwding(bot, m):

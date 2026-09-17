@@ -9,6 +9,7 @@ from pyrogram.errors import FloodWait
 from pyrogram.errors.exceptions.not_acceptable_406 import ChannelPrivate as PrivateChat
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified, ChannelPrivate
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from buttons import btn, row, markup, colored_markup
 
 #===================Run Function===================#
 
@@ -49,11 +50,12 @@ async def run(bot, message):
           except Exception:
               title = "Source"
           forward_id = f"{user_id}-{message.id}"
-          buttons = [[
-              InlineKeyboardButton('Yes', callback_data=f"start_public_{forward_id}"),
-              InlineKeyboardButton('No', callback_data="close_btn")
-          ]]
-          reply_markup = InlineKeyboardMarkup(buttons)
+          reply_markup = markup(
+              row(
+                  btn('✅ ʏᴇs, sᴛᴀʀᴛ', f"start_public_{forward_id}", "green"),
+                  btn('❌ ɴᴏ, ᴄᴀɴᴄᴇʟ', "close_btn", "red")
+              )
+          )
           await message.reply_text(
               text=f"**⚡ ᴅɪʀᴇᴄᴛ ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ**\n\n" + Translation.DOUBLE_CHECK.format(botname=_bot['name'], botuname=_bot['username'], from_chat=title, to_chat=to_title, skip=skip_count),
               disable_web_page_preview=True,
@@ -115,11 +117,12 @@ async def run(bot, message):
         return
     skip_count = int(skip_val)
     forward_id = f"{user_id}-{skipno.id}"
-    buttons = [[
-        InlineKeyboardButton('Yes', callback_data=f"start_public_{forward_id}"),
-        InlineKeyboardButton('No', callback_data="close_btn")
-    ]]
-    reply_markup = InlineKeyboardMarkup(buttons)
+    reply_markup = markup(
+        row(
+            btn('✅ ʏᴇs, sᴛᴀʀᴛ', f"start_public_{forward_id}", "green"),
+            btn('❌ ɴᴏ, ᴄᴀɴᴄᴇʟ', "close_btn", "red")
+        )
+    )
     await message.reply_text(
         text=Translation.DOUBLE_CHECK.format(botname=_bot['name'], botuname=_bot['username'], from_chat=title, to_chat=to_title, skip=skip_count),
         disable_web_page_preview=True,

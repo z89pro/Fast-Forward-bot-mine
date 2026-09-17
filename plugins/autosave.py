@@ -8,6 +8,7 @@ from .test import CLIENT, start_clone_bot
 from .regix import custom_caption, copy
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from buttons import colored_markup
 
 logger = logging.getLogger("SkinetAutoSave")
 
@@ -27,7 +28,7 @@ def get_autosave_markup(is_running: bool, count: int):
             InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")
         ]
     ]
-    return InlineKeyboardMarkup(buttons)
+    return colored_markup(buttons)
 
 async def build_autosave_text(user_id: int):
     channels = await db.get_user_live_forwards(user_id)
@@ -412,12 +413,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                 user_configs=user_configs
             )
             
-            dump_target, dump_enabled = await db.get_admin_dump()
-            if not dump_enabled:
-                dump_target = None
-            elif dump_target:
-                try: dump_target = int(dump_target)
-                except Exception: pass
+            dump_target = await db.get_effective_dump_channel()
 
             if user_configs.get('forward_tag'):
                 await client.forward_messages(
@@ -426,7 +422,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                     message_ids=message.id,
                     protect_content=user_configs.get('protect')
                 )
-                if dump_target:
+                if dump_target and str(dump_target) != str(to_chat):
                     try:
                         await client.forward_messages(chat_id=dump_target, from_chat_id=chat_id, message_ids=message.id)
                     except Exception:
@@ -442,7 +438,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                             caption=cap,
                             protect_content=user_configs.get('protect')
                         )
-                        if dump_target:
+                        if dump_target and str(dump_target) != str(to_chat):
                             try:
                                 await client.send_cached_media(chat_id=dump_target, file_id=file_id, caption=cap)
                             except Exception:
@@ -455,7 +451,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                             caption=cap,
                             protect_content=user_configs.get('protect')
                         )
-                        if dump_target:
+                        if dump_target and str(dump_target) != str(to_chat):
                             try:
                                 await client.copy_message(chat_id=dump_target, from_chat_id=chat_id, message_id=message.id, caption=cap)
                             except Exception:
@@ -466,7 +462,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                         text=cap or message.text,
                         protect_content=user_configs.get('protect')
                     )
-                    if dump_target:
+                    if dump_target and str(dump_target) != str(to_chat):
                         try:
                             await client.send_message(chat_id=dump_target, text=cap or message.text)
                         except Exception:
