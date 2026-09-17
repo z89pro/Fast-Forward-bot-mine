@@ -27,6 +27,9 @@ _DEFAULTS = {
     "FORCE_SUB_CHANNEL":  "",
     "FORCE_SUB_ON":       "False",
     "PORT":               "8080",
+    "REFERRAL_ENABLED":   "True",
+    "REFERRAL_POINTS_PER_JOIN": "10",
+    "REFERRAL_WELCOME_BONUS": "5",
 }
 
 def _get(key: str, alt_keys: tuple = ()) -> str:
@@ -65,6 +68,10 @@ class Config:
     FORCE_SUB_CHANNEL = _get("FORCE_SUB_CHANNEL")
     FORCE_SUB_ON = _get("FORCE_SUB_ON").lower() in ("true", "1", "yes")
     PORT = int(_get("PORT")) if _get("PORT").isdigit() else 8080
+
+    REFERRAL_ENABLED = _get("REFERRAL_ENABLED").lower() in ("true", "1", "yes")
+    REFERRAL_POINTS_PER_JOIN = int(_get("REFERRAL_POINTS_PER_JOIN")) if _get("REFERRAL_POINTS_PER_JOIN").isdigit() else 10
+    REFERRAL_WELCOME_BONUS = int(_get("REFERRAL_WELCOME_BONUS")) if _get("REFERRAL_WELCOME_BONUS").isdigit() else 5
 
 
 class temp(object):

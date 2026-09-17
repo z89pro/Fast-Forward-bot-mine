@@ -24,7 +24,10 @@ main_buttons = [
         InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ', callback_data='tutorial#menu')
     ],
     [
-        InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status'),
+        InlineKeyboardButton('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', callback_data='referral#main'),
+        InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status')
+    ],
+    [
         InlineKeyboardButton('ℹ️ ᴀʙᴏᴜᴛ', callback_data='about')
     ]
 ]
@@ -56,21 +59,48 @@ async def start(client, message):
             )
             return
 
-    if not await db.is_user_exist(user.id):
-        await db.add_user(user.id, message.from_user.mention)
+    # Parse referral payload if present (/start ref_123456)
+    ref_id = None
+    if len(message.command) > 1 and message.command[1].startswith("ref_"):
+        try:
+            parsed_ref = int(message.command[1].replace("ref_", ""))
+            if parsed_ref != user.id:
+                ref_id = parsed_ref
+        except Exception:
+            ref_id = None
+
+    is_new = not await db.is_user_exist(user.id)
+    if is_new:
+        await db.add_user(user.id, message.from_user.mention, referred_by=ref_id)
+        if ref_id:
+            credited, pts = await db.handle_referral_join(user.id, ref_id)
+            if credited:
+                try:
+                    await client.send_message(
+                        ref_id,
+                        f"🎉 <b>New Referral Joined!</b>\n\n"
+                        f"👤 <b>{user.mention}</b> joined Skinet Verse using your invite link!\n"
+                        f"💎 You earned <b>+{pts} Referral Points</b>!\n\n"
+                        f"Check your balance and redeem perks in /referral."
+                    )
+                except Exception:
+                    pass
         if Config.LOG_CHANNEL:
             try:
+                ref_txt = f"\n🔗 Rᴇғᴇʀʀᴇᴅ Bʏ: <code>{ref_id}</code>" if ref_id else ""
                 await client.send_message(
                     chat_id=Config.LOG_CHANNEL,
-                    text=f"#NewUser\n\nIᴅ - {user.id}\nNᴀᴍᴇ - {message.from_user.mention}"
+                    text=f"#NewUser\n\nIᴅ - {user.id}\nNᴀᴍᴇ - {message.from_user.mention}{ref_txt}"
                 )
             except Exception:
                 pass
+
     reply_markup = InlineKeyboardMarkup(main_buttons)
+    extra_welcome = "\n\n🎁 <i>You joined via an invite link! Claim your welcome bonus in /referral!</i>" if (is_new and ref_id) else ""
     await client.send_message(
         chat_id=message.chat.id,
         reply_markup=reply_markup,
-        text=Translation.START_TXT.format(message.from_user.first_name))
+        text=Translation.START_TXT.format(message.from_user.first_name) + extra_welcome)
 
 #==================Restart Function==================#
 

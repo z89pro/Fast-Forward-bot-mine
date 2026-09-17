@@ -23,18 +23,26 @@ class Database:
         self.chl = self.db.channels 
         self.live = self.db.live_forwards 
         
-    def new_user(self, id, name):
+    def new_user(self, id, name, referred_by=None):
         return dict(
-            id = id,
+            id = int(id),
             name = name,
             ban_status=dict(
                 is_banned=False,
                 ban_reason="",
             ),
+            referral=dict(
+                referred_by=int(referred_by) if referred_by else None,
+                referral_count=0,
+                referral_points=0,
+                referral_earned_total=0,
+                referral_redeemed_total=0,
+                bonus_claimed=False
+            )
         )      
                 
-    async def add_user(self, id, name):
-        user = self.new_user(id, name)
+    async def add_user(self, id, name, referred_by=None):
+        user = self.new_user(id, name, referred_by=referred_by)
         await self.col.insert_one(user)
     
     async def is_user_exist(self, id):
@@ -274,6 +282,89 @@ class Database:
                 Config.FAST_DELAY = float(cfg['FAST_DELAY'])
         except Exception as e:
             print(f"Error loading system config from DB: {e}")
+
+    async def get_referral_data(self, user_id: int):
+        default = {
+            'referred_by': None,
+            'referral_count': 0,
+            'referral_points': 0,
+            'referral_earned_total': 0,
+            'referral_redeemed_total': 0,
+            'bonus_claimed': False
+        }
+        user = await self.col.find_one({'id': int(user_id)})
+        if not user:
+            return default
+        ref_data = user.get('referral') or {}
+        for k, v in default.items():
+            if k not in ref_data:
+                ref_data[k] = v
+        return ref_data
+
+    async def update_referral_data(self, user_id: int, data: dict):
+        await self.col.update_one({'id': int(user_id)}, {'$set': {'referral': data}}, upsert=True)
+
+    async def handle_referral_join(self, new_user_id: int, referrer_id: int):
+        if not referrer_id or int(new_user_id) == int(referrer_id):
+            return False, 0
+        referrer = await self.col.find_one({'id': int(referrer_id)})
+        if not referrer:
+            return False, 0
+        ref_data = await self.get_referral_data(referrer_id)
+        pts = int(getattr(Config, 'REFERRAL_POINTS_PER_JOIN', 10))
+        ref_data['referral_count'] = ref_data.get('referral_count', 0) + 1
+        ref_data['referral_points'] = ref_data.get('referral_points', 0) + pts
+        ref_data['referral_earned_total'] = ref_data.get('referral_earned_total', 0) + pts
+        await self.update_referral_data(referrer_id, ref_data)
+        await self.log_referral_event('join', referrer_id, pts, f"User {new_user_id} joined via invite")
+        return True, pts
+
+    async def claim_welcome_bonus(self, user_id: int):
+        ref_data = await self.get_referral_data(user_id)
+        if not ref_data.get('referred_by'):
+            return False, "You were not referred by any invite link."
+        if ref_data.get('bonus_claimed'):
+            return False, "You have already claimed your welcome bonus!"
+        pts = int(getattr(Config, 'REFERRAL_WELCOME_BONUS', 5))
+        ref_data['referral_points'] = ref_data.get('referral_points', 0) + pts
+        ref_data['referral_earned_total'] = ref_data.get('referral_earned_total', 0) + pts
+        ref_data['bonus_claimed'] = True
+        await self.update_referral_data(user_id, ref_data)
+        await self.log_referral_event('bonus', user_id, pts, "Claimed welcome bonus")
+        return True, pts
+
+    async def redeem_referral_points(self, user_id: int, cost: int, perk_name: str):
+        ref_data = await self.get_referral_data(user_id)
+        current_pts = ref_data.get('referral_points', 0)
+        if current_pts < cost:
+            return False, f"Not enough points. Need {cost}, have {current_pts}."
+        ref_data['referral_points'] = current_pts - cost
+        ref_data['referral_redeemed_total'] = ref_data.get('referral_redeemed_total', 0) + cost
+        await self.update_referral_data(user_id, ref_data)
+        await self.log_referral_event('redeem', user_id, -cost, perk_name)
+        return True, ref_data['referral_points']
+
+    async def log_referral_event(self, evt_type, uid, pts=0, detail=""):
+        try:
+            from datetime import datetime
+            event = {
+                'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'type': str(evt_type),
+                'user_id': int(uid),
+                'points': int(pts),
+                'detail': str(detail)[:120]
+            }
+            await self.db.referral_ledger.insert_one(event)
+        except Exception:
+            pass
+
+    async def get_top_referrers(self, limit=10):
+        cursor = self.col.find({'referral.referral_count': {'$gt': 0}}).sort('referral.referral_count', -1).limit(limit)
+        return [doc async for doc in cursor]
+
+    async def get_referral_ledger(self, limit=20):
+        cursor = self.db.referral_ledger.find({}).sort('_id', -1).limit(limit)
+        return [doc async for doc in cursor]
     
 db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 

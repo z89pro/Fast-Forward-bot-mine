@@ -21,6 +21,8 @@ class Translation(object):
 ⏣ __/autosave - Smart AutoSave & Channel Monitoring__
 ⏣ __/tutorial - 12-Module Master Tutorial Hub__
 ⏣ __/skinet - Skinet Text & Media Modifier Guide__
+⏣ __/referral - Refer & Earn Rewards Hub__
+⏣ __/topref - Top 10 Referral Leaderboard__
 ⏣ __/pause - Pause ongoing forwarding__
 ⏣ __/resume - Resume paused forwarding__
 ⏣ __/stop - Cancel your ongoing forwarding__

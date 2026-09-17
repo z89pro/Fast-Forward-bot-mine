@@ -81,6 +81,7 @@ class Bot(Client):
                 BotCommand("forward", "Start message forwarding"),
                 BotCommand("fwd", "Direct range forward links"),
                 BotCommand("autosave", "Smart AutoSave & live monitoring"),
+                BotCommand("referral", "Refer friends & earn rewards"),
                 BotCommand("pause", "Pause ongoing forwarding"),
                 BotCommand("resume", "Resume paused forwarding"),
                 BotCommand("stop", "Cancel ongoing forwarding"),
