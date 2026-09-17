@@ -5,8 +5,8 @@ from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, mar
 
 TUTORIAL_MODULES = {
     1: {
-        "title": "🚀 1. Bot Overview & /start",
-        "short": "Bot Overview",
+        "title": "🚀 1. ʙᴏᴛ ᴏᴠᴇʀᴠɪᴇᴡ & /start",
+        "short": "ʙᴏᴛ ᴏᴠᴇʀᴠɪᴇᴡ",
         "text": (
             "<b><u>📚 MODULE 1: BOT OVERVIEW & GETTING STARTED</u></b>\n\n"
             "Welcome to <b>Skinet Verse Forward Bot</b> — an ultra-fast channel cloning, content migration, and automated distribution suite designed for Telegram channels and course creators!\n\n"
@@ -24,11 +24,11 @@ TUTORIAL_MODULES = {
             "• <code>/autosave</code> - Real-time channel monitoring engine.\n"
             "• <code>/tutorial</code> - Access this comprehensive tutorial hub anytime!"
         ),
-        "action_btn": InlineKeyboardButton("⚙️ Open Settings", callback_data="settings#main")
+        "action_btn": InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")
     },
     2: {
-        "title": "🤖 2. BotFather Token & Setup",
-        "short": "BotFather Setup",
+        "title": "🤖 2. ʙᴏᴛғᴀᴛʜᴇʀ ᴛᴏᴋᴇɴ & sᴇᴛᴜᴘ",
+        "short": "ʙᴏᴛғᴀᴛʜᴇʀ sᴇᴛᴜᴘ",
         "text": (
             "<b><u>📚 MODULE 2: BOTFATHER TOKEN & BOT SETUP</u></b>\n\n"
             "Before forwarding messages, you must connect a Telegram Bot to perform the heavy lifting on your behalf.\n\n"
@@ -44,11 +44,11 @@ TUTORIAL_MODULES = {
             "<b>6.</b> Paste or forward the BotFather token message to this bot.\n\n"
             "✅ <i>Once added, your bot is verified and ready to forward messages!</i>"
         ),
-        "action_btn": InlineKeyboardButton("🤖 Manage Bots", callback_data="settings#bots")
+        "action_btn": InlineKeyboardButton("🤖 ᴍᴀɴᴀɢᴇ ʙᴏᴛs", callback_data="settings#bots")
     },
     3: {
-        "title": "🏷 3. Target Channel Setup",
-        "short": "Target Channels",
+        "title": "🏷 3. ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ sᴇᴛᴜᴘ",
+        "short": "ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟs",
         "text": (
             "<b><u>📚 MODULE 3: TARGET CHANNEL CONFIGURATION</u></b>\n\n"
             "Your <b>Target Channel</b> is where all forwarded files, videos, and course materials will be delivered.\n\n"
@@ -61,11 +61,11 @@ TUTORIAL_MODULES = {
             "<b>5.</b> Forward any message from your target channel to this bot, or enter the Channel ID (e.g., <code>-1001987654321</code>).\n\n"
             "💡 <i>Tip: You can add multiple target channels and switch between them whenever you start a forward task!</i>"
         ),
-        "action_btn": InlineKeyboardButton("🏷 Manage Channels", callback_data="settings#channels")
+        "action_btn": InlineKeyboardButton("🏷 ᴍᴀɴᴀɢᴇ ᴄʜᴀɴɴᴇʟs", callback_data="settings#channels")
     },
     4: {
-        "title": "⏩ 4. Forwarding (/forward & /fwd)",
-        "short": "Forward & /fwd",
+        "title": "⏩ 4. ғᴏʀᴡᴀʀᴅɪɴɢ (/forward & /fwd)",
+        "short": "ғᴏʀᴡᴀʀᴅ & /fwd",
         "text": (
             "<b><u>📚 MODULE 4: FORWARDING ENGINE (/forward & /fwd)</u></b>\n\n"
             "The bot provides two flexible ways to copy and migrate channel content:\n\n"
@@ -82,11 +82,11 @@ TUTORIAL_MODULES = {
             "  <code>/fwd https://t.me/c/12345/10 https://t.me/c/12345/150</code>\n"
             "• Starts immediately without asking interactive questions!"
         ),
-        "action_btn": InlineKeyboardButton("⚙️ Forward Settings", callback_data="settings#main")
+        "action_btn": InlineKeyboardButton("⚙️ ғᴏʀᴡᴀʀᴅ sᴇᴛᴛɪɴɢs", callback_data="settings#main")
     },
     5: {
-        "title": "💎 5. Free vs Pro Tier Features",
-        "short": "Free vs Pro Tiers",
+        "title": "💎 5. ғʀᴇᴇ ᴠs ᴘʀᴏ ᴛɪᴇʀ ғᴇᴀᴛᴜʀᴇs",
+        "short": "ғʀᴇᴇ ᴠs ᴘʀᴏ ᴛɪᴇʀs",
         "text": (
             "<b><u>📚 MODULE 5: FREE vs PRO TIER COMPARISON</u></b>\n\n"
             "Choose the power level that fits your workflow:\n\n"
@@ -103,11 +103,11 @@ TUTORIAL_MODULES = {
             "• 👤 <b>UserBot Integration:</b> Clone from private/restricted channels\n"
             "• 📦 <b>Unlimited Channels & Batch Size:</b> Zero throttling and multi-admin support"
         ),
-        "action_btn": InlineKeyboardButton("🎓 Course Seller Mode", callback_data="settings#courseseller")
+        "action_btn": InlineKeyboardButton("🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ", callback_data="settings#courseseller")
     },
     6: {
-        "title": "🖋 6. Custom Caption Settings",
-        "short": "Custom Captions",
+        "title": "🖋 6. ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ sᴇᴛᴛɪɴɢs",
+        "short": "ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴs",
         "text": (
             "<b><u>📚 MODULE 6: CUSTOM CAPTION ENGINE</u></b>\n\n"
             "Transform message captions automatically to feature your own branding, links, and styling!\n\n"
@@ -124,11 +124,11 @@ TUTORIAL_MODULES = {
             "🌟 &lt;i&gt;Uploaded by Skinet Verse&lt;/i&gt;</code>\n\n"
             "💡 <i>Enable 'Clean Caption' to wipe competitor headers/footers before applying your custom format!</i>"
         ),
-        "action_btn": InlineKeyboardButton("🖋️ Set Caption", callback_data="settings#caption")
+        "action_btn": InlineKeyboardButton("🖋️ sᴇᴛ ᴄᴀᴘᴛɪᴏɴ", callback_data="settings#caption")
     },
     7: {
-        "title": "🕵 7. Media Filter Toggles",
-        "short": "Media Filters",
+        "title": "🕵 7. ᴍᴇᴅɪᴀ ғɪʟᴛᴇʀ ᴛᴏɢɢʟᴇs",
+        "short": "ᴍᴇᴅɪᴀ ғɪʟᴛᴇʀs",
         "text": (
             "<b><u>📚 MODULE 7: SMART MEDIA FILTERS</u></b>\n\n"
             "Never clutter your target channel with unwanted spam, stickers, or filler text!\n\n"
@@ -142,11 +142,11 @@ TUTORIAL_MODULES = {
             "<b>⚙️ How to Toggle:</b>\n"
             "Go to <code>/settings</code> ➔ <b>🕵‍♀ ғɪʟᴛᴇʀs 🕵‍♀</b> and toggle each media type ON/OFF with a single tap!"
         ),
-        "action_btn": InlineKeyboardButton("🕵‍♀ Manage Filters", callback_data="settings#filters")
+        "action_btn": InlineKeyboardButton("🕵‍♀ ᴍᴀɴᴀɢᴇ ғɪʟᴛᴇʀs", callback_data="settings#filters")
     },
     8: {
-        "title": "⚡️ 8. Auto-Forwarding (AutoSave)",
-        "short": "Smart AutoSave",
+        "title": "⚡️ 8. ᴀᴜᴛᴏ-ғᴏʀᴡᴀʀᴅɪɴɢ (ᴀᴜᴛᴏsᴀᴠᴇ)",
+        "short": "sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ",
         "text": (
             "<b><u>📚 MODULE 8: SMART AUTOSAVE (AUTO-FORWARDING)</u></b>\n\n"
             "Tired of running manual forward commands every time a teacher drops a new lecture? <b>Smart AutoSave</b> monitors channels 24/7!\n\n"
@@ -160,11 +160,11 @@ TUTORIAL_MODULES = {
             "   • Automatically pushes the cleaned post to your target channel!\n\n"
             "⚡️ <i>Runs seamlessly in the background with zero battery or CPU drain on your device!</i>"
         ),
-        "action_btn": InlineKeyboardButton("🚀 Launch AutoSave", callback_data="autosave#main")
+        "action_btn": InlineKeyboardButton("🚀 ʟᴀᴜɴᴄʜ ᴀᴜᴛᴏsᴀᴠᴇ", callback_data="autosave#main")
     },
     9: {
-        "title": "💧 9. Watermarks & Branding",
-        "short": "Watermarks & Brand",
+        "title": "💧 9. ᴡᴀᴛᴇʀᴍᴀʀᴋs & ʙʀᴀɴᴅɪɴɢ",
+        "short": "ᴡᴀᴛᴇʀᴍᴀʀᴋs & ʙʀᴀɴᴅ",
         "text": (
             "<b><u>📚 MODULE 9: WATERMARK SANITIZATION & BRANDING</u></b>\n\n"
             "Establish your own brand identity and eliminate competitor watermarks from forwarded materials:\n\n"
@@ -174,11 +174,11 @@ TUTORIAL_MODULES = {
             "• <b>Upload Type Cycling:</b> Convert raw media files into standard Streamable Videos or pure Documents via <b>🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ ➔ 📦 ᴜᴘʟᴏᴀᴅ ᴛʏᴘᴇ</b>.\n\n"
             "💡 <i>Combine with Skinet Username Replacer for 100% white-label course distribution!</i>"
         ),
-        "action_btn": InlineKeyboardButton("🛠 Skinet Modifier", callback_data="settings#ftm")
+        "action_btn": InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm")
     },
     10: {
-        "title": "🛠 10. Skinet Replacers & Removers",
-        "short": "Skinet Replacer Guide",
+        "title": "🛠 10. sᴋɪɴᴇᴛ ʀᴇᴘʟᴀᴄᴇʀs & ʀᴇᴍᴏᴠᴇʀs",
+        "short": "sᴋɪɴᴇᴛ ʀᴇᴘʟᴀᴄᴇʀ ɢᴜɪᴅᴇ",
         "text": (
             "<b><u>📚 MODULE 10: SKINET REMOVERS & REPLACERS (STEP-BY-STEP)</u></b>\n\n"
             "<b>Skinet Text & Media Modifier (Powered by Skinet Verse)</b> gives you complete control over competitor text, links, and tags.\n\n"
@@ -201,11 +201,11 @@ TUTORIAL_MODULES = {
             "• Tap <b>🔤 ᴀᴅᴅ ᴡᴏʀᴅ ʀᴇᴘʟᴀᴄᴇᴍᴇɴᴛ</b>.\n"
             "• Send rule as <code>old_word:new_word</code> (e.g. <code>PW:SkinetVerse</code>)."
         ),
-        "action_btn": InlineKeyboardButton("🛠 Open Skinet Modifier", callback_data="settings#ftm")
+        "action_btn": InlineKeyboardButton("🛠 ᴏᴘᴇɴ sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm")
     },
     11: {
-        "title": "🔢 11. Alpha Mode & Skip Messages",
-        "short": "Alpha & Skip",
+        "title": "🔢 11. ᴀʟᴘʜᴀ ᴍᴏᴅᴇ & sᴋɪᴘ ᴍᴇssᴀɢᴇs",
+        "short": "ᴀʟᴘʜᴀ & sᴋɪᴘ",
         "text": (
             "<b><u>📚 MODULE 11: MESSAGE SKIPPING & PARTIAL FORWARDS</u></b>\n\n"
             "Need to resume a forward task or skip promotional messages at the beginning of a channel?\n\n"
@@ -219,11 +219,11 @@ TUTORIAL_MODULES = {
             "• <b>Bypass Intro Ads:</b> Skip intro advertisements and welcome messages.\n"
             "• <b>Direct Range Alternative:</b> Use <code>/fwd &lt;link_51&gt; &lt;link_200&gt;</code> for exact boundary targeting."
         ),
-        "action_btn": InlineKeyboardButton("⚙️ Speed Settings", callback_data="settings#speed")
+        "action_btn": InlineKeyboardButton("⚙️ sᴘᴇᴇᴅ sᴇᴛᴛɪɴɢs", callback_data="settings#speed")
     },
     12: {
-        "title": "👤 12. UserBot Private Channel Login",
-        "short": "UserBot Private Login",
+        "title": "👤 12. ᴜsᴇʀʙᴏᴛ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ ʟᴏɢɪɴ",
+        "short": "ᴜsᴇʀʙᴏᴛ ᴘʀɪᴠᴀᴛᴇ ʟᴏɢɪɴ",
         "text": (
             "<b><u>📚 MODULE 12: USERBOT PRIVATE CHANNEL LOGIN</u></b>\n\n"
             "Normal Telegram bots cannot see or join private channels unless invited as admin. A <b>UserBot</b> allows forwarding from ANY channel you have access to!\n\n"
@@ -237,7 +237,7 @@ TUTORIAL_MODULES = {
             "• Your session runs securely in-memory and is never shared.\n"
             "• You can forward from any restricted or private channel seamlessly!"
         ),
-        "action_btn": InlineKeyboardButton("🤖 UserBot Setup", callback_data="settings#bots")
+        "action_btn": InlineKeyboardButton("🤖 ᴜsᴇʀʙᴏᴛ sᴇᴛᴜᴘ", callback_data="settings#bots")
     }
 }
 

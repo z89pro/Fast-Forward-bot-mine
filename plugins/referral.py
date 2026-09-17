@@ -10,33 +10,33 @@ logger = logging.getLogger("SkinetReferral")
 REDEEM_PERKS = [
     {
         "id": "extreme_speed",
-        "title": "⚡️ Extreme Speed Pass (0.5s Turbo)",
+        "title": "⚡️ ᴇxᴛʀᴇᴍᴇ sᴘᴇᴇᴅ ᴘᴀss (0.5s ᴛᴜʀʙᴏ)",
         "cost": 20,
-        "desc": "Unlocks 0.5s ultra-fast burst message forwarding.",
+        "desc": "ᴜɴʟᴏᴄᴋs 0.5s ᴜʟᴛʀᴀ-ғᴀsᴛ ʙᴜʀsᴛ ᴍᴇssᴀɢᴇ ғᴏʀᴡᴀʀᴅɪɴɢ.",
         "key": "speed_cfg",
         "val": {"mode": "extreme", "delay": 0.5, "jitter": True, "batch_size": 100}
     },
     {
         "id": "course_seller",
-        "title": "🎓 Course Seller Pro Pass",
+        "title": "🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴘʀᴏ ᴘᴀss",
         "cost": 30,
-        "desc": "Auto lecture numbering, index table of contents & ad cleaner.",
+        "desc": "ᴀᴜᴛᴏ ʟᴇᴄᴛᴜʀᴇ ɴᴜᴍʙᴇʀɪɴɢ, ɪɴᴅᴇx ᴛᴀʙʟᴇ ᴏғ ᴄᴏɴᴛᴇɴᴛs & ᴀᴅ ᴄʟᴇᴀɴᴇʀ.",
         "key": "course_seller_mode",
         "val": True
     },
     {
         "id": "ad_remover",
-        "title": "🛠 Skinet Clean Sanitizer Pass",
+        "title": "🛠 sᴋɪɴᴇᴛ ᴄʟᴇᴀɴ sᴀɴɪᴛɪᴢᴇʀ ᴘᴀss",
         "cost": 15,
-        "desc": "Custom text & link replace rules with automated ad stripper.",
+        "desc": "ᴄᴜsᴛᴏᴍ ᴛᴇxᴛ & ʟɪɴᴋ ʀᴇᴘʟᴀᴄᴇ ʀᴜʟᴇs ᴡɪᴛʜ ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴀᴅ sᴛʀɪᴘᴘᴇʀ.",
         "key": "clean_caption",
         "val": True
     },
     {
         "id": "verify_bypass",
-        "title": "🛡️ 7-Day VIP Verification Pass",
+        "title": "🛡️ 7-ᴅᴀʏ ᴠɪᴘ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘᴀss",
         "cost": 50,
-        "desc": "Bypasses all token verification steps freely for 7 full days.",
+        "desc": "ʙʏᴘᴀssᴇs ᴀʟʟ ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴇᴘs ғʀᴇᴇʟʏ ғᴏʀ 7 ғᴜʟʟ ᴅᴀʏs.",
         "key": "vip_pass_7d",
         "val": 7 * 86400
     }

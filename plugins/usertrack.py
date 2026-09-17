@@ -58,18 +58,18 @@ async def build_userstats_overview():
 
     text = (
         "<blockquote><b>📊 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴜsᴇʀ ᴛʀᴀᴄᴋɪɴɢ ᴅᴀsʜʙᴏᴀʀᴅ</u></b></blockquote>\n\n"
-        "<b>Comprehensive analytics & real-time telemetry over your bot's userbase:</b>\n\n"
+        "<b>ᴄᴏᴍᴘʀᴇʜᴇɴsɪᴠᴇ ᴀɴᴀʟʏᴛɪᴄs & ʀᴇᴀʟ-ᴛɪᴍᴇ ᴛᴇʟᴇᴍᴇᴛʀʏ ᴏᴠᴇʀ ʏᴏᴜʀ ʙᴏᴛ's ᴜsᴇʀʙᴀsᴇ:</b>\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👥 <b>Total Registered Users:</b> <code>{total}</code>\n"
-        f"🔁 <b>Total Messages Forwarded:</b> <code>{total_forwards}</code>\n"
+        f"👥 <b>ᴛᴏᴛᴀʟ ʀᴇɢɪsᴛᴇʀᴇᴅ ᴜsᴇʀs:</b> <code>{total}</code>\n"
+        f"🔁 <b>ᴛᴏᴛᴀʟ ᴍᴇssᴀɢᴇs ғᴏʀᴡᴀʀᴅᴇᴅ:</b> <code>{total_forwards}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🆕 <b>New Users (24h):</b> <code>{new_today}</code>\n"
-        f"📅 <b>New Users (7d):</b> <code>{new_week}</code>\n"
-        f"🟢 <b>Active Users (24h):</b> <code>{act_today}</code>\n"
-        f"⚡️ <b>Active Users (7d):</b> <code>{act_week}</code>\n"
+        f"🆕 <b>ɴᴇᴡ ᴜsᴇʀs (24h):</b> <code>{new_today}</code>\n"
+        f"📅 <b>ɴᴇᴡ ᴜsᴇʀs (7d):</b> <code>{new_week}</code>\n"
+        f"🟢 <b>ᴀᴄᴛɪᴠᴇ ᴜsᴇʀs (24h):</b> <code>{act_today}</code>\n"
+        f"⚡️ <b>ᴀᴄᴛɪᴠᴇ ᴜsᴇʀs (7d):</b> <code>{act_week}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📈 <b>7-Day Growth Velocity:</b> <code>{growth_pct:.1f}%</code>\n\n"
-        "<i>💡 Lookup any user profile:</i> <code>/userstats &lt;user_id&gt;</code>"
+        f"📈 <b>7-ᴅᴀʏ ɢʀᴏᴡᴛʜ ᴠᴇʟᴏᴄɪᴛʏ:</b> <code>{growth_pct:.1f}%</code>\n\n"
+        "<i>💡 ʟᴏᴏᴋᴜᴘ ᴀɴʏ ᴜsᴇʀ ᴘʀᴏғɪʟᴇ:</i> <code>/userstats &lt;user_id&gt;</code>"
     )
 
     buttons = InlineKeyboardMarkup([
@@ -90,7 +90,7 @@ async def build_userstats_overview():
 async def build_user_profile(user_id: int):
     user = await db.get_user(user_id)
     if not user:
-        return f"<b>❌ User <code>{user_id}</code> not found in database.</b>", None
+        return f"<b>❌ ᴜsᴇʀ <code>{user_id}</code> ɴᴏᴛ ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ.</b>", None
 
     name = html.escape(str(user.get("name", "User")))
     first_seen = fmt_dt(user.get("first_seen"))
@@ -99,31 +99,31 @@ async def build_user_profile(user_id: int):
     activity = user.get("activity_count", 1)
     
     ref = user.get("referral", {})
-    referred_by = ref.get("referred_by") or "None (Direct)"
+    referred_by = ref.get("referred_by") or "ɴᴏɴᴇ (ᴅɪʀᴇᴄᴛ)"
     ref_count = ref.get("referral_count", 0)
     ref_points = ref.get("referral_points", 0)
     
     channels = await db.get_user_channels(user_id)
     bot_info = await db.get_bot(user_id)
-    bot_status = "✅ Connected" if bot_info else "❌ Not added"
-    bot_type = "UserBot" if (bot_info and not bot_info.get("is_bot")) else ("Bot" if bot_info else "None")
+    bot_status = "✅ ᴄᴏɴɴᴇᴄᴛᴇᴅ" if bot_info else "❌ ɴᴏᴛ ᴀᴅᴅᴇᴅ"
+    bot_type = "ᴜsᴇʀʙᴏᴛ" if (bot_info and not bot_info.get("is_bot")) else ("ʙᴏᴛ" if bot_info else "ɴᴏɴᴇ")
 
     text = (
         f"<blockquote><b>👤 <u>ᴜsᴇʀ ᴘʀᴏғɪʟᴇ: {name}</u></b></blockquote>\n\n"
-        f"🆔 <b>Telegram ID:</b> <code>{user_id}</code>\n"
-        f"👤 <b>Name / Mention:</b> {name}\n"
+        f"🆔 <b>ᴛᴇʟᴇɢʀᴀᴍ ID:</b> <code>{user_id}</code>\n"
+        f"👤 <b>ɴᴀᴍᴇ / ᴍᴇɴᴛɪᴏɴ:</b> {name}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📅 <b>First Seen:</b> <code>{first_seen}</code>\n"
-        f"🕒 <b>Last Active:</b> <code>{last_seen}</code>\n"
-        f"🔁 <b>Messages Forwarded:</b> <code>{forwards}</code>\n"
-        f"⚡️ <b>Interaction Count:</b> <code>{activity}</code>\n"
+        f"📅 <b>ғɪʀsᴛ sᴇᴇɴ:</b> <code>{first_seen}</code>\n"
+        f"🕒 <b>ʟᴀsᴛ ᴀᴄᴛɪᴠᴇ:</b> <code>{last_seen}</code>\n"
+        f"🔁 <b>ᴍᴇssᴀɢᴇs ғᴏʀᴡᴀʀᴅᴇᴅ:</b> <code>{forwards}</code>\n"
+        f"⚡️ <b>ɪɴᴛᴇʀᴀᴄᴛɪᴏɴ ᴄᴏᴜɴᴛ:</b> <code>{activity}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🤖 <b>Bot Engine:</b> <code>{bot_status} ({bot_type})</code>\n"
-        f"🏷 <b>Configured Channels:</b> <code>{len(channels)}</code>\n"
+        f"🤖 <b>ʙᴏᴛ ᴇɴɢɪɴᴇ:</b> <code>{bot_status} ({bot_type})</code>\n"
+        f"🏷 <b>ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs:</b> <code>{len(channels)}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🔗 <b>Referred By:</b> <code>{referred_by}</code>\n"
-        f"👥 <b>Invited Friends:</b> <code>{ref_count}</code>\n"
-        f"💎 <b>Referral Points:</b> <code>{ref_points} pts</code>"
+        f"🔗 <b>ʀᴇғᴇʀʀᴇᴅ ʙʏ:</b> <code>{referred_by}</code>\n"
+        f"👥 <b>ɪɴᴠɪᴛᴇᴅ ғʀɪᴇɴᴅs:</b> <code>{ref_count}</code>\n"
+        f"💎 <b>ʀᴇғᴇʀʀᴀʟ ᴘᴏɪɴᴛs:</b> <code>{ref_points} ᴘᴛs</code>"
     )
 
     buttons = InlineKeyboardMarkup([
@@ -142,7 +142,7 @@ async def userstats_cmd(client: Client, message: Message):
     user_id = message.from_user.id
     if not is_owner(user_id):
         return await message.reply_text(
-            "⚠️ <b>Access Denied:</b> This analytics dashboard is strictly restricted to Bot Owners.",
+            "⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ᴛʜɪs ᴀɴᴀʟʏᴛɪᴄs ᴅᴀsʜʙᴏᴀʀᴅ ɪs sᴛʀɪᴄᴛʟʏ ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴏᴡɴᴇʀs.",
             quote=True
         )
 
@@ -164,7 +164,7 @@ async def userstats_cmd(client: Client, message: Message):
 async def utr_callbacks(client: Client, query: CallbackQuery):
     user_id = query.from_user.id
     if not is_owner(user_id):
-        return await query.answer("Admins only!", show_alert=True)
+        return await query.answer("ᴀᴅᴍɪɴs ᴏɴʟʏ!", show_alert=True)
 
     data = query.data
 
@@ -199,7 +199,7 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
 
         lines = [
             f"<blockquote>{title}</blockquote>\n",
-            f"<b>Total Users:</b> <code>{len(users)}</code> | Page <b>{page+1}/{total_pages}</b>\n",
+            f"<b>ᴛᴏᴛᴀʟ ᴜsᴇʀs:</b> <code>{len(users)}</code> | ᴘᴀɢᴇ <b>{page+1}/{total_pages}</b>\n",
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         ]
 
@@ -208,8 +208,8 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
             uid = u.get("id")
             name = html.escape(str(u.get("name", "User"))[:18])
             date_val = fmt_dt(u.get(sort_key))
-            lines.append(f"• <b>{name}</b> (<code>{uid}</code>)\n  └ <i>{date_val}</i> | Forwards: <code>{u.get('forward_count', 0)}</code>")
-            item_buttons.append([InlineKeyboardButton(f"👤 View {name}", callback_data=f"utr_user_{uid}")])
+            lines.append(f"• <b>{name}</b> (<code>{uid}</code>)\n  └ <i>{date_val}</i> | ғᴏʀᴡᴀʀᴅs: <code>{u.get('forward_count', 0)}</code>")
+            item_buttons.append([InlineKeyboardButton(f"👤 ᴠɪᴇᴡ {name}", callback_data=f"utr_user_{uid}")])
 
         lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
@@ -234,11 +234,11 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
         await query.message.delete()
         ask = await client.ask(
             user_id,
-            text=f"<b>👑 Send points to add to User <code>{target_id}</code>:</b>\n(e.g. <code>25</code>)\n/cancel - Abort",
+            text=f"<b>👑 sᴇɴᴅ ᴘᴏɪɴᴛs ᴛᴏ ᴀᴅᴅ ᴛᴏ ᴜsᴇʀ <code>{target_id}</code>:</b>\n(e.g. <code>25</code>)\n/cancel - ᴀʙᴏʀᴛ",
             timeout=120
         )
         if not ask.text or ask.text.startswith("/cancel") or not ask.text.strip().isdigit():
-            return await client.send_message(user_id, "Process cancelled or invalid number.")
+            return await client.send_message(user_id, "ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ ᴏʀ ɪɴᴠᴀʟɪᴅ ɴᴜᴍʙᴇʀ.")
         
         pts = int(ask.text.strip())
         ref_data = await db.get_referral_data(target_id)
@@ -250,15 +250,15 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
         try:
             await client.send_message(
                 target_id,
-                f"🎁 <b>Admin Bonus:</b> You have been granted <b>+{pts} Referral Points</b> by the administrator!\nCheck /referral."
+                f"🎁 <b>ᴀᴅᴍɪɴ ʙᴏɴᴜs:</b> ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ɢʀᴀɴᴛᴇᴅ <b>+{pts} ʀᴇғᴇʀʀᴀʟ ᴘᴏɪɴᴛs</b> ʙʏ ᴛʜᴇ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ!\nᴄʜᴇᴄᴋ /referral."
             )
         except Exception:
             pass
 
         await client.send_message(
             user_id,
-            f"✅ Granted <b>+{pts} points</b> to User <code>{target_id}</code>!",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("👤 View Profile", callback_data=f"utr_user_{target_id}")]])
+            f"✅ ɢʀᴀɴᴛᴇᴅ <b>+{pts} ᴘᴏɪɴᴛs</b> ᴛᴏ ᴜsᴇʀ <code>{target_id}</code>!",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("👤 ᴠɪᴇᴡ ᴘʀᴏғɪʟᴇ", callback_data=f"utr_user_{target_id}")]])
         )
 
     elif data == "utr_noop":

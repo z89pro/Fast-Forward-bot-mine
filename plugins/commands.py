@@ -367,15 +367,15 @@ async def clone_cmd(client, message):
     if not channels:
         return await message.reply_text("<b>❌ Please set a target channel in /settings first!</b>", quote=True)
     await message.reply_text(
-        "<b>⚡ <u>Channel Cloning Guide:</u></b>\n\n"
-        "To forward or clone messages from a source channel to your target:\n"
-        "• Use <code>/forward</code> for interactive wizard\n"
-        "• Use <code>/fwd &lt;start_link&gt; &lt;end_link&gt;</code> for direct range forward\n"
-        "• Use <code>/autosave</code> to automatically monitor channels in real-time.",
+        "<b>⚡ <u>ᴄʜᴀɴɴᴇʟ ᴄʟᴏɴɪɴɢ ɢᴜɪᴅᴇ:</u></b>\n\n"
+        "ᴛᴏ ғᴏʀᴡᴀʀᴅ ᴏʀ ᴄʟᴏɴᴇ ᴍᴇssᴀɢᴇs ғʀᴏᴍ ᴀ sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ ᴛᴏ ʏᴏᴜʀ ᴛᴀʀɢᴇᴛ:\n"
+        "• ᴜsᴇ <code>/forward</code> ғᴏʀ ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ᴡɪᴢᴀʀᴅ\n"
+        "• ᴜsᴇ <code>/fwd &lt;start_link&gt; &lt;end_link&gt;</code> ғᴏʀ ᴅɪʀᴇᴄᴛ ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ\n"
+        "• ᴜsᴇ <code>/autosave</code> ᴛᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴍᴏɴɪᴛᴏʀ ᴄʜᴀɴɴᴇʟs ɪɴ ʀᴇᴀʟ-ᴛɪᴍᴇ.",
         reply_markup=markup(
             row(
-                btn("⚙️ Settings", "settings#main", "blue"),
-                btn("📚 Tutorial", "tutorial#menu", "blue")
+                btn("⚙️ sᴇᴛᴛɪɴɢs", "settings#main", "blue"),
+                btn("📚 ᴛᴜᴛᴏʀɪᴀʟ", "tutorial#menu", "blue")
             )
         ),
         quote=True
@@ -413,7 +413,7 @@ KNOWN_COMMANDS = {
     "stop", "pause", "resume", "reset", "resetall", "tutorial", "guide", "skinet",
     "modifier", "ftm", "courseseller", "seller", "unequify", "userstats", "track",
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
-    "deladmin", "admins", "cancel"
+    "deladmin", "admins", "cancel", "yes", "no"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)
@@ -421,16 +421,19 @@ async def non_command_handler(client: Client, message: Message):
     user_id = message.from_user.id if message.from_user else message.chat.id
 
     # 1. Skip if there is an active listener (like bot.ask) for this chat/user
-    if hasattr(client, "get_listener_matching_with_data"):
-        try:
-            if client.get_listener_matching_with_data(chat_id=message.chat.id, user_id=user_id):
-                return
-        except Exception:
-            pass
-    if hasattr(client, "listeners") and client.listeners:
-        for k in client.listeners.keys():
-            if str(message.chat.id) in str(k) or str(user_id) in str(k):
-                return
+    try:
+        from pyrogram import enums
+        if hasattr(client, "listeners") and isinstance(client.listeners, dict):
+            msg_listeners = client.listeners.get(enums.ListenerTypes.MESSAGE, [])
+            for l in msg_listeners:
+                ident = getattr(l, "identifier", None)
+                if ident:
+                    c_id = getattr(ident, "chat_id", None)
+                    u_id = getattr(ident, "from_user_id", None)
+                    if (c_id and c_id == message.chat.id) or (u_id and u_id == user_id):
+                        return
+    except Exception:
+        pass
 
     # 2. Skip if user is submitting payment proof
     try:

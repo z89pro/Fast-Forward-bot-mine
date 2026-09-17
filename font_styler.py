@@ -242,4 +242,19 @@ def patch_pyrogram_font():
             return await orig_answer_callback(self, *new_args, **kwargs)
         Client.answer_callback_query = hooked_answer_callback
 
+    # 7. Client.ask
+    orig_ask = getattr(Client, "ask", None)
+    if orig_ask:
+        @functools.wraps(orig_ask)
+        async def hooked_ask(self, *args, **kwargs):
+            new_args = list(args)
+            if len(new_args) > 1 and isinstance(new_args[1], str):
+                new_args[1] = to_small_caps(new_args[1])
+            elif "text" in kwargs and isinstance(kwargs["text"], str):
+                kwargs["text"] = to_small_caps(kwargs["text"])
+            if "reply_markup" in kwargs and kwargs["reply_markup"]:
+                kwargs["reply_markup"] = style_reply_markup(kwargs["reply_markup"])
+            return await orig_ask(self, *new_args, **kwargs)
+        Client.ask = hooked_ask
+
     logger.info("✅ Universal Small Caps font engine initialized and patched into Pyrogram Client.")

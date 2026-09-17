@@ -1,4 +1,5 @@
 import os
+import re
 import sys 
 import math
 import time
@@ -32,7 +33,7 @@ async def pub_(bot, message):
     temp.CANCEL[user] = False
     from plugins.verify import is_user_verified, send_verify_prompt
     if not await is_user_verified(user):
-        await message.answer("⚠️ Verification required! Please complete verification.", show_alert=True)
+        await message.answer("⚠️ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʀᴇǫᴜɪʀᴇᴅ! ᴘʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ.", show_alert=True)
         return await send_verify_prompt(bot, message.message, user)
     frwd_id = message.data.split("_")[2]
     if temp.lock.get(user) and str(temp.lock.get(user))=="True":
@@ -67,6 +68,7 @@ async def pub_(bot, message):
        await msg_edit(m, f"**ᴘʟᴇᴀsᴇ [ᴜsᴇʀʙᴏᴛ / ʙᴏᴛ](t.me/{_bot['username']}) ᴀᴅᴍɪɴ ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ғᴜʟʟ ᴘᴇʀᴍɪssɪᴏɴ.**", retry_btn(frwd_id), True)
        return await stop(client, user)
     task_id = f"fwd_{user}_{frwd_id}"
+    user_configs = await db.get_configs(user)
     return await execute_forward_task(
         client=client,
         user=user,
@@ -211,7 +213,7 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 if sent_id:
                     media_obj = getattr(message, message.media.value, None) if message.media else None
                     fname = getattr(media_obj, 'file_name', '') if media_obj else ''
-                    c_title = fname or (message.caption[:50] if message.caption else f"Lecture {lec_idx:02d}")
+                    c_title = fname or ((message.caption or message.text or "")[:50].strip() if (message.caption or message.text) else f"Lecture {lec_idx:02d}")
                     course_items.append({'num': lec_idx, 'title': c_title, 'msg_id': sent_id})
                 sleep_time = human_delay(base_delay) if jitter_enabled else base_delay
                 await asyncio.sleep(sleep_time)
@@ -290,8 +292,8 @@ async def _resume_single_task(bot_app, task_data):
         try:
             await bot_app.send_message(
                 user_id,
-                "<blockquote><b>⚠️ Task Resumption Notice</b>\n\n"
-                "<i>Your previous forwarding task could not auto-resume because your bot/session is not configured. Please check /settings.</i></blockquote>"
+                "<blockquote><b>⚠️ ᴛᴀsᴋ ʀᴇsᴜᴍᴘᴛɪᴏɴ ɴᴏᴛɪᴄᴇ</b>\n\n"
+                "<i>ʏᴏᴜʀ ᴘʀᴇᴠɪᴏᴜs ғᴏʀᴡᴀʀᴅɪɴɢ ᴛᴀsᴋ ᴄᴏᴜʟᴅ ɴᴏᴛ ᴀᴜᴛᴏ-ʀᴇsᴜᴍᴇ ʙᴇᴄᴀᴜsᴇ ʏᴏᴜʀ ʙᴏᴛ/sᴇssɪᴏɴ ɪs ɴᴏᴛ ᴄᴏɴғɪɢᴜʀᴇᴅ. ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ /settings.</i></blockquote>"
             )
         except Exception:
             pass
@@ -338,11 +340,11 @@ async def _resume_single_task(bot_app, task_data):
     try:
         resume_card = (
             "<blockquote><b>🔄 <u>ᴀᴜᴛᴏ-ʀᴇsᴜᴍɪɴɢ ɪɴᴛᴇʀʀᴜᴘᴛᴇᴅ ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋ</u></b>\n\n"
-            f"📡 <b>Source:</b> <code>{from_chat}</code>\n"
-            f"🎯 <b>Target:</b> <code>{to_chat}</code>\n"
-            f"📦 <b>Resuming at Message:</b> <code>{current_offset}</code> / <code>{limit}</code>\n"
-            f"⚙️ <b>Previously Forwarded:</b> <code>{task_data.get('total_files', 0)}</code>\n\n"
-            "⚡ <i>Bot recovered successfully from reboot! Continuing forward job...</i></blockquote>"
+            f"📡 <b>sᴏᴜʀᴄᴇ:</b> <code>{from_chat}</code>\n"
+            f"🎯 <b>ᴛᴀʀɢᴇᴛ:</b> <code>{to_chat}</code>\n"
+            f"📦 <b>ʀᴇsᴜᴍɪɴɢ ᴀᴛ ᴍᴇssᴀɢᴇ:</b> <code>{current_offset}</code> / <code>{limit}</code>\n"
+            f"⚙️ <b>ᴘʀᴇᴠɪᴏᴜsʟʏ ғᴏʀᴡᴀʀᴅᴇᴅ:</b> <code>{task_data.get('total_files', 0)}</code>\n\n"
+            "⚡ <i>ʙᴏᴛ ʀᴇᴄᴏᴠᴇʀᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ ғʀᴏᴍ ʀᴇʙᴏᴏᴛ! ᴄᴏɴᴛɪɴᴜɪɴɢ ғᴏʀᴡᴀʀᴅ ᴊᴏʙ...</i></blockquote>"
         )
         m = await bot_app.send_message(user_id, resume_card)
     except Exception as err:
@@ -429,13 +431,25 @@ async def copy(bot, msg, m, sts, dump_target=None):
 async def send_course_index_list(client, user, sts, course_items):
    to_chat = sts.get('TO')
    from_title = str(sts.get('FROM'))
-   clean_chat = str(to_chat).replace("-100", "").replace("-", "")
+   to_str = str(to_chat).strip()
+   is_public = to_str.startswith("@") or not to_str.lstrip("-").isdigit()
+   if is_public:
+      chan_ref = to_str.lstrip("@")
+      clean_chat = ""
+   else:
+      chan_ref = ""
+      if to_str.startswith("-100"):
+         clean_chat = to_str[4:]
+      elif to_str.startswith("-"):
+         clean_chat = to_str[1:]
+      else:
+         clean_chat = to_str
 
    header = (
       "📚 <b><u>ᴄᴏᴜʀsᴇ ʟᴇᴄᴛᴜʀᴇs ɪɴᴅᴇx / sʏʟʟᴀʙᴜs</u></b>\n"
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-      f"🎯 <b>Source:</b> <code>{from_title}</code>\n"
-      f"📦 <b>Total Lectures:</b> <code>{len(course_items)}</code>\n\n"
+      f"🎯 <b>sᴏᴜʀᴄᴇ:</b> <code>{from_title}</code>\n"
+      f"📦 <b>ᴛᴏᴛᴀʟ ʟᴇᴄᴛᴜʀᴇs:</b> <code>{len(course_items)}</code>\n\n"
    )
 
    chunk_size = 25
@@ -446,12 +460,15 @@ async def send_course_index_list(client, user, sts, course_items):
          num_str = f"{item['num']:02d}"
          title = str(item['title']).replace("<", "&lt;").replace(">", "&gt;")
          if item.get('msg_id'):
-            link = f"https://t.me/c/{clean_chat}/{item['msg_id']}"
+            if is_public:
+               link = f"https://t.me/{chan_ref}/{item['msg_id']}"
+            else:
+               link = f"https://t.me/c/{clean_chat}/{item['msg_id']}"
             lines.append(f"<b>[{num_str}]</b> <a href='{link}'>{title}</a>")
          else:
             lines.append(f"<b>[{num_str}]</b> {title}")
 
-      footer = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡️ <i>Generated by Skinet Verse (Course Seller Mode)</i>"
+      footer = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡️ <i>ɢᴇɴᴇʀᴀᴛᴇᴅ ʙʏ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ (ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ)</i>"
       full_text = header + "\n".join(lines) + footer
 
       try:
@@ -526,7 +543,10 @@ async def edit(msg, title, status, sts):
    elif str(status).isnumeric():
        status = f"sʟᴇᴇᴘɪɴɢ {status} s"
 
-   percentage = "{:.0f}".format(float(i.fetched)*100/float(i.total))
+   total_val = float(i.total) if i.total else 1.0
+   fetched_val = float(i.fetched) if i.fetched else 0.0
+   pct_val = min(100.0, max(0.0, (fetched_val * 100.0) / total_val)) if total_val > 0 else 0.0
+   percentage = "{:.0f}".format(pct_val)
 
    now = time.time()
    diff = int(now - i.start)
@@ -623,9 +643,9 @@ def clean_caption_advanced(text: str, user_configs: dict = None, lecture_index: 
   # 1. Hidden link remover & replacer (HTML: <a href="url">text</a>)
   if rem_hid or rem_link:
     if rep_link:
-      text = re.sub(r'<a\s+href=["\'][^"\']+["\']>(.*?)</a>', rf'<a href="{rep_link}">\1</a>', text, flags=re.DOTALL)
+      text = re.sub(r'<a\s+[^>]*href=["\'][^"\']+["\'][^>]*>(.*?)</a>', rf'<a href="{rep_link}">\1</a>', text, flags=re.DOTALL)
     else:
-      text = re.sub(r'<a\s+href=["\'][^"\']+["\']>(.*?)</a>', r'\1', text, flags=re.DOTALL)
+      text = re.sub(r'<a\s+[^>]*href=["\'][^"\']+["\'][^>]*>(.*?)</a>', r'\1', text, flags=re.DOTALL)
 
   # 2. Hidden link remover & replacer (Markdown: [text](url))
   if rem_hid or rem_link:
@@ -634,21 +654,21 @@ def clean_caption_advanced(text: str, user_configs: dict = None, lecture_index: 
     else:
       text = re.sub(r'\[([^\]]+)\]\(https?://[^\)]+\)', r'\1', text)
 
-  # 3. Direct links remover & replacer
+  # 3. Direct links remover & replacer (do not match URLs inside HTML tag attributes)
   if rem_link or clean_cap:
+    url_pattern = r'(?<!href=["\'])(?<!["\'=])(?:https?://|www\.)[^\s<>"\'\)]+'
     if rep_link:
-      text = re.sub(r'https?://(?:t\.me|telegram\.me|telegram\.dog)/\S+', rep_link, text)
-      text = re.sub(r'https?://\S+|www\.\S+', rep_link, text)
+      text = re.sub(url_pattern, rep_link, text)
     else:
-      text = re.sub(r'https?://(?:t\.me|telegram\.me|telegram\.dog)/\S+', '', text)
-      text = re.sub(r'https?://\S+|www\.\S+', '', text)
+      text = re.sub(url_pattern, '', text)
 
-  # 4. Username remover & replacer
+  # 4. Username remover & replacer (do not match inside email addresses)
   if rem_user or clean_cap:
+    username_pattern = r'(?<![a-zA-Z0-9_.])@([a-zA-Z0-9_]{3,32})'
     if rep_user:
-      text = re.sub(r'@\w+', rep_user, text)
+      text = re.sub(username_pattern, rep_user, text)
     else:
-      text = re.sub(r'@\w+', '', text)
+      text = re.sub(username_pattern, '', text)
 
   # 5. Word replacements
   if replace_words:
@@ -708,11 +728,10 @@ def custom_caption(msg, caption, clean_caption=False, replace_words=None, user_c
         size=get_size(file_size),
         caption=cleaned or ""
       )
-      return clean_caption_advanced(res, user_configs, lecture_index=None, file_name=file_name)
+      return res.strip() if res.strip() else None
     except Exception:
       return cleaned
   return cleaned if cleaned else None
-  return None
 
 def get_size(size):
   units = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB"]

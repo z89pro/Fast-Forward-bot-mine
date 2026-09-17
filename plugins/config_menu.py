@@ -22,37 +22,37 @@ def mask_secret(s: str) -> str:
     return s[:4] + "•" * 8 + s[-4:]
 
 async def build_config_view() -> str:
-    fsub_status = "🟢 <b>Enabled</b>" if Config.FORCE_SUB_ON else "🔴 <b>Disabled</b>"
-    fsub_chan = f"<code>{Config.FORCE_SUB_CHANNEL}</code>" if Config.FORCE_SUB_CHANNEL else "<i>None (Not set)</i>"
-    log_chan = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
-    dump_chan = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
+    fsub_status = "🟢 <b>ᴇɴᴀʙʟᴇᴅ</b>" if Config.FORCE_SUB_ON else "🔴 <b>ᴅɪsᴀʙʟᴇᴅ</b>"
+    fsub_chan = f"<code>{Config.FORCE_SUB_CHANNEL}</code>" if Config.FORCE_SUB_CHANNEL else "<i>ɴᴏɴᴇ (ɴᴏᴛ sᴇᴛ)</i>"
+    log_chan = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
+    dump_chan = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
     all_admins = await db.get_all_admins()
-    admins_str = " ".join([f"<code>{x}</code>" for x in all_admins]) if all_admins else "<i>None</i>"
+    admins_str = " ".join([f"<code>{x}</code>" for x in all_admins]) if all_admins else "<i>ɴᴏɴᴇ</i>"
     masked_token = mask_secret(Config.BOT_TOKEN)
     masked_hash = mask_secret(Config.API_HASH)
     fast_delay = getattr(Config, 'FAST_DELAY', 1.0)
     vcfg = await db.get_verify_config()
-    v_status = "🟢 <b>Enabled</b>" if vcfg.get('enabled') else "🔴 <b>Disabled</b>"
-    v_info = f"{vcfg.get('duration', 24)}h ({vcfg.get('steps', 1)} Step)"
-    upi_val = getattr(Config, 'UPI_ID', '') or "<i>Not Set</i>"
+    v_status = "🟢 <b>ᴇɴᴀʙʟᴇᴅ</b>" if vcfg.get('enabled') else "🔴 <b>ᴅɪsᴀʙʟᴇᴅ</b>"
+    v_info = f"{vcfg.get('duration', 24)}ʜ ({vcfg.get('steps', 1)} sᴛᴇᴘ)"
+    upi_val = getattr(Config, 'UPI_ID', '') or "<i>ɴᴏᴛ sᴇᴛ</i>"
     
     text = (
         "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ</u></b></blockquote>\n\n"
-        "<i>Modify global bot environment values dynamically from Telegram. Changes persist in MongoDB across server restarts!</i>\n\n"
+        "<i>ᴍᴏᴅɪғʏ ɢʟᴏʙᴀʟ ʙᴏᴛ ᴇɴᴠɪʀᴏɴᴍᴇɴᴛ ᴠᴀʟᴜᴇs ᴅʏɴᴀᴍɪᴄᴀʟʟʏ ғʀᴏᴍ ᴛᴇʟᴇɢʀᴀᴍ. ᴄʜᴀɴɢᴇs ᴘᴇʀsɪsᴛ ɪɴ ᴍᴏɴɢᴏᴅʙ ᴀᴄʀᴏss sᴇʀᴠᴇʀ ʀᴇsᴛᴀʀᴛs!</i>\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👑 <b>Authorized Admins ({len(all_admins)}):</b> {admins_str}\n"
-        f"📡 <b>Log Channel ID:</b> {log_chan}\n"
-        f"📦 <b>Dump Channel ID:</b> {dump_chan}\n"
-        f"📢 <b>Force Sub Channel:</b> {fsub_chan}\n"
-        f"🔒 <b>Force Sub Enforced:</b> {fsub_status}\n"
-        f"🛡️ <b>Token Verification:</b> {v_status} (<code>{v_info}</code>)\n"
-        f"💳 <b>UPI Payment ID:</b> <code>{upi_val}</code>\n"
-        f"🤖 <b>Bot Token:</b> <code>{masked_token}</code>\n"
-        f"🔑 <b>API ID / Hash:</b> <code>{Config.API_ID}</code> / <code>{masked_hash}</code>\n"
-        f"⚡️ <b>Default Speed Delay:</b> <code>{fast_delay}s</code>\n"
-        f"🗄 <b>Database Name:</b> <code>{Config.DATABASE_NAME}</code>\n"
+        f"👑 <b>ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴs ({len(all_admins)}):</b> {admins_str}\n"
+        f"📡 <b>ʟᴏɢ ᴄʜᴀɴɴᴇʟ ɪᴅ:</b> {log_chan}\n"
+        f"📦 <b>ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ɪᴅ:</b> {dump_chan}\n"
+        f"📢 <b>ғᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ:</b> {fsub_chan}\n"
+        f"🔒 <b>ғᴏʀᴄᴇ sᴜʙ ᴇɴғᴏʀᴄᴇᴅ:</b> {fsub_status}\n"
+        f"🛡️ <b>ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ:</b> {v_status} (<code>{v_info}</code>)\n"
+        f"💳 <b>ᴜᴘɪ ᴘᴀʏᴍᴇɴᴛ ɪᴅ:</b> <code>{upi_val}</code>\n"
+        f"🤖 <b>ʙᴏᴛ ᴛᴏᴋᴇɴ:</b> <code>{masked_token}</code>\n"
+        f"🔑 <b>ᴀᴘɪ ɪᴅ / ʜᴀsʜ:</b> <code>{Config.API_ID}</code> / <code>{masked_hash}</code>\n"
+        f"⚡️ <b>ᴅᴇғᴀᴜʟᴛ sᴘᴇᴇᴅ ᴅᴇʟᴀʏ:</b> <code>{fast_delay}s</code>\n"
+        f"🗄 <b>ᴅᴀᴛᴀʙᴀsᴇ ɴᴀᴍᴇ:</b> <code>{Config.DATABASE_NAME}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "👇 <b>Select any parameter below to update its value:</b>"
+        "👇 <b>sᴇʟᴇᴄᴛ ᴀɴʏ ᴘᴀʀᴀᴍᴇᴛᴇʀ ʙᴇʟᴏᴡ ᴛᴏ ᴜᴘᴅᴀᴛᴇ ɪᴛs ᴠᴀʟᴜᴇ:</b>"
     )
     return text
 
@@ -100,7 +100,7 @@ async def config_cmd(bot: Client, message: Message):
     user_id = message.from_user.id
     if not await is_admin(user_id):
         return await message.reply_text(
-            "⚠️ <b>Access Denied:</b> This configuration dashboard is strictly restricted to Bot Admins & Owners.",
+            "⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ᴛʜɪs ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ ᴅᴀsʜʙᴏᴀʀᴅ ɪs sᴛʀɪᴄᴛʟʏ ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs & ᴏᴡɴᴇʀs.",
             quote=True
         )
     text = await build_config_view()
@@ -114,7 +114,7 @@ async def config_cmd(bot: Client, message: Message):
 async def config_callback(bot: Client, query: CallbackQuery):
     user_id = query.from_user.id
     if not await is_admin(user_id):
-        return await query.answer("⚠️ Access Denied! Restricted to Bot Admins & Owners only.", show_alert=True)
+        return await query.answer("⚠️ ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ! ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs & ᴏᴡɴᴇʀs ᴏɴʟʏ.", show_alert=True)
 
     data = query.data.split("#")[1] if "#" in query.data else "main"
 
@@ -126,8 +126,8 @@ async def config_callback(bot: Client, query: CallbackQuery):
     elif data == "toggle_fsub":
         Config.FORCE_SUB_ON = not Config.FORCE_SUB_ON
         await db.update_system_config("FORCE_SUB_ON", Config.FORCE_SUB_ON)
-        status_txt = "Enabled" if Config.FORCE_SUB_ON else "Disabled"
-        await query.answer(f"Force Sub is now {status_txt}!")
+        status_txt = "ᴇɴᴀʙʟᴇᴅ" if Config.FORCE_SUB_ON else "ᴅɪsᴀʙʟᴇᴅ"
+        await query.answer(f"ғᴏʀᴄᴇ sᴜʙ ɪs ɴᴏᴡ {status_txt}!")
         text = await build_config_view()
         vcfg = await db.get_verify_config()
         await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
@@ -137,8 +137,8 @@ async def config_callback(bot: Client, query: CallbackQuery):
         new_val = not vcfg.get("enabled", True)
         await db.update_verify_config("enabled", new_val)
         Config.VERIFY_ENABLED = new_val
-        status_txt = "Enabled" if new_val else "Disabled"
-        await query.answer(f"Token verification is now {status_txt}!")
+        status_txt = "ᴇɴᴀʙʟᴇᴅ" if new_val else "ᴅɪsᴀʙʟᴇᴅ"
+        await query.answer(f"ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ɴᴏᴡ {status_txt}!")
         text = await build_config_view()
         vcfg["enabled"] = new_val
         await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
@@ -147,21 +147,21 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.answer()
         vcfg = await db.get_verify_config()
         status_txt = "🟢 ᴇɴᴀʙʟᴇᴅ" if vcfg.get("enabled") else "🔴 ᴅɪsᴀʙʟᴇᴅ"
-        s1 = f"{vcfg.get('shortener_url', 'None')} (API: {'Set' if vcfg.get('shortener_api') else 'None'})"
-        s2 = f"{vcfg.get('shortener_url2', 'None')} (API: {'Set' if vcfg.get('shortener_api2') else 'None'})"
-        s3 = f"{vcfg.get('shortener_url3', 'None')} (API: {'Set' if vcfg.get('shortener_api3') else 'None'})"
+        s1 = f"{vcfg.get('shortener_url', 'ɴᴏɴᴇ')} (ᴀᴘɪ: {'sᴇᴛ' if vcfg.get('shortener_api') else 'ɴᴏɴᴇ'})"
+        s2 = f"{vcfg.get('shortener_url2', 'ɴᴏɴᴇ')} (ᴀᴘɪ: {'sᴇᴛ' if vcfg.get('shortener_api2') else 'ɴᴏɴᴇ'})"
+        s3 = f"{vcfg.get('shortener_url3', 'ɴᴏɴᴇ')} (ᴀᴘɪ: {'sᴇᴛ' if vcfg.get('shortener_api3') else 'ɴᴏɴᴇ'})"
         txt = (
             "<blockquote><b>🛡️ <u>ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴇᴛᴛɪɴɢs</u></b></blockquote>\n\n"
             f"• <b>sᴛᴀᴛᴜs:</b> <code>{status_txt}</code>\n"
-            f"• <b>ᴘᴀss ᴅᴜʀᴀᴛɪᴏɴ:</b> <code>{vcfg.get('duration', 24)} Hours</code>\n"
-            f"• <b>ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴇᴘs:</b> <code>{vcfg.get('steps', 1)} Step(s)</code>\n"
-            f"• <b>ʟɪɴᴋ ᴛɪᴍᴇᴏᴜᴛ:</b> <code>{vcfg.get('timeout', 30)} Minutes</code>\n\n"
+            f"• <b>ᴘᴀss ᴅᴜʀᴀᴛɪᴏɴ:</b> <code>{vcfg.get('duration', 24)} ʜᴏᴜʀs</code>\n"
+            f"• <b>ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴇᴘs:</b> <code>{vcfg.get('steps', 1)} sᴛᴇᴘ(s)</code>\n"
+            f"• <b>ʟɪɴᴋ ᴛɪᴍᴇᴏᴜᴛ:</b> <code>{vcfg.get('timeout', 30)} ᴍɪɴᴜᴛᴇs</code>\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"<b>Shortener 1:</b> <code>{s1}</code>\n"
-            f"<b>Shortener 2:</b> <code>{s2}</code>\n"
-            f"<b>Shortener 3:</b> <code>{s3}</code>\n"
+            f"<b>sʜᴏʀᴛᴇɴᴇʀ 1:</b> <code>{s1}</code>\n"
+            f"<b>sʜᴏʀᴛᴇɴᴇʀ 2:</b> <code>{s2}</code>\n"
+            f"<b>sʜᴏʀᴛᴇɴᴇʀ 3:</b> <code>{s3}</code>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "<i>💡 Use <code>/setverify</code> in chat to change steps, duration, and add shortener API keys.</i>"
+            "<i>💡 ᴜsᴇ <code>/setverify</code> ɪɴ ᴄʜᴀᴛ ᴛᴏ ᴄʜᴀɴɢᴇ sᴛᴇᴘs, ᴅᴜʀᴀᴛɪᴏɴ, ᴀɴᴅ ᴀᴅᴅ sʜᴏʀᴛᴇɴᴇʀ ᴀᴘɪ ᴋᴇʏs.</i>"
         )
         await query.message.edit_text(
             txt,
@@ -173,17 +173,17 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "set_log":
         await query.message.delete()
-        curr_log = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
+        curr_log = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
         ask = await bot.ask(
             user_id,
             text=(
                 "<blockquote><b>📡 <u>sᴇᴛ ʟᴏɢ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
-                f"<b>Current Value:</b> {curr_log}\n\n"
-                "Send the Telegram Channel ID where system telemetry and restart events will be dumped.\n\n"
-                "• <b>Example:</b> <code>-1001234567890</code>\n"
-                "• <b>Disable:</b> Send <code>0</code> to keep disabled\n"
-                "• <b>Cancel:</b> Send <code>/cancel</code> to abort\n\n"
-                "⚠️ <i>Ensure the bot is added as an Administrator in that channel first!</i>"
+                f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_log}\n\n"
+                "sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴄʜᴀɴɴᴇʟ ɪᴅ ᴡʜᴇʀᴇ sʏsᴛᴇᴍ ᴛᴇʟᴇᴍᴇᴛʀʏ ᴀɴᴅ ʀᴇsᴛᴀʀᴛ ᴇᴠᴇɴᴛs ᴡɪʟʟ ʙᴇ ᴅᴜᴍᴘᴇᴅ.\n\n"
+                "• <b>ᴇxᴀᴍᴘʟᴇ:</b> <code>-1001234567890</code>\n"
+                "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
+                "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
+                "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
             ),
             timeout=120
         )
@@ -195,7 +195,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if not (raw.lstrip("-").isdigit()):
             return await bot.send_message(
                 user_id,
-                "<b>❌ Invalid Channel ID! Must be numbers (e.g. -1001234567890).</b>",
+                "<b>❌ ɪɴᴠᴀʟɪᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ! ᴍᴜsᴛ ʙᴇ ɴᴜᴍʙᴇʀs (ᴇ.ɢ. -1001234567890).</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
 
@@ -206,30 +206,30 @@ async def config_callback(bot: Client, query: CallbackQuery):
         # Test notification dispatch
         if new_val != 0:
             try:
-                await bot.send_message(new_val, "📡 <b>Log Channel Connected Successfully!</b>\n<i>⚡️ Powered by Skinet Verse</i>")
+                await bot.send_message(new_val, "📡 <b>ʟᴏɢ ᴄʜᴀɴɴᴇʟ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ!</b>\n<i>⚡️ ᴘᴏᴡᴇʀᴇᴅ ʙʏ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ</i>")
             except Exception as e:
                 logger.warning(f"Could not dispatch test ping to new log channel {new_val}: {e}")
 
-        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(Disabled)</i>"
+        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
         await bot.send_message(
             user_id,
-            f"✅ <b>Log Channel updated to:</b> {disp}",
+            f"✅ <b>ʟᴏɢ ᴄʜᴀɴɴᴇʟ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴏ:</b> {disp}",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
     elif data == "set_dump":
         await query.message.delete()
-        curr_dump = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
+        curr_dump = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
         ask = await bot.ask(
             user_id,
             text=(
                 "<blockquote><b>📦 <u>sᴇᴛ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
-                f"<b>Current Value:</b> {curr_dump}\n\n"
-                "Send the Telegram Channel ID where media files will be archived.\n\n"
-                "• <b>Example:</b> <code>-1001234567890</code>\n"
-                "• <b>Disable:</b> Send <code>0</code> to keep disabled\n"
-                "• <b>Cancel:</b> Send <code>/cancel</code> to abort\n\n"
-                "⚠️ <i>Ensure the bot is added as an Administrator in that channel first!</i>"
+                f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_dump}\n\n"
+                "sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴄʜᴀɴɴᴇʟ ɪᴅ ᴡʜᴇʀᴇ ᴍᴇᴅɪᴀ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴀʀᴄʜɪᴠᴇᴅ.\n\n"
+                "• <b>ᴇxᴀᴍᴘʟᴇ:</b> <code>-1001234567890</code>\n"
+                "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
+                "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
+                "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
             ),
             timeout=120
         )
@@ -241,7 +241,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if not (raw.lstrip("-").isdigit()):
             return await bot.send_message(
                 user_id,
-                "<b>❌ Invalid Channel ID! Must be numbers.</b>",
+                "<b>❌ ɪɴᴠᴀʟɪᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ! ᴍᴜsᴛ ʙᴇ ɴᴜᴍʙᴇʀs.</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
 
@@ -250,10 +250,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await db.update_system_config("DUMP_CHANNEL", new_val)
         await db.update_admin_dump(new_val, enabled=bool(new_val != 0))
 
-        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(Disabled)</i>"
+        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
         await bot.send_message(
             user_id,
-            f"✅ <b>Dump Channel updated to:</b> {disp}",
+            f"✅ <b>ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴏ:</b> {disp}",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
@@ -262,13 +262,13 @@ async def config_callback(bot: Client, query: CallbackQuery):
         ask = await bot.ask(
             user_id,
             text=(
-                "<b>📢 Send new Force Sub Channel:</b>\n\n"
-                "Examples:\n"
+                "<b>📢 sᴇɴᴅ ɴᴇᴡ ғᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ:</b>\n\n"
+                "ᴇxᴀᴍᴘʟᴇs:\n"
                 "• <code>@MyChannel</code>\n"
                 "• <code>https://t.me/MyChannel</code>\n"
                 "• <code>-1001234567890</code>\n"
-                "Send <code>none</code> to clear\n"
-                "<i>/cancel - Abort</i>"
+                "sᴇɴᴅ <code>none</code> ᴛᴏ ᴄʟᴇᴀʀ\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=120
         )
@@ -283,7 +283,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"✅ <b>Force Sub Channel set to:</b> <code>{val or 'None'}</code>",
+            f"✅ <b>ғᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ sᴇᴛ ᴛᴏ:</b> <code>{val or 'ɴᴏɴᴇ'}</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
@@ -292,17 +292,17 @@ async def config_callback(bot: Client, query: CallbackQuery):
         primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
         admin_lines = []
         for a in admins:
-            tag = " 👑 (Primary Owner)" if a == primary_owner else " 🛡️ (Admin)"
+            tag = " 👑 (ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ)" if a == primary_owner else " 🛡️ (ᴀᴅᴍɪɴ)"
             admin_lines.append(f"• <code>{a}</code>{tag}")
-        admins_body = "\n".join(admin_lines) if admin_lines else "<i>None</i>"
+        admins_body = "\n".join(admin_lines) if admin_lines else "<i>ɴᴏɴᴇ</i>"
 
         text = (
             "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴍᴜʟᴛɪ-ᴀᴅᴍɪɴ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ</u></b></blockquote>\n\n"
-            f"<b>Total Authorized Admins:</b> <code>{len(admins)}</code>\n\n"
+            f"<b>ᴛᴏᴛᴀʟ ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴs:</b> <code>{len(admins)}</code>\n\n"
             f"{admins_body}\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            "<i>Authorized administrators have full access to system configuration, premium VIP approvals, shortener management, and live logs.</i>\n\n"
-            "👇 <b>Select an action below:</b>"
+            "<i>ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs ʜᴀᴠᴇ ғᴜʟʟ ᴀᴄᴄᴇss ᴛᴏ sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ, ᴘʀᴇᴍɪᴜᴍ ᴠɪᴘ ᴀᴘᴘʀᴏᴠᴀʟs, sʜᴏʀᴛᴇɴᴇʀ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ, ᴀɴᴅ ʟɪᴠᴇ ʟᴏɢs.</i>\n\n"
+            "👇 <b>sᴇʟᴇᴄᴛ ᴀɴ ᴀᴄᴛɪᴏɴ ʙᴇʟᴏᴡ:</b>"
         )
         btns = InlineKeyboardMarkup([
             [
@@ -320,10 +320,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
         ask = await bot.ask(
             user_id,
             text=(
-                "<b>👑 Send the Telegram User ID to promote as Admin:</b>\n\n"
-                "Example: <code>987654321</code>\n"
-                "<i>User ID can be found via @userinfobot or /status.</i>\n\n"
-                "<i>/cancel - Abort</i>"
+                "<b>👑 sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅ ᴛᴏ ᴘʀᴏᴍᴏᴛᴇ ᴀs ᴀᴅᴍɪɴ:</b>\n\n"
+                "ᴇxᴀᴍᴘʟᴇ: <code>987654321</code>\n"
+                "<i>ᴜsᴇʀ ɪᴅ ᴄᴀɴ ʙᴇ ғᴏᴜɴᴅ ᴠɪᴀ @userinfobot ᴏʀ /status.</i>\n\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=120
         )
@@ -335,14 +335,14 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if not val.isdigit():
             return await bot.send_message(
                 user_id,
-                "<b>❌ Invalid ID! User ID must be numbers only.</b>",
+                "<b>❌ ɪɴᴠᴀʟɪᴅ ɪᴅ! ᴜsᴇʀ ɪᴅ ᴍᴜsᴛ ʙᴇ ɴᴜᴍʙᴇʀs ᴏɴʟʏ.</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
             )
         new_admin = int(val)
         await db.add_admin(new_admin)
         await bot.send_message(
             user_id,
-            f"✅ <b>Successfully added user <code>{new_admin}</code> to authorized administrators!</b>",
+            f"✅ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ ᴜsᴇʀ <code>{new_admin}</code> ᴛᴏ ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs!</b>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴅᴍɪɴs", callback_data="config#manage_admins")]])
         )
 
@@ -353,10 +353,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
         ask = await bot.ask(
             user_id,
             text=(
-                f"👑 <b>Current Admins:</b> <code>{' '.join(str(x) for x in admins)}</code>\n\n"
-                "<b>Send the Telegram User ID to remove from Admins:</b>\n"
-                "<i>Note: Primary owner cannot be removed.</i>\n\n"
-                "<i>/cancel - Abort</i>"
+                f"👑 <b>ᴄᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴs:</b> <code>{' '.join(str(x) for x in admins)}</code>\n\n"
+                "<b>sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅ ᴛᴏ ʀᴇᴍᴏᴠᴇ ғʀᴏᴍ ᴀᴅᴍɪɴs:</b>\n"
+                "<i>ɴᴏᴛᴇ: ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ ᴄᴀɴɴᴏᴛ ʙᴇ ʀᴇᴍᴏᴠᴇᴅ.</i>\n\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=120
         )
@@ -368,34 +368,34 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if not val.isdigit():
             return await bot.send_message(
                 user_id,
-                "<b>❌ Invalid ID! Must be digits only.</b>",
+                "<b>❌ ɪɴᴠᴀʟɪᴅ ɪᴅ! ᴍᴜsᴛ ʙᴇ ᴅɪɢɪᴛs ᴏɴʟʏ.</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
             )
         del_admin = int(val)
         if primary_owner and del_admin == primary_owner:
             return await bot.send_message(
                 user_id,
-                "<b>⚠️ Primary bot owner cannot be removed!</b>",
+                "<b>⚠️ ᴘʀɪᴍᴀʀʏ ʙᴏᴛ ᴏᴡɴᴇʀ ᴄᴀɴɴᴏᴛ ʙᴇ ʀᴇᴍᴏᴠᴇᴅ!</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
             )
         await db.remove_admin(del_admin)
         await bot.send_message(
             user_id,
-            f"✅ <b>Successfully removed <code>{del_admin}</code> from administrators!</b>",
+            f"✅ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ <code>{del_admin}</code> ғʀᴏᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs!</b>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴅᴍɪɴs", callback_data="config#manage_admins")]])
         )
 
     elif data == "set_upi":
         await query.message.delete()
-        curr_upi = getattr(Config, 'UPI_ID', '') or 'None'
+        curr_upi = getattr(Config, 'UPI_ID', '') or 'ɴᴏɴᴇ'
         ask = await bot.ask(
             user_id,
             text=(
-                f"💳 <b>Current UPI ID:</b> <code>{curr_upi}</code>\n\n"
-                "<b>Send new UPI ID for receiving premium payments:</b>\n"
-                "Example: <code>yourname@upi</code> or <code>merchant@okhdfcbank</code>\n"
-                "Send <code>none</code> to remove.\n\n"
-                "<i>/cancel - Abort</i>"
+                f"💳 <b>ᴄᴜʀʀᴇɴᴛ ᴜᴘɪ ɪᴅ:</b> <code>{curr_upi}</code>\n\n"
+                "<b>sᴇɴᴅ ɴᴇᴡ ᴜᴘɪ ɪᴅ ғᴏʀ ʀᴇᴄᴇɪᴠɪɴɢ ᴘʀᴇᴍɪᴜᴍ ᴘᴀʏᴍᴇɴᴛs:</b>\n"
+                "ᴇxᴀᴍᴘʟᴇ: <code>yourname@upi</code> ᴏʀ <code>merchant@okhdfcbank</code>\n"
+                "sᴇɴᴅ <code>none</code> ᴛᴏ ʀᴇᴍᴏᴠᴇ.\n\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=120
         )
@@ -410,7 +410,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await db.update_system_config("UPI_ID", new_upi)
         await bot.send_message(
             user_id,
-            f"✅ <b>UPI Payment ID updated to:</b> <code>{new_upi or 'None'}</code>",
+            f"✅ <b>ᴜᴘɪ ᴘᴀʏᴍᴇɴᴛ ɪᴅ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴏ:</b> <code>{new_upi or 'ɴᴏɴᴇ'}</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
@@ -421,11 +421,11 @@ async def config_callback(bot: Client, query: CallbackQuery):
         ask = await bot.ask(
             user_id,
             text=(
-                f"👑 <b>Current Admin IDs:</b> <code>{curr}</code>\n\n"
-                "<b>Send space-separated Telegram user IDs to set as authorized admins:</b>\n"
-                "Example: <code>8349955493 987654321</code>\n\n"
-                "<i>Note: Your ID will always be preserved so you cannot lock yourself out.</i>\n"
-                "<i>/cancel - Abort</i>"
+                f"👑 <b>ᴄᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴ ɪᴅs:</b> <code>{curr}</code>\n\n"
+                "<b>sᴇɴᴅ sᴘᴀᴄᴇ-sᴇᴘᴀʀᴀᴛᴇᴅ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅs ᴛᴏ sᴇᴛ ᴀs ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴs:</b>\n"
+                "ᴇxᴀᴍᴘʟᴇ: <code>8349955493 987654321</code>\n\n"
+                "<i>ɴᴏᴛᴇ: ʏᴏᴜʀ ɪᴅ ᴡɪʟʟ ᴀʟᴡᴀʏs ʙᴇ ᴘʀᴇsᴇʀᴠᴇᴅ sᴏ ʏᴏᴜ ᴄᴀɴɴᴏᴛ ʟᴏᴄᴋ ʏᴏᴜʀsᴇʟғ ᴏᴜᴛ.</i>\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=120
         )
@@ -443,7 +443,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"✅ <b>Admin list updated to:</b> <code>{parsed}</code>",
+            f"✅ <b>ᴀᴅᴍɪɴ ʟɪsᴛ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴏ:</b> <code>{parsed}</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
@@ -452,13 +452,13 @@ async def config_callback(bot: Client, query: CallbackQuery):
         ask = await bot.ask(
             user_id,
             text=(
-                "<b>⚡️ Send new Default Forward Delay (in seconds):</b>\n\n"
-                "Presets:\n"
-                "• <code>0.2</code> or <code>0.5</code> (Extreme Fast)\n"
-                "• <code>1.0</code> (Fast Default)\n"
-                "• <code>3.0</code> (Normal Safe)\n"
-                "• <code>5.0</code> (Anti-Flood Strict)\n\n"
-                "<i>/cancel - Abort</i>"
+                "<b>⚡️ sᴇɴᴅ ɴᴇᴡ ᴅᴇғᴀᴜʟᴛ ғᴏʀᴡᴀʀᴅ ᴅᴇʟᴀʏ (ɪɴ sᴇᴄᴏɴᴅs):</b>\n\n"
+                "ᴘʀᴇsᴇᴛs:\n"
+                "• <code>0.2</code> ᴏʀ <code>0.5</code> (ᴇxᴛʀᴇᴍᴇ ғᴀsᴛ)\n"
+                "• <code>1.0</code> (ғᴀsᴛ ᴅᴇғᴀᴜʟᴛ)\n"
+                "• <code>3.0</code> (ɴᴏʀᴍᴀʟ sᴀғᴇ)\n"
+                "• <code>5.0</code> (ᴀɴᴛɪ-ғʟᴏᴏᴅ sᴛʀɪᴄᴛ)\n\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=120
         )
@@ -473,7 +473,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         except ValueError:
             return await bot.send_message(
                 user_id,
-                "<b>❌ Invalid delay! Enter a decimal number between 0.1 and 60.0</b>",
+                "<b>❌ ɪɴᴠᴀʟɪᴅ ᴅᴇʟᴀʏ! ᴇɴᴛᴇʀ ᴀ ᴅᴇᴄɪᴍᴀʟ ɴᴜᴍʙᴇʀ ʙᴇᴛᴡᴇᴇɴ 0.1 ᴀɴᴅ 60.0</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
 
@@ -482,7 +482,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"✅ <b>Default Delay set to:</b> <code>{val}s</code>",
+            f"✅ <b>ᴅᴇғᴀᴜʟᴛ ᴅᴇʟᴀʏ sᴇᴛ ᴛᴏ:</b> <code>{val}s</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
@@ -491,10 +491,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
         ask = await bot.ask(
             user_id,
             text=(
-                "<b>🤖 Send new Telegram Bot Token:</b>\n\n"
-                "Format: <code>1234567890:AAHxxxx...</code>\n\n"
-                "⚠️ <b>Important:</b> <i>After saving a new bot token, you MUST restart the bot for the change to take effect!</i>\n"
-                "<i>/cancel - Abort</i>"
+                "<b>🤖 sᴇɴᴅ ɴᴇᴡ ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ᴛᴏᴋᴇɴ:</b>\n\n"
+                "ғᴏʀᴍᴀᴛ: <code>1234567890:AAHxxxx...</code>\n\n"
+                "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴀғᴛᴇʀ sᴀᴠɪɴɢ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏᴋᴇɴ, ʏᴏᴜ ᴍᴜsᴛ ʀᴇsᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ғᴏʀ ᴛʜᴇ ᴄʜᴀɴɢᴇ ᴛᴏ ᴛᴀᴋᴇ ᴇғғᴇᴄᴛ!</i>\n"
+                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
             ),
             timeout=180
         )
@@ -506,7 +506,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if not (":" in token and token.split(":", 1)[0].isdigit()):
             return await bot.send_message(
                 user_id,
-                "<b>❌ Invalid Bot Token format! Must be numeric_id:string from @BotFather.</b>",
+                "<b>❌ ɪɴᴠᴀʟɪᴅ ʙᴏᴛ ᴛᴏᴋᴇɴ ғᴏʀᴍᴀᴛ! ᴍᴜsᴛ ʙᴇ numeric_id:string ғʀᴏᴍ @BotFather.</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
 
@@ -515,7 +515,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"✅ <b>Bot Token saved to database!</b>\n\nToken: <code>{mask_secret(token)}</code>\n\nClick below to restart the bot client with this new token:",
+            f"✅ <b>ʙᴏᴛ ᴛᴏᴋᴇɴ sᴀᴠᴇᴅ ᴛᴏ ᴅᴀᴛᴀʙᴀsᴇ!</b>\n\nᴛᴏᴋᴇɴ: <code>{mask_secret(token)}</code>\n\nᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ᴛᴏ ʀᴇsᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ᴄʟɪᴇɴᴛ ᴡɪᴛʜ ᴛʜɪs ɴᴇᴡ ᴛᴏᴋᴇɴ:",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ ɴᴏᴡ", callback_data="config#restart")],
                 [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]
@@ -526,7 +526,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.message.delete()
         ask_id = await bot.ask(
             user_id,
-            text="<b>🔑 Send your Telegram API ID (numbers):</b>\n\n<i>/cancel - Abort</i>",
+            text="<b>🔑 sᴇɴᴅ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘɪ ɪᴅ (ɴᴜᴍʙᴇʀs):</b>\n\n<i>/cancel - ᴀʙᴏʀᴛ</i>",
             timeout=120
         )
         if not ask_id.text or ask_id.text.startswith("/cancel"):
@@ -534,13 +534,13 @@ async def config_callback(bot: Client, query: CallbackQuery):
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
 
         if not ask_id.text.strip().isdigit():
-            return await bot.send_message(user_id, "<b>❌ API ID must be digits only!</b>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#main")]]))
+            return await bot.send_message(user_id, "<b>❌ ᴀᴘɪ ɪᴅ ᴍᴜsᴛ ʙᴇ ᴅɪɢɪᴛs ᴏɴʟʏ!</b>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#main")]]))
         
         api_id = int(ask_id.text.strip())
 
         ask_hash = await bot.ask(
             user_id,
-            text="<b>🔑 Send your Telegram API HASH (hex string):</b>\n\n<i>/cancel - Abort</i>",
+            text="<b>🔑 sᴇɴᴅ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘɪ ʜᴀsʜ (ʜᴇx sᴛʀɪɴɢ):</b>\n\n<i>/cancel - ᴀʙᴏʀᴛ</i>",
             timeout=120
         )
         if not ask_hash.text or ask_hash.text.startswith("/cancel"):
@@ -555,13 +555,13 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"✅ <b>API Credentials updated!</b>\nAPI ID: <code>{api_id}</code>\nAPI Hash: <code>{mask_secret(api_hash)}</code>",
+            f"✅ <b>ᴀᴘɪ ᴄʀᴇᴅᴇɴᴛɪᴀʟs ᴜᴘᴅᴀᴛᴇᴅ!</b>\nᴀᴘɪ ɪᴅ: <code>{api_id}</code>\nᴀᴘɪ ʜᴀsʜ: <code>{mask_secret(api_hash)}</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
     elif data == "restart":
         msg = await query.message.edit_text(
-            "<blockquote><b>🔄 Restarting Skinet Verse Bot Engine...</b>\n\n<i>All services will reload with latest database configs in 5 seconds.</i></blockquote>"
+            "<blockquote><b>🔄 ʀᴇsᴛᴀʀᴛɪɴɢ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ʙᴏᴛ ᴇɴɢɪɴᴇ...</b>\n\n<i>ᴀʟʟ sᴇʀᴠɪᴄᴇs ᴡɪʟʟ ʀᴇʟᴏᴀᴅ ᴡɪᴛʜ ʟᴀᴛᴇsᴛ ᴅᴀᴛᴀʙᴀsᴇ ᴄᴏɴғɪɢs ɪɴ 5 sᴇᴄᴏɴᴅs.</i></blockquote>"
         )
         try:
             await db.set_restart_status(query.message.chat.id, msg.id)
@@ -582,43 +582,43 @@ async def config_callback(bot: Client, query: CallbackQuery):
 @Client.on_message(filters.private & filters.command(["addadmin"]))
 async def cmd_add_admin(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.", quote=True)
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs & ᴏᴡɴᴇʀs.", quote=True)
     args = message.command[1:]
     if not args or not args[0].isdigit():
-        return await message.reply_text("<b>Usage:</b> <code>/addadmin &lt;user_id&gt;</code>\n\nExample: <code>/addadmin 987654321</code>", quote=True)
+        return await message.reply_text("<b>ᴜsᴀɢᴇ:</b> <code>/addadmin &lt;user_id&gt;</code>\n\nᴇxᴀᴍᴘʟᴇ: <code>/addadmin 987654321</code>", quote=True)
     new_uid = int(args[0])
     await db.add_admin(new_uid)
-    await message.reply_text(f"✅ User <code>{new_uid}</code> has been granted Administrator privileges.", quote=True)
+    await message.reply_text(f"✅ ᴜsᴇʀ <code>{new_uid}</code> ʜᴀs ʙᴇᴇɴ ɢʀᴀɴᴛᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ᴘʀɪᴠɪʟᴇɢᴇs.", quote=True)
 
 
 @Client.on_message(filters.private & filters.command(["deladmin"]))
 async def cmd_del_admin(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.", quote=True)
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs & ᴏᴡɴᴇʀs.", quote=True)
     args = message.command[1:]
     if not args or not args[0].isdigit():
-        return await message.reply_text("<b>Usage:</b> <code>/deladmin &lt;user_id&gt;</code>\n\nExample: <code>/deladmin 987654321</code>", quote=True)
+        return await message.reply_text("<b>ᴜsᴀɢᴇ:</b> <code>/deladmin &lt;user_id&gt;</code>\n\nᴇxᴀᴍᴘʟᴇ: <code>/deladmin 987654321</code>", quote=True)
     del_uid = int(args[0])
     primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
     if primary_owner and del_uid == primary_owner:
-        return await message.reply_text("⚠️ <b>Cannot remove primary Bot Owner.</b>", quote=True)
+        return await message.reply_text("⚠️ <b>ᴄᴀɴɴᴏᴛ ʀᴇᴍᴏᴠᴇ ᴘʀɪᴍᴀʀʏ ʙᴏᴛ ᴏᴡɴᴇʀ.</b>", quote=True)
     await db.remove_admin(del_uid)
-    await message.reply_text(f"✅ User <code>{del_uid}</code> removed from Administrator privileges.", quote=True)
+    await message.reply_text(f"✅ ᴜsᴇʀ <code>{del_uid}</code> ʀᴇᴍᴏᴠᴇᴅ ғʀᴏᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ᴘʀɪᴠɪʟᴇɢᴇs.", quote=True)
 
 
 @Client.on_message(filters.private & filters.command(["admins"]))
 async def cmd_admins(bot: Client, message: Message):
     if not await db.is_admin(message.from_user.id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.", quote=True)
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs & ᴏᴡɴᴇʀs.", quote=True)
     admins = await db.get_all_admins()
     primary = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
     lines = []
     for a in admins:
-        tag = " 👑 (Primary Owner)" if a == primary else " 🛡️ (Admin)"
+        tag = " 👑 (ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ)" if a == primary else " 🛡️ (ᴀᴅᴍɪɴ)"
         lines.append(f"• <code>{a}</code>{tag}")
     admin_text = (
         "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs</u></b></blockquote>\n\n"
-        f"<b>Total Count:</b> <code>{len(admins)}</code>\n\n" + "\n".join(lines)
+        f"<b>ᴛᴏᴛᴀʟ ᴄᴏᴜɴᴛ:</b> <code>{len(admins)}</code>\n\n" + "\n".join(lines)
     )
     await message.reply_text(admin_text, quote=True)
 

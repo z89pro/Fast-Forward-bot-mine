@@ -169,18 +169,18 @@ async def build_plans_view(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
     admin_link = _get_admin_contact_link()
     rows = [
         row(
-            btn("🥉 Buy Starter (₹49)", "prem_buy_starter", "green"),
-            btn("🥈 Buy Pro (₹149)", "prem_buy_pro", "green")
+            btn("🥉 ʙᴜʏ sᴛᴀʀᴛᴇʀ (₹49)", "prem_buy_starter", "green"),
+            btn("🥈 ʙᴜʏ ᴘʀᴏ (₹149)", "prem_buy_pro", "green")
         ),
         row(
-            btn("🥇 Buy Ultra Lifetime (₹399)", "prem_buy_ultra", "green")
+            btn("🥇 ʙᴜʏ ᴜʟᴛʀᴀ ʟɪғᴇᴛɪᴍᴇ (₹399)", "prem_buy_ultra", "green")
         ),
         row(
-            btn("💳 My Active Plan", "prem_myplan", "blue"),
-            btn_url("💬 Contact Admin", admin_link, "blue")
+            btn("💳 ᴍʏ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ", "prem_myplan", "blue"),
+            btn_url("💬 ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ", admin_link, "blue")
         ),
         row(
-            btn("🔙 Back to Home", "back", "red")
+            btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "red")
         )
     ]
     return text, markup(*rows)
@@ -239,8 +239,8 @@ async def myplan_cmd(bot: Client, message: Message):
         )
 
     btn_list = [
-        row(btn("💎 View VIP Plans", "prem_plans", "green")),
-        row(btn("🔙 Back to Home", "back", "red"))
+        row(btn("💎 ᴠɪᴇᴡ ᴠɪᴘ ᴘʟᴀɴs", "prem_plans", "green")),
+        row(btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "red"))
     ]
     await message.reply_text(txt, reply_markup=markup(*btn_list), quote=True)
 
@@ -293,7 +293,7 @@ async def admin_add_premium(bot: Client, message: Message):
                 f"📅 <b>Valid Until:</b> <code>{exp_str} IST</code>\n\n"
                 "⚡ <i>All premium features are now unlocked! Enjoy zero verification and extreme speed.</i>"
             ),
-            reply_markup=markup(row(btn("💎 View Plan Perks", "prem_myplan", "green")))
+            reply_markup=markup(row(btn("💎 ᴠɪᴇᴡ ᴘʟᴀɴ ᴘᴇʀᴋs", "prem_myplan", "green")))
         )
     except Exception as e:
         logger.debug(f"Could not notify user {target_uid} of VIP grant: {e}")
@@ -311,10 +311,17 @@ async def admin_del_premium(bot: Client, message: Message):
     try:
         target_uid = int(args[0])
     except ValueError:
-        return await message.reply_text("❌ Invalid User ID.", quote=True)
+        return await message.reply_text("❌ Invalid User ID. Must be integer.", quote=True)
 
     await db.remove_premium_user(target_uid)
-    await message.reply_text(f"✅ Premium access revoked for user <code>{target_uid}</code>.", quote=True)
+    await message.reply_text(f"✅ Premium VIP removed for User <code>{target_uid}</code>.", quote=True)
+    try:
+        await bot.send_message(
+            target_uid,
+            "<b>⚠️ Your VIP Premium subscription has been revoked or expired.</b>\n\nUse /plans to purchase again."
+        )
+    except Exception:
+        pass
 
 
 # ── Callback Handlers ─────────────────────────────────────────────────
@@ -369,8 +376,8 @@ async def cb_prem_myplan(bot: Client, query: CallbackQuery):
         )
 
     btn_list = [
-        row(btn("💎 Upgrade Plan", "prem_plans", "green")),
-        row(btn("🔙 Back to Home", "back", "red"))
+        row(btn("💎 ᴜᴘɢʀᴀᴅᴇ ᴘʟᴀɴ", "prem_plans", "green")),
+        row(btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "red"))
     ]
     await query.message.edit_text(txt, reply_markup=markup(*btn_list))
 
@@ -428,15 +435,15 @@ async def cb_prem_buy(bot: Client, query: CallbackQuery):
 
     action_buttons = [
         row(
-            btn("📤 Submit UTR / Ref No", f"prem_utr_{order_id}", "green"),
-            btn("📸 Submit Screenshot", f"prem_ss_{order_id}", "green")
+            btn("📤 sᴜʙᴍɪᴛ ᴜᴛʀ / ʀᴇғ ɴᴏ", f"prem_utr_{order_id}", "green"),
+            btn("📸 sᴜʙᴍɪᴛ sᴄʀᴇᴇɴsʜᴏᴛ", f"prem_ss_{order_id}", "green")
         ),
         row(
-            btn_url("💬 Contact Admin / Direct Buy", admin_link, "blue")
+            btn_url("💬 ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ / ᴅɪʀᴇᴄᴛ ʙᴜʏ", admin_link, "blue")
         ),
         row(
-            btn("❌ Cancel Order", f"prem_cancel_{order_id}", "red"),
-            btn("🔙 All Plans", "prem_plans", "blue")
+            btn("❌ ᴄᴀɴᴄᴇʟ ᴏʀᴅᴇʀ", f"prem_cancel_{order_id}", "red"),
+            btn("🔙 ᴀʟʟ ᴘʟᴀɴs", "prem_plans", "blue")
         )
     ]
 
@@ -522,7 +529,7 @@ async def proof_submission_listener(bot: Client, message: Message):
         f"💎 <b>Plan:</b> {plan_info['name']} (<code>₹{order['amount']:.2f}</code>)\n"
         f"🧾 <b>Ref/UTR:</b> <code>{utr_val or 'Screenshot Attached'}</code>\n\n"
         "⚡ <i>Your VIP pass will be activated as soon as an admin approves. You will be notified automatically!</i>",
-        reply_markup=markup(row(btn("💎 Back to Plans", "prem_plans", "blue")))
+        reply_markup=markup(row(btn("💎 ʙᴀᴄᴋ ᴛᴏ ᴘʟᴀɴs", "prem_plans", "blue")))
     )
 
     # Dispatch to LOG_CHANNEL & Bot Owners for 1-click verification
@@ -539,8 +546,8 @@ async def proof_submission_listener(bot: Client, message: Message):
 
     admin_actions = markup(
         row(
-            btn("✅ Approve VIP", f"prem_appr_{user_id}_{order['plan']}_{order_id}", "green"),
-            btn("❌ Reject", f"prem_rej_{user_id}_{order_id}", "red")
+            btn("✅ ᴀᴘᴘʀᴏᴠᴇ ᴠɪᴘ", f"prem_appr_{user_id}_{order['plan']}_{order_id}", "green"),
+            btn("❌ ʀᴇᴊᴇᴄᴛ", f"prem_rej_{user_id}_{order_id}", "red")
         )
     )
 
@@ -612,7 +619,7 @@ async def cb_prem_approve(bot: Client, query: CallbackQuery):
                 "• 🎓 Course Seller Syllabus Indexer\n\n"
                 "<i>Thank you for supporting Skinet Verse!</i>"
             ),
-            reply_markup=markup(row(btn("💎 View My Plan", "prem_myplan", "green")))
+            reply_markup=markup(row(btn("💎 ᴠɪᴇᴡ ᴍʏ ᴘʟᴀɴ", "prem_myplan", "green")))
         )
     except Exception as e:
         logger.warning(f"Failed to send VIP celebration to {target_uid}: {e}")
@@ -653,7 +660,7 @@ async def cb_prem_reject(bot: Client, query: CallbackQuery):
                 f"Your payment proof for Order <code>{order_id}</code> could not be verified by our team.\n\n"
                 "<i>If you believe this is a mistake, please contact our administrator directly with your bank transaction statement.</i>"
             ),
-            reply_markup=markup(row(btn_url("💬 Contact Admin", admin_link, "blue")))
+            reply_markup=markup(row(btn_url("💬 ᴄᴏɴᴛᴀᴄᴛ ᴀᴅᴍɪɴ", admin_link, "blue")))
         )
     except Exception as e:
         logger.warning(f"Could not notify user of rejection: {e}")

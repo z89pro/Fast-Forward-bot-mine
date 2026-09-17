@@ -53,12 +53,12 @@ def _format_time(seconds: float) -> str:
 async def broadcast_handler(bot: Client, message: Message):
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.", quote=True)
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.", quote=True)
 
     if BROADCAST_STATE["is_running"]:
         return await message.reply_text(
-            "<blockquote><b>⚠️ A broadcast is already running!</b>\n\n"
-            "Use <code>/cancelbroadcast</code> to halt the active process.</blockquote>",
+            "<blockquote><b>⚠️ ᴀ ʙʀᴏᴀᴅᴄᴀsᴛ ɪs ᴀʟʀᴇᴀᴅʏ ʀᴜɴɴɪɴɢ!</b>\n\n"
+            "ᴜsᴇ <code>/cancelbroadcast</code> ᴛᴏ ʜᴀʟᴛ ᴛʜᴇ ᴀᴄᴛɪᴠᴇ ᴘʀᴏᴄᴇss.</blockquote>",
             quote=True
         )
 
@@ -89,18 +89,18 @@ async def broadcast_handler(bot: Client, message: Message):
                 chat_id=user_id,
                 text=(
                     "<blockquote><b>📢 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴇɴᴛᴇʀ</u></b></blockquote>\n\n"
-                    "Please send or forward the message you wish to broadcast to all registered users.\n\n"
-                    "• <b>Supported:</b> Text, Photos, Videos, Documents, Audio, Voice, Stickers\n"
-                    "• <b>Pin Option:</b> Include <code>-pin</code> in text/caption to auto-pin\n"
-                    "• <b>Cancel:</b> Send <code>/cancel</code> to abort."
+                    "ᴘʟᴇᴀsᴇ sᴇɴᴅ ᴏʀ ғᴏʀᴡᴀʀᴅ ᴛʜᴇ ᴍᴇssᴀɢᴇ ʏᴏᴜ ᴡɪsʜ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ ᴛᴏ ᴀʟʟ ʀᴇɢɪsᴛᴇʀᴇᴅ ᴜsᴇʀs.\n\n"
+                    "• <b>sᴜᴘᴘᴏʀᴛᴇᴅ:</b> ᴛᴇxᴛ, ᴘʜᴏᴛᴏs, ᴠɪᴅᴇᴏs, ᴅᴏᴄᴜᴍᴇɴᴛs, ᴀᴜᴅɪᴏ, ᴠᴏɪᴄᴇ, sᴛɪᴄᴋᴇʀs\n"
+                    "• <b>ᴘɪɴ ᴏᴘᴛɪᴏɴ:</b> ɪɴᴄʟᴜᴅᴇ <code>-pin</code> ɪɴ ᴛᴇxᴛ/ᴄᴀᴘᴛɪᴏɴ ᴛᴏ ᴀᴜᴛᴏ-ᴘɪɴ\n"
+                    "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ."
                 ),
                 timeout=180
             )
         except Exception:
-            return await message.reply_text("⏱ <b>Timeout:</b> Broadcast setup cancelled (3 minutes elapsed).")
+            return await message.reply_text("⏱ <b>ᴛɪᴍᴇᴏᴜᴛ:</b> ʙʀᴏᴀᴅᴄᴀsᴛ sᴇᴛᴜᴘ ᴄᴀɴᴄᴇʟʟᴇᴅ (3 ᴍɪɴᴜᴛᴇs ᴇʟᴀᴘsᴇᴅ).")
 
         if not prompt_msg or not prompt_msg.text or prompt_msg.text == "/cancel":
-            return await message.reply_text("❌ <b>Broadcast setup cancelled.</b>")
+            return await message.reply_text("❌ <b>ʙʀᴏᴀᴅᴄᴀsᴛ sᴇᴛᴜᴘ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>")
 
         # Check if the prompt response has -pin
         if prompt_msg.text and "-pin" in prompt_msg.text:
@@ -118,11 +118,11 @@ async def broadcast_handler(bot: Client, message: Message):
         user_ids = [u['id'] async for u in users_cursor if 'id' in u and u['id']]
         user_ids = list(dict.fromkeys(user_ids))  # deduplicate
     except Exception as e:
-        return await message.reply_text(f"❌ <b>Database Error:</b> Failed to fetch users: <code>{e}</code>")
+        return await message.reply_text(f"❌ <b>ᴅᴀᴛᴀʙᴀsᴇ ᴇʀʀᴏʀ:</b> ғᴀɪʟᴇᴅ ᴛᴏ ғᴇᴛᴄʜ ᴜsᴇʀs: <code>{e}</code>")
 
     total_users = len(user_ids)
     if not total_users:
-        return await message.reply_text("⚠️ <b>No users found in database to broadcast to.</b>")
+        return await message.reply_text("⚠️ <b>ɴᴏ ᴜsᴇʀs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ ᴛᴏ.</b>")
 
     # Set state
     BROADCAST_STATE["is_running"] = True
@@ -130,13 +130,13 @@ async def broadcast_handler(bot: Client, message: Message):
     BROADCAST_STATE["started_by"] = user_id
     BROADCAST_STATE["start_time"] = time.time()
 
-    cancel_btn = colored_markup([[btn("❌ Cancel Broadcast", "bcast_cancel", "red")]])
+    cancel_btn = colored_markup([[btn("❌ ᴄᴀɴᴄᴇʟ ʙʀᴏᴀᴅᴄᴀsᴛ", "bcast_cancel", "red")]])
 
     status_msg = await message.reply_text(
         f"<blockquote><b>📢 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ʙʀᴏᴀᴅᴄᴀsᴛ ɪɴɪᴛɪᴀᴛᴇᴅ</u></b></blockquote>\n\n"
-        f"👥 <b>Total Target Users:</b> <code>{total_users}</code>\n"
-        f"📌 <b>Auto-Pin:</b> <code>{'Enabled ✅' if should_pin else 'Disabled ❌'}</code>\n"
-        f"⏳ <b>Status:</b> <code>Dispatching messages...</code>",
+        f"👥 <b>ᴛᴏᴛᴀʟ ᴛᴀʀɢᴇᴛ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+        f"📌 <b>ᴀᴜᴛᴏ-ᴘɪɴ:</b> <code>{'ᴇɴᴀʙʟᴇᴅ ✅' if should_pin else 'ᴅɪsᴀʙʟᴇᴅ ❌'}</code>\n"
+        f"⏳ <b>sᴛᴀᴛᴜs:</b> <code>ᴅɪsᴘᴀᴛᴄʜɪɴɢ ᴍᴇssᴀɢᴇs...</code>",
         reply_markup=cancel_btn
     )
 
@@ -213,14 +213,14 @@ async def broadcast_handler(bot: Client, message: Message):
 
                 progress_text = (
                     f"<blockquote><b>📢 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ʙʀᴏᴀᴅᴄᴀsᴛ ɪɴ ᴘʀᴏɢʀᴇss</u></b></blockquote>\n\n"
-                    f"📊 <b>Progress:</b> <code>{pct}% [{bar}]</code>\n"
-                    f"👥 <b>Processed:</b> <code>{done} / {total_users}</code>\n"
-                    f"✅ <b>Delivered:</b> <code>{success}</code>\n"
-                    f"🚫 <b>Blocked:</b> <code>{blocked}</code>\n"
-                    f"🗑 <b>Deleted:</b> <code>{deleted}</code>\n"
-                    f"⚠️ <b>Failed:</b> <code>{failed}</code>\n\n"
-                    f"⚡ <b>Speed:</b> <code>{speed:.1f} msgs/s</code>\n"
-                    f"⏰ <b>Elapsed:</b> <code>{_format_time(elapsed)}</code> | ⏳ <b>ETA:</b> <code>{_format_time(eta)}</code>"
+                    f"📊 <b>ᴘʀᴏɢʀᴇss:</b> <code>{pct}% [{bar}]</code>\n"
+                    f"👥 <b>ᴘʀᴏᴄᴇssᴇᴅ:</b> <code>{done} / {total_users}</code>\n"
+                    f"✅ <b>ᴅᴇʟɪᴠᴇʀᴇᴅ:</b> <code>{success}</code>\n"
+                    f"🚫 <b>ʙʟᴏᴄᴋᴇᴅ:</b> <code>{blocked}</code>\n"
+                    f"🗑 <b>ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
+                    f"⚠️ <b>ғᴀɪʟᴇᴅ:</b> <code>{failed}</code>\n\n"
+                    f"⚡ <b>sᴘᴇᴇᴅ:</b> <code>{speed:.1f} ᴍsɢs/s</code>\n"
+                    f"⏰ <b>ᴇʟᴀᴘsᴇᴅ:</b> <code>{_format_time(elapsed)}</code> | ⏳ <b>ᴇᴛᴀ:</b> <code>{_format_time(eta)}</code>"
                 )
                 try:
                     await status_msg.edit_text(progress_text, reply_markup=cancel_btn)
@@ -235,22 +235,22 @@ async def broadcast_handler(bot: Client, message: Message):
         BROADCAST_STATE["should_cancel"] = False
 
         status_title = "🛑 <u>ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴀɴᴄᴇʟʟᴇᴅ</u>" if was_cancelled else "✅ <u>ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</u>"
-        status_sub = "<i>Broadcast halted by administrator.</i>" if was_cancelled else "<i>Broadcast delivered successfully across all users!</i>"
+        status_sub = "<i>ʙʀᴏᴀᴅᴄᴀsᴛ ʜᴀʟᴛᴇᴅ ʙʏ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ.</i>" if was_cancelled else "<i>ʙʀᴏᴀᴅᴄᴀsᴛ ᴅᴇʟɪᴠᴇʀᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴄʀᴏss ᴀʟʟ ᴜsᴇʀs!</i>"
 
         final_text = (
             f"<blockquote><b>📢 {status_title}</b></blockquote>\n\n"
             f"{status_sub}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👥 <b>Total Target Users:</b> <code>{total_users}</code>\n"
-            f"📥 <b>Total Processed:</b> <code>{done}</code>\n"
-            f"✅ <b>Successfully Delivered:</b> <code>{success}</code>\n"
-            f"🚫 <b>Blocked the Bot:</b> <code>{blocked}</code>\n"
-            f"🗑 <b>Deleted Accounts:</b> <code>{deleted}</code>\n"
-            f"⚠️ <b>Failed / Errors:</b> <code>{failed}</code>\n"
-            f"⏱ <b>Total Time Taken:</b> <code>{_format_time(total_time)}</code>\n"
-            f"⚡ <b>Average Throughput:</b> <code>{avg_speed:.1f} msgs/s</code>\n"
+            f"👥 <b>ᴛᴏᴛᴀʟ ᴛᴀʀɢᴇᴛ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+            f"📥 <b>ᴛᴏᴛᴀʟ ᴘʀᴏᴄᴇssᴇᴅ:</b> <code>{done}</code>\n"
+            f"✅ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟɪᴠᴇʀᴇᴅ:</b> <code>{success}</code>\n"
+            f"🚫 <b>ʙʟᴏᴄᴋᴇᴅ ᴛʜᴇ ʙᴏᴛ:</b> <code>{blocked}</code>\n"
+            f"🗑 <b>ᴅᴇʟᴇᴛᴇᴅ ᴀᴄᴄᴏᴜɴᴛs:</b> <code>{deleted}</code>\n"
+            f"⚠️ <b>ғᴀɪʟᴇᴅ / ᴇʀʀᴏʀs:</b> <code>{failed}</code>\n"
+            f"⏱ <b>ᴛᴏᴛᴀʟ ᴛɪᴍᴇ ᴛᴀᴋᴇɴ:</b> <code>{_format_time(total_time)}</code>\n"
+            f"⚡ <b>ᴀᴠᴇʀᴀɢᴇ ᴛʜʀᴏᴜɢʜᴘᴜᴛ:</b> <code>{avg_speed:.1f} ᴍsɢs/s</code>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"<i>⚡ Skinet Verse Automated Telemetry</i>"
+            f"<i>⚡ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴛᴇʟᴇᴍᴇᴛʀʏ</i>"
         )
         try:
             await status_msg.edit_text(final_text)
@@ -265,26 +265,26 @@ async def broadcast_handler(bot: Client, message: Message):
 async def cancel_broadcast_cmd(bot: Client, message: Message):
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.", quote=True)
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.", quote=True)
 
     if not BROADCAST_STATE["is_running"]:
-        return await message.reply_text("ℹ️ <b>No broadcast is currently running.</b>", quote=True)
+        return await message.reply_text("ℹ️ <b>ɴᴏ ʙʀᴏᴀᴅᴄᴀsᴛ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ʀᴜɴɴɪɴɢ.</b>", quote=True)
 
     BROADCAST_STATE["should_cancel"] = True
-    await message.reply_text("🛑 <b>Cancellation signal sent!</b> The broadcast will halt shortly.", quote=True)
+    await message.reply_text("🛑 <b>ᴄᴀɴᴄᴇʟʟᴀᴛɪᴏɴ sɪɢɴᴀʟ sᴇɴᴛ!</b> ᴛʜᴇ ʙʀᴏᴀᴅᴄᴀsᴛ ᴡɪʟʟ ʜᴀʟᴛ sʜᴏʀᴛʟʏ.", quote=True)
 
 
 @Client.on_callback_query(filters.regex("^bcast_cancel$"))
 async def cancel_broadcast_callback(bot: Client, query: CallbackQuery):
     user_id = query.from_user.id
     if not await db.is_admin(user_id):
-        return await query.answer("⚠️ Access Denied: Admin only.", show_alert=True)
+        return await query.answer("⚠️ ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ: ᴀᴅᴍɪɴ ᴏɴʟʏ.", show_alert=True)
 
     if not BROADCAST_STATE["is_running"]:
-        return await query.answer("ℹ️ Broadcast is not currently active.", show_alert=True)
+        return await query.answer("ℹ️ ʙʀᴏᴀᴅᴄᴀsᴛ ɪs ɴᴏᴛ ᴄᴜʀʀᴇɴᴛʟʏ ᴀᴄᴛɪᴠᴇ.", show_alert=True)
 
     BROADCAST_STATE["should_cancel"] = True
-    await query.answer("🛑 Broadcast is being stopped...", show_alert=True)
+    await query.answer("🛑 ʙʀᴏᴀᴅᴄᴀsᴛ ɪs ʙᴇɪɴɢ sᴛᴏᴘᴘᴇᴅ...", show_alert=True)
 
 
 @Client.on_message(filters.private & filters.command(["broadcastrestart", "bcastrestart"]))
@@ -292,18 +292,18 @@ async def broadcast_restart_notice(bot: Client, message: Message):
     """Convenience command: One-click broadcast announcing system restart & resumption."""
     user_id = message.from_user.id
     if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Administrators.", quote=True)
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.", quote=True)
 
     if BROADCAST_STATE["is_running"]:
-        return await message.reply_text("⚠️ A broadcast is already in progress.", quote=True)
+        return await message.reply_text("⚠️ ᴀ ʙʀᴏᴀᴅᴄᴀsᴛ ɪs ᴀʟʀᴇᴀᴅʏ ɪɴ ᴘʀᴏɢʀᴇss.", quote=True)
 
     bot_user = getattr(bot, "username", "codexup_bot")
     notice_text = (
         f"<blockquote><b>🤖 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ᴜᴘᴅᴀᴛᴇ ɴᴏᴛɪᴄᴇ</u></b></blockquote>\n\n"
-        f"⚡ <b>Status:</b> <code>Online & Fully Operational ✅</code>\n\n"
-        f"The bot has completed a core system reboot & maintenance update.\n"
-        f"All auto-forwarding pipelines, AutoSave monitors, and channels are active!\n\n"
-        f"👇 <i>Click below to open your bot dashboard:</i>"
+        f"⚡ <b>sᴛᴀᴛᴜs:</b> <code>ᴏɴʟɪɴᴇ & ғᴜʟʟʏ ᴏᴘᴇʀᴀᴛɪᴏɴᴀʟ ✅</code>\n\n"
+        f"ᴛʜᴇ ʙᴏᴛ ʜᴀs ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴀ ᴄᴏʀᴇ sʏsᴛᴇᴍ ʀᴇʙᴏᴏᴛ & ᴍᴀɪɴᴛᴇɴᴀɴᴄᴇ ᴜᴘᴅᴀᴛᴇ.\n"
+        f"ᴀʟʟ ᴀᴜᴛᴏ-ғᴏʀᴡᴀʀᴅɪɴɢ ᴘɪᴘᴇʟɪɴᴇs, ᴀᴜᴛᴏsᴀᴠᴇ ᴍᴏɴɪᴛᴏʀs, ᴀɴᴅ ᴄʜᴀɴɴᴇʟs ᴀʀᴇ ᴀᴄᴛɪᴠᴇ!\n\n"
+        f"👇 <i>ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ᴛᴏ ᴏᴘᴇɴ ʏᴏᴜʀ ʙᴏᴛ ᴅᴀsʜʙᴏᴀʀᴅ:</i>"
     )
     bot_markup = colored_markup([[btn_url("🚀 ᴏᴘᴇɴ ʙᴏᴛ ᴅᴀsʜʙᴏᴀʀᴅ", f"https://t.me/{bot_user}?start=start", "green")]])
 
@@ -313,18 +313,18 @@ async def broadcast_restart_notice(bot: Client, message: Message):
     total_users = len(user_ids)
 
     if not total_users:
-        return await message.reply_text("⚠️ No users found in database.")
+        return await message.reply_text("⚠️ ɴᴏ ᴜsᴇʀs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ.")
 
     BROADCAST_STATE["is_running"] = True
     BROADCAST_STATE["should_cancel"] = False
     BROADCAST_STATE["started_by"] = user_id
     BROADCAST_STATE["start_time"] = time.time()
 
-    cancel_btn = colored_markup([[btn("❌ Cancel", "bcast_cancel", "red")]])
+    cancel_btn = colored_markup([[btn("❌ ᴄᴀɴᴄᴇʟ", "bcast_cancel", "red")]])
     status_msg = await message.reply_text(
         f"<blockquote><b>📢 <u>ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ʀᴇsᴛᴀʀᴛ ɴᴏᴛɪᴄᴇ</u></b></blockquote>\n\n"
-        f"👥 <b>Target Users:</b> <code>{total_users}</code>\n"
-        f"⏳ <b>Status:</b> <code>Dispatching update notice...</code>",
+        f"👥 <b>ᴛᴀʀɢᴇᴛ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+        f"⏳ <b>sᴛᴀᴛᴜs:</b> <code>ᴅɪsᴘᴀᴛᴄʜɪɴɢ ᴜᴘᴅᴀᴛᴇ ɴᴏᴛɪᴄᴇ...</code>",
         reply_markup=cancel_btn
     )
 
@@ -358,8 +358,8 @@ async def broadcast_restart_notice(bot: Client, message: Message):
                 try:
                     await status_msg.edit_text(
                         f"<blockquote><b>📢 <u>ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ʀᴇsᴛᴀʀᴛ ɴᴏᴛɪᴄᴇ</u></b></blockquote>\n\n"
-                        f"📊 <b>Progress:</b> <code>{pct}% [{bar}]</code>\n"
-                        f"👥 <b>Delivered:</b> <code>{success} / {total_users}</code>",
+                        f"📊 <b>ᴘʀᴏɢʀᴇss:</b> <code>{pct}% [{bar}]</code>\n"
+                        f"👥 <b>ᴅᴇʟɪᴠᴇʀᴇᴅ:</b> <code>{success} / {total_users}</code>",
                         reply_markup=cancel_btn
                     )
                 except Exception:
@@ -370,7 +370,7 @@ async def broadcast_restart_notice(bot: Client, message: Message):
         try:
             await status_msg.edit_text(
                 f"<blockquote><b>✅ <u>ʀᴇsᴛᴀʀᴛ ɴᴏᴛɪᴄᴇ ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴏᴍᴘʟᴇᴛᴇ</u></b></blockquote>\n\n"
-                f"Delivered update notice to <code>{success}</code> users in <code>{_format_time(time.time() - start_time)}</code>."
+                f"ᴅᴇʟɪᴠᴇʀᴇᴅ ᴜᴘᴅᴀᴛᴇ ɴᴏᴛɪᴄᴇ ᴛᴏ <code>{success}</code> ᴜsᴇʀs ɪɴ <code>{_format_time(time.time() - start_time)}</code>."
             )
         except Exception:
             pass

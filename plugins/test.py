@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 BTN_URL_REGEX = re.compile(r"(\[([^\[]+?)]\[buttonurl:/{0,2}(.+?)(:same)?])")
-BOT_TOKEN_TEXT = "<b>1) create a bot using @BotFather\n2) Then you will get a message with bot token\n3) Forward that message to me</b>"
+BOT_TOKEN_TEXT = "<b>1) ᴄʀᴇᴀᴛᴇ ᴀ ʙᴏᴛ ᴜsɪɴɢ @BotFather\n2) ᴛʜᴇɴ ʏᴏᴜ ᴡɪʟʟ ɢᴇᴛ ᴀ ᴍᴇssᴀɢᴇ ᴡɪᴛʜ ʙᴏᴛ ᴛᴏᴋᴇɴ\n3) ғᴏʀᴡᴀʀᴅ ᴛʜᴀᴛ ᴍᴇssᴀɢᴇ ᴛᴏ ᴍᴇ</b>"
 SESSION_STRING_SIZE = 351
 
 async def start_clone_bot(FwdBot, data=None):
@@ -69,11 +69,12 @@ async def start_clone_bot(FwdBot, data=None):
                     print(message.text)
         """
         current = offset
-        while True:
-            new_diff = min(200, limit - current)
+        while current <= limit:
+            new_diff = min(200, limit - current + 1)
             if new_diff <= 0:
                 return
-            messages = await self.get_messages(chat_id, list(range(current, current+new_diff+1)))
+            ids = list(range(current, current + new_diff))
+            messages = await self.get_messages(chat_id, ids)
             for message in messages:
                 yield message
                 current += 1
@@ -100,26 +101,26 @@ class CLIENT:
      try:
         msg = await bot.ask(chat_id=user_id, text=BOT_TOKEN_TEXT, timeout=300)
      except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
-        await bot.send_message(user_id, "Time limit reached (5 minutes).\nPlease start again.")
+        await bot.send_message(user_id, "ᴛɪᴍᴇ ʟɪᴍɪᴛ ʀᴇᴀᴄʜᴇᴅ (5 ᴍɪɴᴜᴛᴇs).\nᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ᴀɢᴀɪɴ.")
         return None
      if not msg or not msg.text or msg.text=='/cancel':
-        await bot.send_message(user_id, '<b>process cancelled !</b>')
+        await bot.send_message(user_id, '<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ !</b>')
         return None
      elif not msg.forward_date:
-        await bot.send_message(user_id, "<b>This is not a forward message</b>")
+        await bot.send_message(user_id, "<b>ᴛʜɪs ɪs ɴᴏᴛ ᴀ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇ</b>")
         return None
      elif not msg.forward_from or str(msg.forward_from.id) != "93372553":
-        await bot.send_message(user_id, "<b>This message was not forward from bot father</b>")
+        await bot.send_message(user_id, "<b>ᴛʜɪs ᴍᴇssᴀɢᴇ ᴡᴀs ɴᴏᴛ ғᴏʀᴡᴀʀᴅ ғʀᴏᴍ ʙᴏᴛ ғᴀᴛʜᴇʀ</b>")
         return None
      bot_token = re.findall(r'\d[0-9]{8,10}:[0-9A-Za-z_-]{35}', msg.text, re.IGNORECASE)
      bot_token = bot_token[0] if bot_token else None
      if not bot_token:
-        await bot.send_message(user_id, "<b>There is no bot token in that message</b>")
+        await bot.send_message(user_id, "<b>ᴛʜᴇʀᴇ ɪs ɴᴏ ʙᴏᴛ ᴛᴏᴋᴇɴ ɪɴ ᴛʜᴀᴛ ᴍᴇssᴀɢᴇ</b>")
         return None
      try:
         _client = await start_clone_bot(self.client(bot_token, False), True)
      except Exception as e:
-        await bot.send_message(user_id, f"<b>BOT ERROR:</b> `{e}`")
+        await bot.send_message(user_id, f"<b>ʙᴏᴛ ᴇʀʀᴏʀ:</b> `{e}`")
         return None
      _bot = _client.me
      details = {
@@ -137,14 +138,14 @@ class CLIENT:
     user_id = int(message.from_user.id)
     api_id = self.api_id or Config.API_ID
     api_hash = self.api_hash or Config.API_HASH
-    disclaimer_text = "<b><blockquote>**<u>⚠️ Warning ⚠️</u>**:\n\n If you already have a session string, please use the add user bot. Otherwise, you can use login.</blockquote></b>"
+    disclaimer_text = "<b><blockquote>**<u>⚠️ ᴡᴀʀɴɪɴɢ ⚠️</u>**:\n\n ɪғ ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ʜᴀᴠᴇ ᴀ sᴇssɪᴏɴ sᴛʀɪɴɢ, ᴘʟᴇᴀsᴇ ᴜsᴇ ᴛʜᴇ ᴀᴅᴅ ᴜsᴇʀ ʙᴏᴛ. ᴏᴛʜᴇʀᴡɪsᴇ, ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ʟᴏɢɪɴ.</blockquote></b>"
     await bot.send_message(user_id, text=disclaimer_text)
 
     client = Client(name=f":memory:{user_id}", api_id=api_id, api_hash=api_hash, in_memory=True)
     try:
         await client.connect()
     except Exception as e:
-        await bot.send_message(user_id, f"<b>Failed to connect:</b> `{e}`")
+        await bot.send_message(user_id, f"<b>ғᴀɪʟᴇᴅ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ:</b> `{e}`")
         return None
 
     try:
@@ -163,28 +164,28 @@ class CLIENT:
                 )
             else:
                 t = (
-                    f"➫ Please enter your phone number with country code.\n"
-                    f"⚠️ You have {p_attempts_left + 1} attempt(s) left.\n"
-                    f"/cancel - To cancel"
+                    f"➫ ᴘʟᴇᴀsᴇ ᴇɴᴛᴇʀ ʏᴏᴜʀ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ᴡɪᴛʜ ᴄᴏᴜɴᴛʀʏ ᴄᴏᴅᴇ.\n"
+                    f"⚠️ ʏᴏᴜ ʜᴀᴠᴇ {p_attempts_left + 1} ᴀᴛᴛᴇᴍᴘᴛ(s) ʟᴇғᴛ.\n"
+                    f"/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ"
                 )
 
             try:
                 phone_number_msg = await bot.ask(user_id, t, filters=filters.text, timeout=300)
             except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
-                await bot.send_message(user_id, "Time limit reached (5 minutes).\n\nPlease start generating your session again.")
+                await bot.send_message(user_id, "ᴛɪᴍᴇ ʟɪᴍɪᴛ ʀᴇᴀᴄʜᴇᴅ (5 ᴍɪɴᴜᴛᴇs).\n\nᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ɢᴇɴᴇʀᴀᴛɪɴɢ ʏᴏᴜʀ sᴇssɪᴏɴ ᴀɢᴀɪɴ.")
                 return None
 
             if not phone_number_msg or not phone_number_msg.text or phone_number_msg.text.startswith('/'):
-                await bot.send_message(user_id, "<b>Process cancelled!</b>")
+                await bot.send_message(user_id, "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!</b>")
                 return None
 
             raw_phone = re.sub(r'[\s\-]', '', phone_number_msg.text)
             if not (raw_phone.startswith('+') or raw_phone.isdigit()):
                 if p_attempts_left > 0:
-                    await bot.send_message(user_id, f"<b>Invalid phone number format!</b> Please include country code (e.g. +910000000000).\nAttempts left: {p_attempts_left}")
+                    await bot.send_message(user_id, f"<b>ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ғᴏʀᴍᴀᴛ!</b> ᴘʟᴇᴀsᴇ ɪɴᴄʟᴜᴅᴇ ᴄᴏᴜɴᴛʀʏ ᴄᴏᴅᴇ (ᴇ.ɢ. +910000000000).\nᴀᴛᴛᴇᴍᴘᴛs ʟᴇғᴛ: {p_attempts_left}")
                     continue
                 else:
-                    await bot.send_message(user_id, "<b>Invalid phone number format!</b> Maximum attempts reached.")
+                    await bot.send_message(user_id, "<b>ɪɴᴠᴀʟɪᴅ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ғᴏʀᴍᴀᴛ!</b> ᴍᴀxɪᴍᴜᴍ ᴀᴛᴛᴇᴍᴘᴛs ʀᴇᴀᴄʜᴇᴅ.")
                     return None
 
             await bot.send_message(user_id, "ᴛʀʏɪɴɢ ᴛᴏ sᴇɴᴅ ᴏᴛᴩ ᴀᴛ ᴛʜᴇ ɢɪᴠᴇɴ ɴᴜᴍʙᴇʀ...")
@@ -194,19 +195,19 @@ class CLIENT:
                 break
             except PhoneNumberInvalid:
                 if p_attempts_left > 0:
-                    await bot.send_message(user_id, f"The phone number you've sent doesn't belong to any Telegram account.\n⚠️ You have {p_attempts_left} attempt(s) left.")
+                    await bot.send_message(user_id, f"ᴛʜᴇ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ᴅᴏᴇsɴ'ᴛ ʙᴇʟᴏɴɢ ᴛᴏ ᴀɴʏ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴄᴄᴏᴜɴᴛ.\n⚠️ ʏᴏᴜ ʜᴀᴠᴇ {p_attempts_left} ᴀᴛᴛᴇᴍᴘᴛ(s) ʟᴇғᴛ.")
                     continue
                 else:
-                    await bot.send_message(user_id, "The phone number you've sent doesn't belong to any Telegram account.\nMaximum attempts reached.")
+                    await bot.send_message(user_id, "ᴛʜᴇ ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ᴅᴏᴇsɴ'ᴛ ʙᴇʟᴏɴɢ ᴛᴏ ᴀɴʏ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴄᴄᴏᴜɴᴛ.\nᴍᴀxɪᴍᴜᴍ ᴀᴛᴛᴇᴍᴘᴛs ʀᴇᴀᴄʜᴇᴅ.")
                     return None
             except PhoneNumberBanned:
-                await bot.send_message(user_id, "This phone number is banned on Telegram.")
+                await bot.send_message(user_id, "ᴛʜɪs ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪs ʙᴀɴɴᴇᴅ ᴏɴ ᴛᴇʟᴇɢʀᴀᴍ.")
                 return None
             except FloodWait as e:
-                await bot.send_message(user_id, f"FloodWait: Please wait {e.value} seconds before trying again.")
+                await bot.send_message(user_id, f"ғʟᴏᴏᴅᴡᴀɪᴛ: ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ {e.value} sᴇᴄᴏɴᴅs ʙᴇғᴏʀᴇ ᴛʀʏɪɴɢ ᴀɢᴀɪɴ.")
                 return None
             except Exception as e:
-                await bot.send_message(user_id, f"<b>Error sending OTP:</b> `{e}`")
+                await bot.send_message(user_id, f"<b>ᴇʀʀᴏʀ sᴇɴᴅɪɴɢ ᴏᴛᴘ:</b> `{e}`")
                 return None
 
         if not code or not phone_number:
@@ -221,15 +222,15 @@ class CLIENT:
             otp_attempts_left = max_otp_attempts - otp_attempt
             if otp_attempt == 1:
                 otp_prompt = (
-                    "Please send the OTP that you've received from Telegram on your account.\n"
-                    "➫ If OTP is 12345, you can send it as 1 2 3 4 5 or 12345.\n"
-                    "/cancel - To cancel."
+                    "ᴘʟᴇᴀsᴇ sᴇɴᴅ ᴛʜᴇ ᴏᴛᴘ ᴛʜᴀᴛ ʏᴏᴜ'ᴠᴇ ʀᴇᴄᴇɪᴠᴇᴅ ғʀᴏᴍ ᴛᴇʟᴇɢʀᴀᴍ ᴏɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.\n"
+                    "➫ ɪғ ᴏᴛᴘ ɪs 12345, ʏᴏᴜ ᴄᴀɴ sᴇɴᴅ ɪᴛ ᴀs 1 2 3 4 5 ᴏʀ 12345.\n"
+                    "/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ."
                 )
             else:
                 otp_prompt = (
-                    f"Please enter the correct OTP received on your Telegram account.\n"
-                    f"⚠️ Attempt {otp_attempt}/{max_otp_attempts} ({otp_attempts_left + 1} attempts left).\n"
-                    f"/cancel - To cancel."
+                    f"ᴘʟᴇᴀsᴇ ᴇɴᴛᴇʀ ᴛʜᴇ ᴄᴏʀʀᴇᴄᴛ ᴏᴛᴘ ʀᴇᴄᴇɪᴠᴇᴅ ᴏɴ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴄᴄᴏᴜɴᴛ.\n"
+                    f"⚠️ ᴀᴛᴛᴇᴍᴘᴛ {otp_attempt}/{max_otp_attempts} ({otp_attempts_left + 1} ᴀᴛᴛᴇᴍᴘᴛs ʟᴇғᴛ).\n"
+                    f"/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ."
                 )
 
             try:
@@ -240,11 +241,11 @@ class CLIENT:
                     timeout=600
                 )
             except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
-                await bot.send_message(user_id, "Time limit reached of 10 minutes.\n\nPlease start generating your session again.")
+                await bot.send_message(user_id, "ᴛɪᴍᴇ ʟɪᴍɪᴛ ʀᴇᴀᴄʜᴇᴅ ᴏғ 10 ᴍɪɴᴜᴛᴇs.\n\nᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ɢᴇɴᴇʀᴀᴛɪɴɢ ʏᴏᴜʀ sᴇssɪᴏɴ ᴀɢᴀɪɴ.")
                 return None
 
             if not phone_code_msg or not phone_code_msg.text or phone_code_msg.text.startswith('/'):
-                await bot.send_message(user_id, "<b>Process cancelled!</b>")
+                await bot.send_message(user_id, "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!</b>")
                 return None
 
             phone_code = phone_code_msg.text.replace(" ", "").replace("-", "").strip()
@@ -257,29 +258,29 @@ class CLIENT:
                 if otp_attempts_left > 0:
                     await bot.send_message(
                         user_id, 
-                        f"❌ The OTP you've sent is wrong.\n⚠️ You have {otp_attempts_left} attempt(s) left."
+                        f"❌ ᴛʜᴇ ᴏᴛᴘ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ɪs ᴡʀᴏɴɢ.\n⚠️ ʏᴏᴜ ʜᴀᴠᴇ {otp_attempts_left} ᴀᴛᴛᴇᴍᴘᴛ(s) ʟᴇғᴛ."
                     )
                     continue
                 else:
                     await bot.send_message(
                         user_id, 
-                        "❌ The OTP you've sent is wrong.\nMaximum 3 attempts reached. Please start again."
+                        "❌ ᴛʜᴇ ᴏᴛᴘ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ɪs ᴡʀᴏɴɢ.\nᴍᴀxɪᴍᴜᴍ 3 ᴀᴛᴛᴇᴍᴘᴛs ʀᴇᴀᴄʜᴇᴅ. ᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ᴀɢᴀɪɴ."
                     )
                     return None
             except PhoneCodeExpired:
-                await bot.send_message(user_id, "The OTP you've sent is expired.\n\nPlease start generating your session again.")
+                await bot.send_message(user_id, "ᴛʜᴇ ᴏᴛᴘ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ɪs ᴇxᴘɪʀᴇᴅ.\n\nᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ɢᴇɴᴇʀᴀᴛɪɴɢ ʏᴏᴜʀ sᴇssɪᴏɴ ᴀɢᴀɪɴ.")
                 return None
             except PhoneNumberUnoccupied:
-                await bot.send_message(user_id, "This phone number is not registered on Telegram. Please register it first.")
+                await bot.send_message(user_id, "ᴛʜɪs ᴘʜᴏɴᴇ ɴᴜᴍʙᴇʀ ɪs ɴᴏᴛ ʀᴇɢɪsᴛᴇʀᴇᴅ ᴏɴ ᴛᴇʟᴇɢʀᴀᴍ. ᴘʟᴇᴀsᴇ ʀᴇɢɪsᴛᴇʀ ɪᴛ ғɪʀsᴛ.")
                 return None
             except SessionPasswordNeeded:
                 needs_2fa = True
                 break
             except FloodWait as e:
-                await bot.send_message(user_id, f"FloodWait: Please wait {e.value} seconds before trying again.")
+                await bot.send_message(user_id, f"ғʟᴏᴏᴅᴡᴀɪᴛ: ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ {e.value} sᴇᴄᴏɴᴅs ʙᴇғᴏʀᴇ ᴛʀʏɪɴɢ ᴀɢᴀɪɴ.")
                 return None
             except Exception as e:
-                await bot.send_message(user_id, f"<b>Sign in error:</b> `{e}`")
+                await bot.send_message(user_id, f"<b>sɪɢɴ ɪɴ ᴇʀʀᴏʀ:</b> `{e}`")
                 return None
 
         if not signed_in and not needs_2fa:
@@ -294,14 +295,14 @@ class CLIENT:
                 pwd_attempts_left = max_pwd_attempts - pwd_attempt
                 if pwd_attempt == 1:
                     pwd_prompt = (
-                        "Please enter your two-step verification password to continue.\n"
-                        "/cancel - To cancel."
+                        "ᴘʟᴇᴀsᴇ ᴇɴᴛᴇʀ ʏᴏᴜʀ ᴛᴡᴏ-sᴛᴇᴘ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘᴀssᴡᴏʀᴅ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ.\n"
+                        "/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ."
                     )
                 else:
                     pwd_prompt = (
-                        f"Please enter your two-step verification password.\n"
-                        f"⚠️ Attempt {pwd_attempt}/{max_pwd_attempts} ({pwd_attempts_left + 1} attempts left).\n"
-                        f"/cancel - To cancel."
+                        f"ᴘʟᴇᴀsᴇ ᴇɴᴛᴇʀ ʏᴏᴜʀ ᴛᴡᴏ-sᴛᴇᴘ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘᴀssᴡᴏʀᴅ.\n"
+                        f"⚠️ ᴀᴛᴛᴇᴍᴘᴛ {pwd_attempt}/{max_pwd_attempts} ({pwd_attempts_left + 1} ᴀᴛᴛᴇᴍᴘᴛs ʟᴇғᴛ).\n"
+                        f"/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ."
                     )
 
                 try:
@@ -312,11 +313,11 @@ class CLIENT:
                         timeout=300
                     )
                 except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
-                    await bot.send_message(user_id, "Time limit reached of 5 minutes.\n\nPlease start generating your session again.")
+                    await bot.send_message(user_id, "ᴛɪᴍᴇ ʟɪᴍɪᴛ ʀᴇᴀᴄʜᴇᴅ ᴏғ 5 ᴍɪɴᴜᴛᴇs.\n\nᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ɢᴇɴᴇʀᴀᴛɪɴɢ ʏᴏᴜʀ sᴇssɪᴏɴ ᴀɢᴀɪɴ.")
                     return None
 
                 if not two_step_msg or not two_step_msg.text or two_step_msg.text.startswith('/'):
-                    await bot.send_message(user_id, "<b>Process cancelled!</b>")
+                    await bot.send_message(user_id, "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!</b>")
                     return None
 
                 password = two_step_msg.text.strip()
@@ -328,20 +329,20 @@ class CLIENT:
                     if pwd_attempts_left > 0:
                         await bot.send_message(
                             user_id, 
-                            f"❌ The password you've sent is wrong.\n⚠️ You have {pwd_attempts_left} attempt(s) left."
+                            f"❌ ᴛʜᴇ ᴘᴀssᴡᴏʀᴅ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ɪs ᴡʀᴏɴɢ.\n⚠️ ʏᴏᴜ ʜᴀᴠᴇ {pwd_attempts_left} ᴀᴛᴛᴇᴍᴘᴛ(s) ʟᴇғᴛ."
                         )
                         continue
                     else:
                         await bot.send_message(
                             user_id, 
-                            "❌ The password you've sent is wrong.\nMaximum 3 attempts reached. Please start again."
+                            "❌ ᴛʜᴇ ᴘᴀssᴡᴏʀᴅ ʏᴏᴜ'ᴠᴇ sᴇɴᴛ ɪs ᴡʀᴏɴɢ.\nᴍᴀxɪᴍᴜᴍ 3 ᴀᴛᴛᴇᴍᴘᴛs ʀᴇᴀᴄʜᴇᴅ. ᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ᴀɢᴀɪɴ."
                         )
                         return None
                 except FloodWait as e:
-                    await bot.send_message(user_id, f"FloodWait: Please wait {e.value} seconds before trying again.")
+                    await bot.send_message(user_id, f"ғʟᴏᴏᴅᴡᴀɪᴛ: ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ {e.value} sᴇᴄᴏɴᴅs ʙᴇғᴏʀᴇ ᴛʀʏɪɴɢ ᴀɢᴀɪɴ.")
                     return None
                 except Exception as e:
-                    await bot.send_message(user_id, f"<b>Password error:</b> `{e}`")
+                    await bot.send_message(user_id, f"<b>ᴘᴀssᴡᴏʀᴅ ᴇʀʀᴏʀ:</b> `{e}`")
                     return None
 
             if not pwd_verified:
@@ -350,10 +351,10 @@ class CLIENT:
         # Step 4: Export session string and save
         string_session = await client.export_session_string()
         if not string_session or len(string_session) < 100:
-            await bot.send_message(user_id, "<b>Invalid session string.</b>")
+            await bot.send_message(user_id, "<b>ɪɴᴠᴀʟɪᴅ sᴇssɪᴏɴ sᴛʀɪɴɢ.</b>")
             return None
 
-        text = f"➫ This is your pyrogram v2 string session:\n\n<code>{string_session}</code>\n\nNote: Don't share it with anyone."
+        text = f"➫ ᴛʜɪs ɪs ʏᴏᴜʀ ᴘʏʀᴏɢʀᴀᴍ v2 sᴛʀɪɴɢ sᴇssɪᴏɴ:\n\n<code>{string_session}</code>\n\nɴᴏᴛᴇ: ᴅᴏɴ'ᴛ sʜᴀʀᴇ ɪᴛ ᴡɪᴛʜ ᴀɴʏᴏɴᴇ."
         await bot.send_message(user_id, text)
         user = await client.get_me()
         details = {
@@ -374,24 +375,24 @@ class CLIENT:
 
   async def add_session(self, bot, message):
       user_id = int(message.from_user.id)
-      text = "<b>⚠️ DISCLAIMER ⚠️</b>\n\n<code>you can use your session for forward message from private chat to another chat.\nPlease add your pyrogram session with your own risk. Their is a chance to ban your account. My developer is not responsible if your account may get banned.</code>"
+      text = "<b>⚠️ ᴅɪsᴄʟᴀɪᴍᴇʀ ⚠️</b>\n\n<code>ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ʏᴏᴜʀ sᴇssɪᴏɴ ғᴏʀ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀᴛ ᴛᴏ ᴀɴᴏᴛʜᴇʀ ᴄʜᴀᴛ.\nᴘʟᴇᴀsᴇ ᴀᴅᴅ ʏᴏᴜʀ ᴘʏʀᴏɢʀᴀᴍ sᴇssɪᴏɴ ᴡɪᴛʜ ʏᴏᴜʀ ᴏᴡɴ ʀɪsᴋ. ᴛʜᴇɪʀ ɪs ᴀ ᴄʜᴀɴᴄᴇ ᴛᴏ ʙᴀɴ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ. ᴍʏ ᴅᴇᴠᴇʟᴏᴘᴇʀ ɪs ɴᴏᴛ ʀᴇsᴘᴏɴsɪʙʟᴇ ɪғ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ ᴍᴀʏ ɢᴇᴛ ʙᴀɴɴᴇᴅ.</code>"
       await bot.send_message(user_id, text=text)
       try:
-          msg = await bot.ask(chat_id=user_id, text="<b>Send your Pyrogram session string.\n\n/cancel - Cancel the process</b>", timeout=300)
+          msg = await bot.ask(chat_id=user_id, text="<b>sᴇɴᴅ ʏᴏᴜʀ ᴘʏʀᴏɢʀᴀᴍ sᴇssɪᴏɴ sᴛʀɪɴɢ.\n\n/cancel - ᴄᴀɴᴄᴇʟ ᴛʜᴇ ᴘʀᴏᴄᴇss</b>", timeout=300)
       except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
-          await bot.send_message(user_id, "Time limit reached (5 minutes).\nPlease start again.")
+          await bot.send_message(user_id, "ᴛɪᴍᴇ ʟɪᴍɪᴛ ʀᴇᴀᴄʜᴇᴅ (5 ᴍɪɴᴜᴛᴇs).\nᴘʟᴇᴀsᴇ sᴛᴀʀᴛ ᴀɢᴀɪɴ.")
           return None
       if not msg or not msg.text or msg.text=='/cancel':
-          await bot.send_message(user_id, '<b>process cancelled !</b>')
+          await bot.send_message(user_id, '<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ !</b>')
           return None
       session_str = msg.text.strip()
       if len(session_str) < 100:
-          await bot.send_message(user_id, '<b>invalid session string</b>')
+          await bot.send_message(user_id, '<b>ɪɴᴠᴀʟɪᴅ sᴇssɪᴏɴ sᴛʀɪɴɢ</b>')
           return None
       try:
           client = await start_clone_bot(self.client(session_str, True), True)
       except Exception as e:
-          await bot.send_message(user_id, f"<b>USER BOT ERROR:</b> `{e}`")
+          await bot.send_message(user_id, f"<b>ᴜsᴇʀ ʙᴏᴛ ᴇʀʀᴏʀ:</b> `{e}`")
           return None
       user = client.me
       details = {
@@ -411,37 +412,95 @@ class CLIENT:
 
 @Client.on_message(filters.private & filters.command('reset'))
 async def reset_cmd(bot, m):
+    user_id = m.from_user.id
+    # Preserve user's bot, channel, and db_uri credentials
+    old_configs = await db.get_configs(user_id)
+    preserved_keys = {
+        'db_uri': old_configs.get('db_uri'),
+    }
+
+    confirm_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("✅ ʏᴇs, ʀᴇsᴇᴛ ᴀʟʟ", callback_data="reset_confirm")],
+        [InlineKeyboardButton("❌ ᴄᴀɴᴄᴇʟ", callback_data="reset_cancel")]
+    ])
+    await m.reply_text(
+        "<blockquote><b>⚠️ <u>ᴄᴏɴғɪʀᴍ sᴇᴛᴛɪɴɢs ʀᴇsᴇᴛ</u></b></blockquote>\n\n"
+        "ᴛʜɪs ᴡɪʟʟ ʀᴇsᴇᴛ <b>ᴀʟʟ</b> ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴs ᴛᴏ ᴅᴇғᴀᴜʟᴛ:\n\n"
+        "• ᴄᴀᴘᴛɪᴏɴ, ғɪʟᴛᴇʀs, sᴘᴇᴇᴅ, ᴋᴇʏᴡᴏʀᴅs\n"
+        "• ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ & sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ\n"
+        "• ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ʙᴜᴛᴛᴏɴs, ʀᴇᴘʟᴀᴄᴇᴍᴇɴᴛs\n\n"
+        "🔒 <i>ʏᴏᴜʀ ʙᴏᴛ ᴛᴏᴋᴇɴ, ᴄʜᴀɴɴᴇʟs & ᴅᴀᴛᴀʙᴀsᴇ ᴜʀɪ ᴡɪʟʟ ʙᴇ ᴘʀᴇsᴇʀᴠᴇᴅ.</i>",
+        reply_markup=confirm_markup,
+        quote=True
+    )
+
+@Client.on_callback_query(filters.regex(r'^reset_confirm$'))
+async def reset_confirm_cb(bot, query):
+    user_id = query.from_user.id
     try:
+        old_configs = await db.get_configs(user_id)
+        preserved_db_uri = old_configs.get('db_uri')
+
+        # Get fresh defaults from database
         default = await db.get_configs("01")
-        await db.update_configs(m.from_user.id, default)
-        await m.reply("Successfully reset settings ✔️")
+        # Restore preserved credentials
+        default['db_uri'] = preserved_db_uri
+
+        await db.update_configs(user_id, default)
+        await query.message.edit_text(
+            "<blockquote><b>✅ <u>sᴇᴛᴛɪɴɢs ʀᴇsᴇᴛ sᴜᴄᴄᴇssғᴜʟ</u></b></blockquote>\n\n"
+            "ᴀʟʟ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴs ʜᴀᴠᴇ ʙᴇᴇɴ ʀᴇsᴛᴏʀᴇᴅ ᴛᴏ ᴅᴇғᴀᴜʟᴛ.\n\n"
+            "🔒 <i>ʙᴏᴛ ᴛᴏᴋᴇɴ, ᴄʜᴀɴɴᴇʟs & ᴅᴀᴛᴀʙᴀsᴇ ᴜʀɪ ᴡᴇʀᴇ ᴘʀᴇsᴇʀᴠᴇᴅ.</i>",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")],
+                [InlineKeyboardButton("🔙 ʜᴏᴍᴇ", callback_data="back")]
+            ])
+        )
     except Exception as e:
-        print(f"An error occurred: {e}")
-        await m.reply("An error occurred while resetting settings. Please try again later.")
+        logger.error(f"Reset error for {user_id}: {e}")
+        await query.message.edit_text(
+            "❌ <b>ᴀɴ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ ᴡʜɪʟᴇ ʀᴇsᴇᴛᴛɪɴɢ.</b>\n\n"
+            f"<code>{e}</code>\n\n"
+            "<i>ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.</i>"
+        )
+
+@Client.on_callback_query(filters.regex(r'^reset_cancel$'))
+async def reset_cancel_cb(bot, query):
+    await query.message.edit_text(
+        "✅ <b>ʀᴇsᴇᴛ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b> ʏᴏᴜʀ sᴇᴛᴛɪɴɢs ʀᴇᴍᴀɪɴ ᴜɴᴄʜᴀɴɢᴇᴅ.",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔙 ʜᴏᴍᴇ", callback_data="back")]
+        ])
+    )
 
 @Client.on_message(filters.command('resetall') & filters.user(Config.BOT_OWNER_ID))
 async def resetall(bot, message):
   users = await db.get_all_users()
-  sts = await message.reply("**processing**")
-  TEXT = "total: {}\nsuccess: {}\nfailed: {}\nexcept: {}"
-  total = success = failed = already = 0
-  ERRORS = []
+  sts = await message.reply_text(
+      "<blockquote><b>🔄 <u>ʀᴇsᴇᴛᴛɪɴɢ ᴀʟʟ ᴜsᴇʀs...</u></b></blockquote>",
+      quote=True
+  )
+  TEXT = "<b>ᴛᴏᴛᴀʟ:</b> {}\n<b>sᴜᴄᴄᴇss:</b> {}\n<b>ғᴀɪʟᴇᴅ:</b> {}"
+  total = success = failed = 0
   async for user in users:
       user_id = user['id']
       default = await get_configs(user_id)
       default['db_uri'] = None
       total += 1
-      if total %10 == 0:
-         await sts.edit(TEXT.format(total, success, failed, already))
+      if total % 10 == 0:
+         try:
+            await sts.edit_text(TEXT.format(total, success, failed))
+         except Exception:
+            pass
       try: 
          await db.update_configs(user_id, default)
          success += 1
-      except Exception as e:
-         ERRORS.append(e)
+      except Exception:
          failed += 1
-  if ERRORS:
-     await message.reply(ERRORS[:100])
-  await sts.edit("completed\n" + TEXT.format(total, success, failed, already))
+  await sts.edit_text(
+      "<blockquote><b>✅ <u>ʀᴇsᴇᴛ ᴀʟʟ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</u></b></blockquote>\n\n" +
+      TEXT.format(total, success, failed)
+  )
   
 async def get_configs(user_id):
   configs = await db.get_configs(user_id)
@@ -449,7 +508,17 @@ async def get_configs(user_id):
                           
 async def update_configs(user_id, key, value):
   current = await db.get_configs(user_id)
-  if key in ['caption', 'duplicate', 'db_uri', 'forward_tag', 'protect', 'file_size', 'size_limit', 'extension', 'keywords', 'button', 'speed_cfg', 'clean_caption', 'replace_words', 'dump_channel', 'dump_enabled']:
+  # All top-level config keys (includes course seller, FTM, and new fields)
+  TOP_LEVEL_KEYS = {
+      'caption', 'duplicate', 'db_uri', 'forward_tag', 'protect',
+      'file_size', 'size_limit', 'extension', 'keywords', 'button',
+      'speed_cfg', 'clean_caption', 'replace_words', 'dump_channel', 'dump_enabled',
+      'course_seller_mode', 'auto_course_list', 'auto_numbering',
+      'username_remover', 'username_replacer', 'link_remover', 'link_replacer',
+      'hidden_link_remover', 'hidden_link_replacer', 'remove_tags',
+      'upload_type', 'watermark_text', 'autosave_unlocked'
+  }
+  if key in TOP_LEVEL_KEYS:
      current[key] = value
   else: 
      current['filters'][key] = value

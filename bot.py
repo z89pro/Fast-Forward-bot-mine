@@ -86,25 +86,25 @@ class Bot(Client):
         # Register bot commands in Telegram Menu
         try:
             await self.set_bot_commands([
-                BotCommand("start", "Start bot & check status"),
-                BotCommand("forward", "Start message forwarding"),
-                BotCommand("fwd", "Direct range forward links"),
-                BotCommand("autosave", "Smart AutoSave & live monitoring"),
-                BotCommand("plans", "Premium VIP passes & purchase"),
-                BotCommand("referral", "Refer friends & earn rewards"),
-                BotCommand("verify", "Check verification or get pass"),
-                BotCommand("setverify", "Token verification settings (Admin)"),
-                BotCommand("pause", "Pause ongoing forwarding"),
-                BotCommand("resume", "Resume paused forwarding"),
-                BotCommand("stop", "Cancel ongoing forwarding"),
-                BotCommand("settings", "Configure bot settings"),
-                BotCommand("config", "Bot system configuration (Owner)"),
-                BotCommand("unequify", "Remove duplicates in channel"),
-                BotCommand("reset", "Reset settings to default"),
-                BotCommand("terms", "Terms of service"),
-                BotCommand("privacy", "Privacy policy"),
-                BotCommand("help", "Help and features guide"),
-                BotCommand("status", "Check bot statistics")
+                BotCommand("start", "sᴛᴀʀᴛ ʙᴏᴛ & ᴄʜᴇᴄᴋ sᴛᴀᴛᴜs"),
+                BotCommand("forward", "sᴛᴀʀᴛ ᴍᴇssᴀɢᴇ ғᴏʀᴡᴀʀᴅɪɴɢ"),
+                BotCommand("fwd", "ᴅɪʀᴇᴄᴛ ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ ʟɪɴᴋs"),
+                BotCommand("autosave", "sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ & ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀɪɴɢ"),
+                BotCommand("plans", "ᴘʀᴇᴍɪᴜᴍ ᴠɪᴘ ᴘᴀssᴇs & ᴘᴜʀᴄʜᴀsᴇ"),
+                BotCommand("referral", "ʀᴇғᴇʀ ғʀɪᴇɴᴅs & ᴇᴀʀɴ ʀᴇᴡᴀʀᴅs"),
+                BotCommand("verify", "ᴄʜᴇᴄᴋ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴏʀ ɢᴇᴛ ᴘᴀss"),
+                BotCommand("setverify", "ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴇᴛᴛɪɴɢs (ᴀᴅᴍɪɴ)"),
+                BotCommand("pause", "ᴘᴀᴜsᴇ ᴏɴɢᴏɪɴɢ ғᴏʀᴡᴀʀᴅɪɴɢ"),
+                BotCommand("resume", "ʀᴇsᴜᴍᴇ ᴘᴀᴜsᴇᴅ ғᴏʀᴡᴀʀᴅɪɴɢ"),
+                BotCommand("stop", "ᴄᴀɴᴄᴇʟ ᴏɴɢᴏɪɴɢ ғᴏʀᴡᴀʀᴅɪɴɢ"),
+                BotCommand("settings", "ᴄᴏɴғɪɢᴜʀᴇ ʙᴏᴛ sᴇᴛᴛɪɴɢs"),
+                BotCommand("config", "ʙᴏᴛ sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ (ᴏᴡɴᴇʀ)"),
+                BotCommand("unequify", "ʀᴇᴍᴏᴠᴇ ᴅᴜᴘʟɪᴄᴀᴛᴇs ɪɴ ᴄʜᴀɴɴᴇʟ"),
+                BotCommand("reset", "ʀᴇsᴇᴛ sᴇᴛᴛɪɴɢs ᴛᴏ ᴅᴇғᴀᴜʟᴛ"),
+                BotCommand("terms", "ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ"),
+                BotCommand("privacy", "ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ"),
+                BotCommand("help", "ʜᴇʟᴘ ᴀɴᴅ ғᴇᴀᴛᴜʀᴇs ɢᴜɪᴅᴇ"),
+                BotCommand("status", "ᴄʜᴇᴄᴋ ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs")
             ])
             logger.info("✅ Telegram bot command menu registered.")
         except Exception as e:

@@ -163,9 +163,12 @@ class Database:
             'hidden_link_replacer': None,
             'remove_tags': True,
             'upload_type': 'media',
-            'watermark_text': None
+            'watermark_text': None,
+            'autosave_unlocked': False
         }
-        user = await self.col.find_one({'id':int(id)})
+        if str(id) in ["0", "01", "default", "None"]:
+            return dict(default)
+        user = await self.col.find_one({'id': int(id)})
         if user:
             configs = user.get('configs', default)
             for k, v in default.items():
@@ -175,8 +178,14 @@ class Database:
                 configs['speed_cfg'] = default['speed_cfg']
             if 'replace_words' not in configs or not isinstance(configs['replace_words'], dict):
                 configs['replace_words'] = {}
+            if 'filters' not in configs or not isinstance(configs['filters'], dict):
+                configs['filters'] = dict(default['filters'])
+            else:
+                for fk, fv in default['filters'].items():
+                    if fk not in configs['filters']:
+                        configs['filters'][fk] = fv
             return configs
-        return default 
+        return dict(default) 
        
     async def add_live_forward(self, user_id, from_chat, to_chat, from_title="Source", to_title="Target"):
         await self.live.delete_many({'user_id': int(user_id), 'from_chat': str(from_chat)})

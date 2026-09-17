@@ -33,22 +33,22 @@ def get_autosave_markup(is_running: bool, count: int):
 async def build_autosave_text(user_id: int):
     channels = await db.get_user_live_forwards(user_id)
     is_running = user_id in temp.LIVE_TASKS and temp.LIVE_TASKS[user_id].is_connected
-    status_str = "🟢 <b>Active & Monitoring 24/7</b>" if is_running else "🔴 <b>Stopped</b>"
+    status_str = "🟢 <b>ᴀᴄᴛɪᴠᴇ & ᴍᴏɴɪᴛᴏʀɪɴɢ 24/7</b>" if is_running else "🔴 <b>sᴛᴏᴘᴘᴇᴅ</b>"
     user_channels = await db.get_user_channels(user_id)
-    default_dest = user_channels[0]['title'] if user_channels else "None (Set in /settings)"
+    default_dest = user_channels[0]['title'] if user_channels else "ɴᴏɴᴇ (sᴇᴛ ɪɴ /settings)"
     
     text = (
         "🚀 <b><u>sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ & ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀ</u></b> ⚡️\n\n"
-        "<i>Powered by Skinet Verse</i>\n\n"
-        f"🔥 <b>Status:</b> {status_str}\n"
-        f"📡 <b>Monitored Channels:</b> <code>{len(channels)}</code>\n"
-        f"📤 <b>Default Destination:</b> <code>{default_dest}</code>\n\n"
-        "<b>🌟 Live Monitoring Highlights:</b>\n"
-        "✅ <b>Real-time Interception:</b> Captures incoming lectures/files instantly.\n"
-        "🎯 <b>Smart Filters:</b> Route only Videos, Notes/PDFs, Audios, or Photos.\n"
-        "🛠 <b>Skinet Clean Engine:</b> Strips competitor links, handles & ads automatically.\n"
-        "📤 <b>Multi-Channel Routing:</b> Dedicated target channel per source.\n\n"
-        "👇 <i>Manage your live monitors using the buttons below:</i>"
+        "<i>ᴘᴏᴡᴇʀᴇᴅ ʙʏ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ</i>\n\n"
+        f"🔥 <b>sᴛᴀᴛᴜs:</b> {status_str}\n"
+        f"📡 <b>ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs:</b> <code>{len(channels)}</code>\n"
+        f"📤 <b>ᴅᴇғᴀᴜʟᴛ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ:</b> <code>{default_dest}</code>\n\n"
+        "<b>🌟 ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀɪɴɢ ʜɪɢʜʟɪɢʜᴛs:</b>\n"
+        "✅ <b>ʀᴇᴀʟ-ᴛɪᴍᴇ ɪɴᴛᴇʀᴄᴇᴘᴛɪᴏɴ:</b> ᴄᴀᴘᴛᴜʀᴇs ɪɴᴄᴏᴍɪɴɢ ʟᴇᴄᴛᴜʀᴇs/ғɪʟᴇs ɪɴsᴛᴀɴᴛʟʏ.\n"
+        "🎯 <b>sᴍᴀʀᴛ ғɪʟᴛᴇʀs:</b> ʀᴏᴜᴛᴇ ᴏɴʟʏ ᴠɪᴅᴇᴏs, ɴᴏᴛᴇs/PDFs, ᴀᴜᴅɪᴏs, ᴏʀ ᴘʜᴏᴛᴏs.\n"
+        "🛠 <b>sᴋɪɴᴇᴛ ᴄʟᴇᴀɴ ᴇɴɢɪɴᴇ:</b> sᴛʀɪᴘs ᴄᴏᴍᴘᴇᴛɪᴛᴏʀ ʟɪɴᴋs, ʜᴀɴᴅʟᴇs & ᴀᴅs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ.\n"
+        "📤 <b>ᴍᴜʟᴛɪ-ᴄʜᴀɴɴᴇʟ ʀᴏᴜᴛɪɴɢ:</b> ᴅᴇᴅɪᴄᴀᴛᴇᴅ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴘᴇʀ sᴏᴜʀᴄᴇ.\n\n"
+        "👇 <i>ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀs ᴜsɪɴɢ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ:</i>"
     )
     return text, is_running, len(channels)
 
@@ -80,14 +80,14 @@ async def autosave_callback(bot, query: CallbackQuery):
                     await client.stop()
                 except Exception:
                     pass
-            await query.answer("🛑 AutoSave Monitor Stopped!", show_alert=True)
+            await query.answer("🛑 ᴀᴜᴛᴏsᴀᴠᴇ ᴍᴏɴɪᴛᴏʀ sᴛᴏᴘᴘᴇᴅ!", show_alert=True)
         else:
             # Start monitor
             success, err = await start_autosave_monitor(user_id, bot)
             if success:
-                await query.answer("🚀 AutoSave Monitor Started!", show_alert=True)
+                await query.answer("🚀 ᴀᴜᴛᴏsᴀᴠᴇ ᴍᴏɴɪᴛᴏʀ sᴛᴀʀᴛᴇᴅ!", show_alert=True)
             else:
-                await query.answer(f"Failed to start: {err}", show_alert=True)
+                await query.answer(f"ғᴀɪʟᴇᴅ ᴛᴏ sᴛᴀʀᴛ: {err}", show_alert=True)
         text, is_running, count = await build_autosave_text(user_id)
         await query.message.edit_text(text, reply_markup=get_autosave_markup(is_running, count))
 
@@ -97,26 +97,26 @@ async def autosave_callback(bot, query: CallbackQuery):
         if not _bot:
             return await bot.send_message(
                 user_id,
-                "<b>❌ Please add a Bot or UserBot first in /settings to use AutoSave Monitoring!</b>\n\n"
-                "• <b>UserBot (Recommended):</b> Can monitor ANY private or restricted channel you are in.\n"
-                "• <b>Bot Token:</b> Can monitor channels where your bot is an Administrator.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ Open Settings", callback_data="settings#main")]])
+                "<b>❌ ᴘʟᴇᴀsᴇ ᴀᴅᴅ ᴀ ʙᴏᴛ ᴏʀ ᴜsᴇʀʙᴏᴛ ғɪʀsᴛ ɪɴ /settings ᴛᴏ ᴜsᴇ ᴀᴜᴛᴏsᴀᴠᴇ ᴍᴏɴɪᴛᴏʀɪɴɢ!</b>\n\n"
+                "• <b>ᴜsᴇʀʙᴏᴛ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ):</b> ᴄᴀɴ ᴍᴏɴɪᴛᴏʀ ᴀɴʏ ᴘʀɪᴠᴀᴛᴇ ᴏʀ ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴄʜᴀɴɴᴇʟ ʏᴏᴜ ᴀʀᴇ ɪɴ.\n"
+                "• <b>ʙᴏᴛ ᴛᴏᴋᴇɴ:</b> ᴄᴀɴ ᴍᴏɴɪᴛᴏʀ ᴄʜᴀɴɴᴇʟs ᴡʜᴇʀᴇ ʏᴏᴜʀ ʙᴏᴛ ɪs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")]])
             )
         
         src_msg = await bot.ask(
             user_id,
             text=(
-                "<b>📡 Send Source Channel link or Chat ID to monitor:</b>\n\n"
-                "Examples:\n"
-                "• <code>https://t.me/c/1234567890</code> (Private channel)\n"
-                "• <code>https://t.me/public_channel</code> (Public channel)\n"
-                "• <code>-1001234567890</code> (Direct Chat ID)\n\n"
-                "<i>Send /cancel to abort</i>"
+                "<b>📡 sᴇɴᴅ sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ ᴏʀ ᴄʜᴀᴛ ID ᴛᴏ ᴍᴏɴɪᴛᴏʀ:</b>\n\n"
+                "ᴇxᴀᴍᴘʟᴇs:\n"
+                "• <code>https://t.me/c/1234567890</code> (ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ)\n"
+                "• <code>https://t.me/public_channel</code> (ᴘᴜʙʟɪᴄ ᴄʜᴀɴɴᴇʟ)\n"
+                "• <code>-1001234567890</code> (ᴅɪʀᴇᴄᴛ ᴄʜᴀᴛ ID)\n\n"
+                "<i>sᴇɴᴅ /cancel ᴛᴏ ᴀʙᴏʀᴛ</i>"
             ),
             timeout=300
         )
         if not src_msg.text or src_msg.text.startswith("/cancel"):
-            return await bot.send_message(user_id, "**Process cancelled!**")
+            return await bot.send_message(user_id, "**ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!**")
         
         src_raw = src_msg.text.strip()
         link_regex = re.compile(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)")
@@ -133,24 +133,24 @@ async def autosave_callback(bot, query: CallbackQuery):
         # Ask destination
         channels = await db.get_user_channels(user_id)
         default_dest = channels[0]['chat_id'] if channels else None
-        default_title = channels[0]['title'] if channels else "Global Default"
+        default_title = channels[0]['title'] if channels else "ɢʟᴏʙᴀʟ ᴅᴇғᴀᴜʟᴛ"
 
         dst_msg = await bot.ask(
             user_id,
             text=(
-                f"<b>📤 Send Destination Channel link/ID:</b>\n\n"
-                f"Or send <code>/skip</code> to use your default destination:\n"
-                f"👉 <b>Default:</b> <code>{default_title}</code>\n\n"
-                "<i>Send /cancel to abort</i>"
+                f"<b>📤 sᴇɴᴅ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ/ID:</b>\n\n"
+                f"ᴏʀ sᴇɴᴅ <code>/skip</code> ᴛᴏ ᴜsᴇ ʏᴏᴜʀ ᴅᴇғᴀᴜʟᴛ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ:\n"
+                f"👉 <b>ᴅᴇғᴀᴜʟᴛ:</b> <code>{default_title}</code>\n\n"
+                "<i>sᴇɴᴅ /cancel ᴛᴏ ᴀʙᴏʀᴛ</i>"
             ),
             timeout=300
         )
         if not dst_msg.text or dst_msg.text.startswith("/cancel"):
-            return await bot.send_message(user_id, "**Process cancelled!**")
+            return await bot.send_message(user_id, "**ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!**")
         
         if dst_msg.text.lower() == "/skip":
             if not default_dest:
-                return await bot.send_message(user_id, "**❌ No default destination found! Please set a channel in /settings first.**")
+                return await bot.send_message(user_id, "**❌ ɴᴏ ᴅᴇғᴀᴜʟᴛ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ ғᴏᴜɴᴅ! ᴘʟᴇᴀsᴇ sᴇᴛ ᴀ ᴄʜᴀɴɴᴇʟ ɪɴ /settings ғɪʀsᴛ.**")
             dst_id = default_dest
             dst_title = default_title
         else:
@@ -181,11 +181,11 @@ async def autosave_callback(bot, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"<b>✅ Channel Added to Live Monitoring!</b>\n\n"
-            f"📡 <b>Source:</b> <code>{src_title}</code>\n"
-            f"📤 <b>Destination:</b> <code>{dst_title}</code>\n"
-            f"⚡️ <b>Engine:</b> Skinet Verse AutoSave\n\n"
-            "<i>Click 'Start Monitor' to begin listening for new posts in real-time.</i>",
+            f"<b>✅ ᴄʜᴀɴɴᴇʟ ᴀᴅᴅᴇᴅ ᴛᴏ ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀɪɴɢ!</b>\n\n"
+            f"📡 <b>sᴏᴜʀᴄᴇ:</b> <code>{src_title}</code>\n"
+            f"📤 <b>ᴅᴇsᴛɪɴᴀᴛɪᴏɴ:</b> <code>{dst_title}</code>\n"
+            f"⚡️ <b>ᴇɴɢɪɴᴇ:</b> sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ᴀᴜᴛᴏsᴀᴠᴇ\n\n"
+            "<i>ᴄʟɪᴄᴋ 'sᴛᴀʀᴛ ᴍᴏɴɪᴛᴏʀ' ᴛᴏ ʙᴇɢɪɴ ʟɪsᴛᴇɴɪɴɢ ғᴏʀ ɴᴇᴡ ᴘᴏsᴛs ɪɴ ʀᴇᴀʟ-ᴛɪᴍᴇ.</i>",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("▶️ sᴛᴀʀᴛ ᴍᴏɴɪᴛᴏʀ", callback_data="autosave#toggle_monitor")],
                 [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴜᴛᴏsᴀᴠᴇ", callback_data="autosave#main")]
@@ -195,7 +195,7 @@ async def autosave_callback(bot, query: CallbackQuery):
     elif data == "list_channels":
         channels = await db.get_user_live_forwards(user_id)
         if not channels:
-            return await query.answer("No channels currently monitored!", show_alert=True)
+            return await query.answer("ɴᴏ ᴄʜᴀɴɴᴇʟs ᴄᴜʀʀᴇɴᴛʟʏ ᴍᴏɴɪᴛᴏʀᴇᴅ!", show_alert=True)
         
         buttons = []
         for ch in channels:
@@ -208,14 +208,14 @@ async def autosave_callback(bot, query: CallbackQuery):
             ])
         buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")])
         await query.message.edit_text(
-            "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nClick on a channel to Toggle ON/OFF or click 🗑️ to Delete:",
+            "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
     elif data.startswith("del_chan_"):
         f_chat = data.split("del_chan_")[1]
         await db.remove_live_forward(user_id, f_chat)
-        await query.answer("Channel removed from monitoring!", show_alert=True)
+        await query.answer("ᴄʜᴀɴɴᴇʟ ʀᴇᴍᴏᴠᴇᴅ ғʀᴏᴍ ᴍᴏɴɪᴛᴏʀɪɴɢ!", show_alert=True)
         if user_id in temp.LIVE_TASKS:
             await start_autosave_monitor(user_id, bot)
         channels = await db.get_user_live_forwards(user_id)
@@ -233,15 +233,15 @@ async def autosave_callback(bot, query: CallbackQuery):
             ])
         buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")])
         await query.message.edit_text(
-            "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nClick on a channel to Toggle ON/OFF or click 🗑️ to Delete:",
+            "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
     elif data.startswith("toggle_chan_"):
         f_chat = data.split("toggle_chan_")[1]
         new_val = await db.toggle_live_status(user_id, f_chat)
-        status_txt = "Active 🟢" if new_val else "Paused 🔴"
-        await query.answer(f"Channel is now {status_txt}", show_alert=True)
+        status_txt = "ᴀᴄᴛɪᴠᴇ 🟢" if new_val else "ᴘᴀᴜsᴇᴅ 🔴"
+        await query.answer(f"ᴄʜᴀɴɴᴇʟ ɪs ɴᴏᴡ {status_txt}", show_alert=True)
         channels = await db.get_user_live_forwards(user_id)
         buttons = []
         for ch in channels:
@@ -254,7 +254,7 @@ async def autosave_callback(bot, query: CallbackQuery):
             ])
         buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")])
         await query.message.edit_text(
-            "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nClick on a channel to Toggle ON/OFF or click 🗑️ to Delete:",
+            "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
@@ -295,7 +295,7 @@ async def autosave_callback(bot, query: CallbackQuery):
         filters_cfg[filter_key] = not current
         configs['filters'] = filters_cfg
         await db.update_configs(user_id, configs)
-        await query.answer(f"{filter_key.title()} filter updated!")
+        await query.answer(f"{filter_key.title()} ғɪʟᴛᴇʀ ᴜᴘᴅᴀᴛᴇᴅ!")
 
         def mark(key):
             return "✅" if filters_cfg.get(key, True) else "❌"
@@ -318,7 +318,7 @@ async def autosave_callback(bot, query: CallbackQuery):
             ]
         ]
         await query.message.edit_text(
-            "🎯 **sᴍᴀʀᴛ ᴍᴇᴅɪᴀ ғɪʟᴛᴇʀs**\n\nChoose what types of media you want AutoSave to automatically capture and forward:",
+            "🎯 **sᴍᴀʀᴛ ᴍᴇᴅɪᴀ ғɪʟᴛᴇʀs**\n\nᴄʜᴏᴏsᴇ ᴡʜᴀᴛ ᴛʏᴘᴇs ᴏғ ᴍᴇᴅɪᴀ ʏᴏᴜ ᴡᴀɴᴛ ᴀᴜᴛᴏsᴀᴠᴇ ᴛᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴄᴀᴘᴛᴜʀᴇ ᴀɴᴅ ғᴏʀᴡᴀʀᴅ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
@@ -326,10 +326,10 @@ async def autosave_callback(bot, query: CallbackQuery):
         channels = await db.get_user_live_forwards(user_id)
         text = "📤 **ᴄᴜsᴛᴏᴍ ᴜᴘʟᴏᴀᴅ ᴅᴇsᴛɪɴᴀᴛɪᴏɴs**\n\n"
         if not channels:
-            text += "No monitored channels yet! Use ➕ **Add Channel** first."
+            text += "ɴᴏ ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs ʏᴇᴛ! ᴜsᴇ ➕ **ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ** ғɪʀsᴛ."
         else:
             for ch in channels:
-                text += f"• **{ch.get('from_title', 'Source')}** ➡️ `{ch.get('to_title', 'Target')}`\n"
+                text += f"• **{ch.get('from_title', 'sᴏᴜʀᴄᴇ')}** ➡️ `{ch.get('to_title', 'ᴛᴀʀɢᴇᴛ')}`\n"
         buttons = [[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")]]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
@@ -338,12 +338,12 @@ async def autosave_callback(bot, query: CallbackQuery):
 async def start_autosave_monitor(user_id: int, bot_client: Client):
     _bot = await db.get_bot(user_id)
     if not _bot:
-        return False, "Please add a Bot or UserBot in /settings first."
+        return False, "ᴘʟᴇᴀsᴇ ᴀᴅᴅ ᴀ ʙᴏᴛ ᴏʀ ᴜsᴇʀʙᴏᴛ ɪɴ /settings ғɪʀsᴛ."
 
     monitored = await db.get_user_live_forwards(user_id)
     active_channels = [ch for ch in monitored if ch.get('active', True)]
     if not active_channels:
-        return False, "No active channels to monitor. Use ➕ Add Channel first."
+        return False, "ɴᴏ ᴀᴄᴛɪᴠᴇ ᴄʜᴀɴɴᴇʟs ᴛᴏ ᴍᴏɴɪᴛᴏʀ. ᴜsᴇ ➕ ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ."
 
     # Stop any existing monitor task
     if user_id in temp.LIVE_TASKS:
