@@ -1,77 +1,136 @@
 """
-bot.py — Main entry point
-Flask keep_alive runs first so Render/Koyeb marks the service healthy,
-then the Pyrogram bot starts in the same asyncio event loop.
+bot.py — Advanced Telegram Forward Bot
+Features:
+  • Interactive Forwarding with Live Progress Bar & Pause / Resume / Cancel
+  • Smart AutoSave Mode with real-time channel monitoring & media filtering
+  • Speed Control (Extreme 0.5s, Fast 1.0s, Normal 3.0s, Safe 5.0s, Anti-Ban Jitter)
+  • Channel Duplicate Cleaner (/unequify)
+  • Stealth Dump Channel & Telemetry Log Channel Dual-Architecture
+  • Resilient Startup (prevents Koyeb/Render crash loop on expired tokens)
+  • Built-in Web Server for 24/7 keep-alive & health checks
 """
+import os
+import sys
 import asyncio
 import logging
-from pyrogram import Client
+from pyrogram import Client, __version__ as pyrogram_version
+from pyrogram.raw.all import layer
+from pyrogram.enums import ParseMode
+from pyrogram.errors import FloodWait, RPCError
+from pyrogram.errors.exceptions.bad_request_400 import AccessTokenExpired, AccessTokenInvalid
 from pyrogram.types import BotCommand
-from config import API_ID, API_HASH, BOT_TOKEN
-from utils.flood_manager import FloodManager
-from utils.listener import patch_client, register_listener
+from config import Config, temp
+from database import db
 from keep_alive import keep_alive
 
-# Patch Pyrogram Client to add .listen() natively
-patch_client()
-# ── Logging ────────────────────────────────────────────────────
+# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
+logging.getLogger("pyrogram").setLevel(logging.ERROR)
 logger = logging.getLogger("ForwardBot")
 
-# Global active task tracker: {user_id: FloodManager}
-active_tasks: dict[int, FloodManager] = {}
 
+class Bot(Client):
+    def __init__(self):
+        super().__init__(
+            Config.BOT_SESSION,
+            api_hash=Config.API_HASH,
+            api_id=int(Config.API_ID) if Config.API_ID else 0,
+            bot_token=Config.BOT_TOKEN,
+            sleep_threshold=10,
+            workers=200,
+            plugins={"root": "plugins"}
+        )
+        self.log = logging
 
-async def main():
-    bot = Client(
-        name="ForwardBot",
-        api_id=API_ID,
-        api_hash=API_HASH,
-        bot_token=BOT_TOKEN,
-    )
+    async def start(self):
+        try:
+            await super().start()
+        except (AccessTokenExpired, AccessTokenInvalid) as e:
+            logger.critical("=" * 70)
+            logger.critical("❌ CRITICAL: TELEGRAM BOT_TOKEN HAS EXPIRED OR IS INVALID!")
+            logger.critical(f"Telegram error: {e}")
+            logger.critical("")
+            logger.critical("👉 HOW TO FIX ON KOYEB / RENDER:")
+            logger.critical("1. Open Telegram and message @BotFather")
+            logger.critical("2. Create a new bot or revoke/regenerate token (/newbot or /token)")
+            logger.critical("3. Copy your fresh bot token")
+            logger.critical("4. In your Koyeb / Render Dashboard -> App Settings -> Environment Variables:")
+            logger.critical("   Set BOT_TOKEN = <your_new_token>")
+            logger.critical("5. Redeploy your service.")
+            logger.critical("=" * 70)
+            logger.info("Keeping web health-check server alive to prevent Koyeb restart loop...")
+            while True:
+                await asyncio.sleep(3600)
+        except Exception as e:
+            logger.critical(f"❌ Failed to start bot client: {e}")
+            logger.info("Keeping web health-check server alive...")
+            while True:
+                await asyncio.sleep(3600)
 
-    import plugins.start as start_plugin
-    import plugins.login as login_plugin
-    import plugins.forward as forward_plugin
-    import plugins.clone as clone_plugin
+        me = await self.get_me()
+        logger.info(f"✅ {me.first_name} (@{me.username}) started! Layer {layer} (Pyrogram {pyrogram_version})")
 
-    # Register our native listener to handle .listen() events
-    register_listener(bot)
-    
-    start_plugin.register(bot)
-    login_plugin.register(bot)
-    forward_plugin.register(bot)
-    clone_plugin.register(bot)
+        # Register bot commands in Telegram Menu
+        try:
+            await self.set_bot_commands([
+                BotCommand("start", "Start bot & check status"),
+                BotCommand("forward", "Start message forwarding"),
+                BotCommand("fwd", "Direct range forward links"),
+                BotCommand("autosave", "Smart AutoSave & live monitoring"),
+                BotCommand("pause", "Pause ongoing forwarding"),
+                BotCommand("resume", "Resume paused forwarding"),
+                BotCommand("stop", "Cancel ongoing forwarding"),
+                BotCommand("settings", "Configure bot settings"),
+                BotCommand("unequify", "Remove duplicates in channel"),
+                BotCommand("reset", "Reset settings to default"),
+                BotCommand("help", "Help and features guide"),
+                BotCommand("status", "Check bot statistics")
+            ])
+            logger.info("✅ Telegram bot command menu registered.")
+        except Exception as e:
+            logger.warning(f"Failed to set bot commands: {e}")
 
-    logger.info("Starting Forward Bot...")
+        self.id = me.id
+        self.username = me.username
+        self.first_name = me.first_name
+        self.set_parse_mode(ParseMode.DEFAULT)
 
-    async with bot:
-        me = await bot.get_me()
-        logger.info(f"✅ Bot running as @{me.username}")
+        # Notify users of restart if any ongoing tasks were recorded
+        restart_text = "<b>๏[-ิ_•ิ]๏ ʙᴏᴛ ʀᴇsᴛᴀʀᴛᴇᴅ !</b>"
+        try:
+            users = await db.get_all_frwd()
+            async for u in users:
+                cid = u.get("user_id")
+                if cid:
+                    try:
+                        await self.send_message(cid, restart_text)
+                    except FloodWait as fw:
+                        await asyncio.sleep(fw.value + 1)
+                        try:
+                            await self.send_message(cid, restart_text)
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+            await db.rmve_frwd(all=True)
+        except Exception as err:
+            logger.debug(f"Restart broadcast cleanup: {err}")
 
-        # Register commands in Telegram UI (shows in command menu)
-        await bot.set_bot_commands([
-            BotCommand("start",   "Start the bot & see status"),
-            BotCommand("login",   "Login with your Telegram account"),
-            BotCommand("logout",  "Logout and delete session"),
-            BotCommand("target",  "Set target channel/group"),
-            BotCommand("forward", "Start forwarding messages"),
-            BotCommand("clone",   "Clone a channel"),
-            BotCommand("stop",    "Stop active forwarding"),
-            BotCommand("help",    "Show help guide"),
-        ])
-        logger.info("✅ Bot commands registered in Telegram")
-
-        await asyncio.Event().wait()   # run forever
+    async def stop(self, *args):
+        logger.info(f"🛑 Bot @{getattr(self, 'username', 'ForwardBot')} stopping...")
+        await super().stop()
 
 
 if __name__ == "__main__":
-    keep_alive()          # Start Flask in daemon thread (port 8080)
+    # Start web keep-alive server first on Koyeb/Render port
+    keep_alive()
+
+    app = Bot()
     try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("🛑 Bot stopped by user.")
+        app.run()
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("🛑 Process terminated.")

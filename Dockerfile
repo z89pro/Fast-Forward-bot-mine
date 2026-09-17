@@ -1,25 +1,25 @@
 # ─────────────────────────────────────────────────────────────
-# Dockerfile — Telegram Forward Bot
+# Dockerfile — Telegram Forward Bot (Ultra Edition)
 # ─────────────────────────────────────────────────────────────
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install system deps (needed for tgcrypto)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (layer caching)
+# Copy requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy rest of the code
+# Copy application source
 COPY . .
 
-# Expose Flask keep-alive port
-EXPOSE 8080
+# Expose ports for Koyeb / Render / Railway health checks
+EXPOSE 8080 8000
 
 # Run the bot
 CMD ["python", "bot.py"]
