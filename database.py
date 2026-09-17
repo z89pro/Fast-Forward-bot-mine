@@ -1,4 +1,5 @@
 from os import environ 
+from datetime import datetime, timezone, timedelta
 from config import Config
 import motor.motor_asyncio
 from pymongo import MongoClient
@@ -275,6 +276,23 @@ class Database:
     
     async def get_all_frwd(self):
        return self.nfy.find({})
+
+    async def set_restart_status(self, chat_id: int, message_id: int):
+        try:
+            return await self.db.admin_config.update_one(
+                {'_id': 'restart_notice'},
+                {'$set': {'chat_id': int(chat_id), 'message_id': int(message_id), 'time': datetime.now(timezone.utc)}},
+                upsert=True
+            )
+        except Exception:
+            return None
+
+    async def get_and_clear_restart_status(self):
+        try:
+            doc = await self.db.admin_config.find_one_and_delete({'_id': 'restart_notice'})
+            return doc if doc else None
+        except Exception:
+            return None
 
     async def get_system_config(self):
         doc = await self.db.admin_config.find_one({'_id': 'system_config'})

@@ -128,10 +128,19 @@ async def start(client, message):
 @Client.on_message(filters.private & filters.command(['restart']) & filters.user(Config.BOT_OWNER_ID))
 async def restart(client, message):
     msg = await message.reply_text(
-        text="<i>ᴛʀʏɪɴɢ ᴛᴏ ʀᴇsᴛᴀʀᴛ...</i>"
+        text="<blockquote><b>🔄 Restarting Skinet Verse Bot Engine...</b>\n\n<i>Rebooting core processes and reloading all configurations. Please wait 5-10 seconds...</i></blockquote>"
     )
-    await asyncio.sleep(5)
-    await msg.edit("<i>sᴇʀᴠᴇʀ ʀᴇsᴛᴀʀᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ ✅</i>")
+    try:
+        await db.set_restart_status(message.chat.id, msg.id)
+    except Exception:
+        pass
+    try:
+        import json
+        with open('.restart_status.json', 'w') as f:
+            json.dump({'chat_id': message.chat.id, 'message_id': msg.id}, f)
+    except Exception:
+        pass
+    await asyncio.sleep(2)
     os.execl(sys.executable, sys.executable, *sys.argv)
     
 #==================Help Command==================#

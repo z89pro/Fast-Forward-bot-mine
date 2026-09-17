@@ -11,8 +11,11 @@ Features:
 """
 import os
 import sys
+import json
 import asyncio
 import logging
+from datetime import datetime, timezone, timedelta
+from platform import python_version
 from pyrogram import Client, __version__ as pyrogram_version
 from pyrogram.raw.all import layer
 from pyrogram.enums import ParseMode
@@ -109,8 +112,82 @@ class Bot(Client):
         self.first_name = me.first_name
         self.set_parse_mode(ParseMode.DEFAULT)
 
-        # Notify users of restart if any ongoing tasks were recorded
-        restart_text = "<b>๏[-ิ_•ิ]๏ ʙᴏᴛ ʀᴇsᴛᴀʀᴛᴇᴅ !</b>"
+        # ── 1. Process Pending Restart Status (from /restart or config menu) ──
+        ist = timezone(timedelta(hours=5, minutes=30))
+        stamp = datetime.now(ist).strftime("%d-%b-%Y %I:%M:%S %p")
+        restarted_chat_id = None
+        reboot_notice = None
+
+        try:
+            reboot_notice = await db.get_and_clear_restart_status()
+        except Exception as e:
+            logger.debug(f"DB restart status query error: {e}")
+
+        if not reboot_notice and os.path.exists('.restart_status.json'):
+            try:
+                with open('.restart_status.json', 'r') as f:
+                    reboot_notice = json.load(f)
+                os.remove('.restart_status.json')
+            except Exception as e:
+                logger.debug(f"Local restart file cleanup error: {e}")
+
+        if reboot_notice:
+            r_chat_id = reboot_notice.get('chat_id')
+            r_msg_id = reboot_notice.get('message_id')
+            if r_chat_id and r_msg_id:
+                restarted_chat_id = r_chat_id
+                reboot_done_text = (
+                    "<blockquote><b>🤖 Bot Has Restarted!</b>\n\n"
+                    "✅ <i>System rebooted successfully and all services are online!</i>\n\n"
+                    f"⏰ <b>Time:</b> <code>{stamp} IST</code>\n"
+                    f"⚡ <b>Engine:</b> <code>Skinet Verse v2.0 Fast Final</code>\n"
+                    f"🚀 <b>Status:</b> <code>Active & Ready</code></blockquote>"
+                )
+                try:
+                    await self.edit_message_text(r_chat_id, r_msg_id, reboot_done_text)
+                    logger.info(f"Updated restart status message for chat {r_chat_id}")
+                except Exception:
+                    try:
+                        await self.send_message(r_chat_id, reboot_done_text)
+                    except Exception:
+                        pass
+
+        # ── 2. Broadcast Restart Notice to LOG_CHANNEL ──
+        if Config.LOG_CHANNEL:
+            log_restart_text = (
+                "<blockquote><b>🤖 Bot Has Restarted!</b>\n\n"
+                f"<b>Bot:</b> @{self.username} (<code>{self.id}</code>)\n"
+                f"<b>Status:</b> <code>Online & Ready ✅</code>\n"
+                f"<b>Time:</b> <code>{stamp} IST</code>\n"
+                f"<b>Engine:</b> <code>Skinet Verse v2.0 Fast Final</code>\n"
+                f"<b>Pyrogram:</b> <code>v{pyrogram_version}</code> | <b>Python:</b> <code>v{python_version()}</code>\n"
+                f"<b>Database:</b> <code>MongoDB Connected</code></blockquote>"
+            )
+            try:
+                await self.send_message(Config.LOG_CHANNEL, log_restart_text)
+                logger.info(f"Sent restart notice to LOG_CHANNEL: {Config.LOG_CHANNEL}")
+            except Exception as e:
+                logger.warning(f"Failed to send restart notice to LOG_CHANNEL: {e}")
+
+        # ── 3. Notify Bot Owner(s) if not already notified in active chat ──
+        if Config.BOT_OWNER_ID:
+            for oid in Config.BOT_OWNER_ID:
+                if oid != restarted_chat_id:
+                    try:
+                        owner_notice = (
+                            "<blockquote><b>🤖 Bot Has Restarted!</b>\n\n"
+                            f"@{self.username} is back online and ready for tasks.\n\n"
+                            f"⏰ <code>{stamp} IST</code></blockquote>"
+                        )
+                        await self.send_message(oid, owner_notice)
+                    except Exception:
+                        pass
+
+        # ── 4. Notify Users with Interrupted Forwarding Tasks ──
+        restart_text = (
+            "<blockquote><b>๏[-ิ_•ิ]๏ Bot Has Restarted!</b>\n\n"
+            "<i>The bot has rebooted. If your task was interrupted, please resend your forward link.</i></blockquote>"
+        )
         try:
             users = await db.get_all_frwd()
             async for u in users:

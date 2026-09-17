@@ -418,8 +418,17 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "restart":
         msg = await query.message.edit_text(
-            "<b>🔄 Restarting Skinet Verse Bot Engine...</b>\n\n<i>All services will reload with latest database configs in 5 seconds.</i>"
+            "<blockquote><b>🔄 Restarting Skinet Verse Bot Engine...</b>\n\n<i>All services will reload with latest database configs in 5 seconds.</i></blockquote>"
         )
-        await asyncio.sleep(3)
-        await msg.edit("<b>✅ Server restarting now!</b>")
+        try:
+            await db.set_restart_status(query.message.chat.id, msg.id)
+        except Exception:
+            pass
+        try:
+            import json
+            with open('.restart_status.json', 'w') as f:
+                json.dump({'chat_id': query.message.chat.id, 'message_id': msg.id}, f)
+        except Exception:
+            pass
+        await asyncio.sleep(2)
         os.execl(sys.executable, sys.executable, *sys.argv)
