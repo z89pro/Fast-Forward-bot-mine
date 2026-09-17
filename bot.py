@@ -174,7 +174,10 @@ class Bot(Client):
                 await self.send_message(Config.LOG_CHANNEL, log_restart_text)
                 logger.info(f"Sent restart notice to LOG_CHANNEL: {Config.LOG_CHANNEL}")
             except Exception as e:
-                logger.warning(f"Failed to send restart notice to LOG_CHANNEL: {e}")
+                logger.warning(
+                    f"Could not send restart notice to LOG_CHANNEL ({Config.LOG_CHANNEL}): {e}. "
+                    f"Please ensure @{getattr(self, 'username', 'bot')} is added as an Admin with post permissions in that channel."
+                )
 
         # ── 3. Notify Bot Owner(s) if not already notified in active chat ──
         if Config.BOT_OWNER_ID:

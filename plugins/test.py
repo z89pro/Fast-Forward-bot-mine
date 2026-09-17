@@ -371,40 +371,44 @@ class CLIENT:
             await client.disconnect()
         except Exception:
             pass
-    
-    async def add_session(self, bot, message):
-        user_id = int(message.from_user.id)
-        text = "<b>⚠️ DISCLAIMER ⚠️</b>\n\n<code>you can use your session for forward message from private chat to another chat.\nPlease add your pyrogram session with your own risk. Their is a chance to ban your account. My developer is not responsible if your account may get banned.</code>"
-        await bot.send_message(user_id, text=text)
-        try:
-            msg = await bot.ask(chat_id=user_id, text="<b>Send your Pyrogram session string.\n\n/cancel - Cancel the process</b>", timeout=300)
-        except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
-            await bot.send_message(user_id, "Time limit reached (5 minutes).\nPlease start again.")
-            return None
-        if not msg or not msg.text or msg.text=='/cancel':
-            await bot.send_message(user_id, '<b>process cancelled !</b>')
-            return None
-        session_str = msg.text.strip()
-        if len(session_str) < 100:
-            await bot.send_message(user_id, '<b>invalid session string</b>')
-            return None
-        try:
-            client = await start_clone_bot(self.client(session_str, True), True)
-        except Exception as e:
-            await bot.send_message(user_id, f"<b>USER BOT ERROR:</b> `{e}`")
-            return None
-        user = client.me
-        details = {
-            'id': user.id,
-            'is_bot': False,
-            'user_id': user_id,
-            'name': user.first_name,
-            'session': session_str,
-            'username': user.username
-        }
-        await db.add_bot(details)
-        return True
-    
+
+  async def add_session(self, bot, message):
+      user_id = int(message.from_user.id)
+      text = "<b>⚠️ DISCLAIMER ⚠️</b>\n\n<code>you can use your session for forward message from private chat to another chat.\nPlease add your pyrogram session with your own risk. Their is a chance to ban your account. My developer is not responsible if your account may get banned.</code>"
+      await bot.send_message(user_id, text=text)
+      try:
+          msg = await bot.ask(chat_id=user_id, text="<b>Send your Pyrogram session string.\n\n/cancel - Cancel the process</b>", timeout=300)
+      except (TimeoutError, asyncio.TimeoutError, ListenerTimeout):
+          await bot.send_message(user_id, "Time limit reached (5 minutes).\nPlease start again.")
+          return None
+      if not msg or not msg.text or msg.text=='/cancel':
+          await bot.send_message(user_id, '<b>process cancelled !</b>')
+          return None
+      session_str = msg.text.strip()
+      if len(session_str) < 100:
+          await bot.send_message(user_id, '<b>invalid session string</b>')
+          return None
+      try:
+          client = await start_clone_bot(self.client(session_str, True), True)
+      except Exception as e:
+          await bot.send_message(user_id, f"<b>USER BOT ERROR:</b> `{e}`")
+          return None
+      user = client.me
+      details = {
+          'id': user.id,
+          'is_bot': False,
+          'user_id': user_id,
+          'name': user.first_name,
+          'session': session_str,
+          'username': user.username
+      }
+      await db.add_bot(details)
+      try:
+          await client.stop()
+      except Exception:
+          pass
+      return True
+
 @Client.on_message(filters.private & filters.command('reset'))
 async def reset_cmd(bot, m):
     try:

