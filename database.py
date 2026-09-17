@@ -671,6 +671,21 @@ class Database:
             {'$set': update_dict}
         )
 
+    async def get_pending_premium_orders(self, limit: int = 20):
+        try:
+            cursor = self.orders.find({'status': {'$in': ['pending', 'verifying']}}).sort('created_at', -1).limit(limit)
+            return [doc async for doc in cursor]
+        except Exception:
+            return []
+
+    async def get_premium_count(self) -> int:
+        import time
+        now = time.time()
+        try:
+            return await self.premium.count_documents({'expires_at': {'$gt': now}})
+        except Exception:
+            return 0
+
     
 db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 

@@ -409,7 +409,7 @@ KNOWN_COMMANDS = {
     "broadcast", "bcast", "cancelbroadcast", "bcastcancel", "broadcastrestart", "bcastrestart",
     "restart", "reboot", "terms", "tos", "privacy", "donate", "clone", "plans",
     "premium", "buy", "vip", "myplan", "plan", "addpremium", "addvip", "delpremium",
-    "delvip", "referral", "refer", "earn", "topref", "leaderboard", "refadmin",
+    "delvip", "vipadmin", "premiumadmin", "referral", "refer", "earn", "topref", "leaderboard", "refadmin",
     "stop", "pause", "resume", "reset", "resetall", "tutorial", "guide", "skinet",
     "modifier", "ftm", "courseseller", "seller", "unequify", "userstats", "track",
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",

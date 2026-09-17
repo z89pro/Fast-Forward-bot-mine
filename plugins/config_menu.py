@@ -75,18 +75,21 @@ def build_config_buttons(vcfg=None) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("👑 ᴍᴀɴᴀɢᴇ ᴀᴅᴍɪɴs", callback_data="config#manage_admins"),
-            InlineKeyboardButton("💳 ᴜᴘɪ ᴘᴀʏᴍᴇɴᴛ ɪᴅ", callback_data="config#set_upi")
+            InlineKeyboardButton("💎 ᴠɪᴘ ᴍᴀɴᴀɢᴇʀ", callback_data="vipadmin_main")
         ],
         [
-            InlineKeyboardButton("⚡️ sᴘᴇᴇᴅ ᴅᴇʟᴀʏ", callback_data="config#set_speed"),
-            InlineKeyboardButton("🤖 ʙᴏᴛ ᴛᴏᴋᴇɴ", callback_data="config#set_token")
+            InlineKeyboardButton("💳 ᴜᴘɪ ᴘᴀʏᴍᴇɴᴛ ɪᴅ", callback_data="config#set_upi"),
+            InlineKeyboardButton("⚡️ sᴘᴇᴇᴅ ᴅᴇʟᴀʏ", callback_data="config#set_speed")
         ],
         [
-            InlineKeyboardButton("🔑 ᴀᴘɪ ɪᴅ / ʜᴀsʜ", callback_data="config#set_api"),
-            InlineKeyboardButton("🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ ɴᴏᴡ", callback_data="config#restart")
+            InlineKeyboardButton("🤖 ʙᴏᴛ ᴛᴏᴋᴇɴ", callback_data="config#set_token"),
+            InlineKeyboardButton("🔑 ᴀᴘɪ ɪᴅ / ʜᴀsʜ", callback_data="config#set_api")
         ],
         [
-            InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main"),
+            InlineKeyboardButton("🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ ɴᴏᴡ", callback_data="config#restart"),
+            InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")
+        ],
+        [
             InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="back")
         ]
     ]

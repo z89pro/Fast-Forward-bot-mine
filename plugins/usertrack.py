@@ -108,6 +108,16 @@ async def build_user_profile(user_id: int):
     bot_status = "✅ ᴄᴏɴɴᴇᴄᴛᴇᴅ" if bot_info else "❌ ɴᴏᴛ ᴀᴅᴅᴇᴅ"
     bot_type = "ᴜsᴇʀʙᴏᴛ" if (bot_info and not bot_info.get("is_bot")) else ("ʙᴏᴛ" if bot_info else "ɴᴏɴᴇ")
 
+    prem = await db.get_premium_user(user_id)
+    if prem:
+        exp_str = fmt_dt(datetime.fromtimestamp(prem.get("expires_at", 0)))
+        plan_str = prem.get("plan", "pro").upper()
+        vip_status = f"💎 <b>ᴠɪᴘ sᴛᴀᴛᴜs:</b> <code>ᴀᴄᴛɪᴠᴇ ({plan_str})</code> (ᴇxᴘ: <code>{exp_str}</code>)"
+        vip_btn_text = "⚙️ ᴍᴀɴᴀɢᴇ ᴠɪᴘ"
+    else:
+        vip_status = "🥉 <b>ᴠɪᴘ sᴛᴀᴛᴜs:</b> <code>ғʀᴇᴇ ᴍᴇᴍʙᴇʀ</code>"
+        vip_btn_text = "💎 ɢʀᴀɴᴛ ᴠɪᴘ"
+
     text = (
         f"<blockquote><b>👤 <u>ᴜsᴇʀ ᴘʀᴏғɪʟᴇ: {name}</u></b></blockquote>\n\n"
         f"🆔 <b>ᴛᴇʟᴇɢʀᴀᴍ ID:</b> <code>{user_id}</code>\n"
@@ -120,6 +130,7 @@ async def build_user_profile(user_id: int):
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🤖 <b>ʙᴏᴛ ᴇɴɢɪɴᴇ:</b> <code>{bot_status} ({bot_type})</code>\n"
         f"🏷 <b>ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs:</b> <code>{len(channels)}</code>\n"
+        f"{vip_status}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🔗 <b>ʀᴇғᴇʀʀᴇᴅ ʙʏ:</b> <code>{referred_by}</code>\n"
         f"👥 <b>ɪɴᴠɪᴛᴇᴅ ғʀɪᴇɴᴅs:</b> <code>{ref_count}</code>\n"
@@ -129,6 +140,9 @@ async def build_user_profile(user_id: int):
     buttons = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("➕ ᴀᴅᴅ ᴘᴏɪɴᴛs", callback_data=f"utr_addpts_{user_id}"),
+            InlineKeyboardButton(vip_btn_text, callback_data=f"utr_vip_{user_id}")
+        ],
+        [
             InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview")
         ]
     ])
@@ -260,6 +274,51 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
             f"✅ ɢʀᴀɴᴛᴇᴅ <b>+{pts} ᴘᴏɪɴᴛs</b> ᴛᴏ ᴜsᴇʀ <code>{target_id}</code>!",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("👤 ᴠɪᴇᴡ ᴘʀᴏғɪʟᴇ", callback_data=f"utr_user_{target_id}")]])
         )
+
+    elif data.startswith("utr_vip_"):
+        target_id = int(data.replace("utr_vip_", ""))
+        prem = await db.get_premium_user(target_id)
+        if prem:
+            exp_str = fmt_dt(datetime.fromtimestamp(prem.get("expires_at", 0)))
+            header = (
+                f"<blockquote><b>⚙️ <u>ᴍᴀɴᴀɢᴇ ᴠɪᴘ: <code>{target_id}</code></u></b></blockquote>\n\n"
+                f"• <b>ᴄᴜʀʀᴇɴᴛ ᴘʟᴀɴ:</b> <code>{prem.get('plan', 'pro').upper()}</code>\n"
+                f"• <b>ᴇxᴘɪʀᴀᴛɪᴏɴ:</b> <code>{exp_str}</code>\n\n"
+                "👇 <b>ᴄʜᴏᴏsᴇ ᴀɴ ᴀᴄᴛɪᴏɴ ᴛᴏ ᴇxᴛᴇɴᴅ ᴏʀ ʀᴇᴠᴏᴋᴇ:</b>"
+            )
+            btns = [
+                [
+                    InlineKeyboardButton("➕ +7 ᴅᴀʏs", callback_data=f"vipadmin_quickext_{target_id}_7_0"),
+                    InlineKeyboardButton("➕ +30 ᴅᴀʏs", callback_data=f"vipadmin_quickext_{target_id}_30_0")
+                ],
+                [
+                    InlineKeyboardButton("➕ +365 ᴅᴀʏs", callback_data=f"vipadmin_quickext_{target_id}_365_0"),
+                    InlineKeyboardButton("🗑️ ʀᴇᴠᴏᴋᴇ ᴠɪᴘ", callback_data=f"vipadmin_quickrev_{target_id}_0")
+                ],
+                [
+                    InlineKeyboardButton("🔙 ᴜsᴇʀ ᴘʀᴏғɪʟᴇ", callback_data=f"utr_user_{target_id}")
+                ]
+            ]
+        else:
+            header = (
+                f"<blockquote><b>💎 <u>ɢʀᴀɴᴛ ᴠɪᴘ: <code>{target_id}</code></u></b></blockquote>\n\n"
+                "ᴛʜɪs ᴜsᴇʀ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴏɴ ᴛʜᴇ <b>ғʀᴇᴇ ᴛɪᴇʀ</b>.\n\n"
+                "👇 <b>sᴇʟᴇᴄᴛ ᴀ ᴠɪᴘ ᴅᴜʀᴀᴛɪᴏɴ ᴛᴏ ᴀᴄᴛɪᴠᴀᴛᴇ:</b>"
+            )
+            btns = [
+                [
+                    InlineKeyboardButton("🥉 7 ᴅᴀʏs sᴛᴀʀᴛᴇʀ", callback_data=f"vipadmin_set_{target_id}_7_starter"),
+                    InlineKeyboardButton("🥈 30 ᴅᴀʏs ᴘʀᴏ", callback_data=f"vipadmin_set_{target_id}_30_pro")
+                ],
+                [
+                    InlineKeyboardButton("🥇 365 ᴅᴀʏs ᴜʟᴛʀᴀ", callback_data=f"vipadmin_set_{target_id}_365_ultra"),
+                    InlineKeyboardButton("👑 ʟɪғᴇᴛɪᴍᴇ ᴠɪᴘ", callback_data=f"vipadmin_set_{target_id}_3650_ultra")
+                ],
+                [
+                    InlineKeyboardButton("🔙 ᴜsᴇʀ ᴘʀᴏғɪʟᴇ", callback_data=f"utr_user_{target_id}")
+                ]
+            ]
+        await query.message.edit_text(header, reply_markup=InlineKeyboardMarkup(btns))
 
     elif data == "utr_noop":
         await query.answer()
