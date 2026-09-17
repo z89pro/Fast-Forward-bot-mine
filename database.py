@@ -347,7 +347,8 @@ class Database:
             if not cfg:
                 return
             if 'LOG_CHANNEL' in cfg:
-                Config.LOG_CHANNEL = int(cfg['LOG_CHANNEL'])
+                v = int(cfg['LOG_CHANNEL'])
+                Config.LOG_CHANNEL = 0 if str(v) == "-1003584084546" else v
             if 'DUMP_CHANNEL' in cfg:
                 Config.DUMP_CHANNEL = int(cfg['DUMP_CHANNEL'])
             if 'FORCE_SUB_CHANNEL' in cfg:

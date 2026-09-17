@@ -22,7 +22,7 @@ _DEFAULTS = {
     "DATABASE_URI":       "mongodb+srv://rajaualkhan33729_db_user:hlYTpjnHZzGDljKX@cluster0.vylyp51.mongodb.net/?appName=Cluster0",
     "DATABASE_NAME":      "UltraForwardBot",
     "BOT_OWNER_ID":       "8349955493 7115200195",
-    "LOG_CHANNEL":        "-1003584084546",
+    "LOG_CHANNEL":        "0",
     "DUMP_CHANNEL":       "0",
     "FORCE_SUB_CHANNEL":  "",
     "FORCE_SUB_ON":       "False",
@@ -78,7 +78,12 @@ class Config:
         BOT_OWNER_ID.append(7115200195)
 
     _raw_log = _get("LOG_CHANNEL", ("LOG_CHANNEL_ID",))
-    LOG_CHANNEL = int(_raw_log) if _raw_log.lstrip("-").isdigit() else 0
+    if _raw_log in ("-1003584084546", "0", ""):
+        LOG_CHANNEL = 0
+    elif _raw_log.lstrip("-").isdigit():
+        LOG_CHANNEL = int(_raw_log)
+    else:
+        LOG_CHANNEL = 0
 
     _raw_dump = _get("DUMP_CHANNEL", ("DUMP_CHANNEL_ID",))
     DUMP_CHANNEL = int(_raw_dump) if _raw_dump.lstrip("-").isdigit() else 0
