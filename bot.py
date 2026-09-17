@@ -146,9 +146,13 @@ if __name__ == "__main__":
     # Start web keep-alive server first on Koyeb/Render port
     keep_alive()
 
+    # Explicit event loop setup for Python 3.10/3.11/3.12 compatibility
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     # Pre-load persistent system config from MongoDB before Pyrogram starts
     try:
-        asyncio.run(db.load_system_config_into_env())
+        loop.run_until_complete(db.load_system_config_into_env())
     except Exception as e:
         logger.debug(f"Pre-load config error: {e}")
 
