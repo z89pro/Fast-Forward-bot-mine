@@ -9,7 +9,7 @@ from .regix import custom_caption, copy
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("SkinetAutoSave")
 
 def get_autosave_markup(is_running: bool, count: int):
     status_btn = InlineKeyboardButton("⏹️ sᴛᴏᴘ ᴍᴏɴɪᴛᴏʀ", callback_data="autosave#toggle_monitor") if is_running else InlineKeyboardButton("▶️ sᴛᴀʀᴛ ᴍᴏɴɪᴛᴏʀ", callback_data="autosave#toggle_monitor")
@@ -32,26 +32,28 @@ def get_autosave_markup(is_running: bool, count: int):
 async def build_autosave_text(user_id: int):
     channels = await db.get_user_live_forwards(user_id)
     is_running = user_id in temp.LIVE_TASKS and temp.LIVE_TASKS[user_id].is_connected
-    status_str = "🟢 **Active & Monitoring**" if is_running else "🔴 **Stopped**"
+    status_str = "🟢 <b>Active & Monitoring 24/7</b>" if is_running else "🔴 <b>Stopped</b>"
     user_channels = await db.get_user_channels(user_id)
     default_dest = user_channels[0]['title'] if user_channels else "None (Set in /settings)"
     
     text = (
-        "🚀 **sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ ᴍᴏᴅᴇ** 🚀\n\n"
-        f"🔥 **Status:** {status_str}\n"
-        f"📡 **Monitored Channels:** `{len(channels)}`\n"
-        f"📤 **Global Destination:** `{default_dest}`\n\n"
-        "**🔥 What's New?**\n"
-        "✅ **Automatic Channel Monitoring**: Automatically monitor channels for new content.\n"
-        "🎯 **Smart Media Filters**: Capture only Videos, Photos, Documents, etc.\n"
-        "📤 **Custom Upload Destinations**: Dedicated target chat for each channel.\n\n"
-        "Select an option below to manage AutoSave:"
+        "🚀 <b><u>sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ & ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀ</u></b> ⚡️\n\n"
+        "<i>Powered by Skinet Verse</i>\n\n"
+        f"🔥 <b>Status:</b> {status_str}\n"
+        f"📡 <b>Monitored Channels:</b> <code>{len(channels)}</code>\n"
+        f"📤 <b>Default Destination:</b> <code>{default_dest}</code>\n\n"
+        "<b>🌟 Live Monitoring Highlights:</b>\n"
+        "✅ <b>Real-time Interception:</b> Captures incoming lectures/files instantly.\n"
+        "🎯 <b>Smart Filters:</b> Route only Videos, Notes/PDFs, Audios, or Photos.\n"
+        "🛠 <b>Skinet Clean Engine:</b> Strips competitor links, handles & ads automatically.\n"
+        "📤 <b>Multi-Channel Routing:</b> Dedicated target channel per source.\n\n"
+        "👇 <i>Manage your live monitors using the buttons below:</i>"
     )
     return text, is_running, len(channels)
 
 # ================= COMMAND /autosave =================
 
-@Client.on_message(filters.private & filters.command(["autosave", "live"]))
+@Client.on_message(filters.private & filters.command(["autosave", "live", "monitor"]))
 async def autosave_cmd(bot, message):
     user_id = message.from_user.id
     text, is_running, count = await build_autosave_text(user_id)
@@ -91,12 +93,29 @@ async def autosave_callback(bot, query: CallbackQuery):
     elif data == "add_channel":
         await query.message.delete()
         _bot = await db.get_bot(user_id)
-        if not _bot or _bot.get('is_bot'):
-            return await bot.send_message(user_id, "<b>❌ You need to add a UserBot first in /settings to use AutoSave Channel Monitoring!</b>")
+        if not _bot:
+            return await bot.send_message(
+                user_id,
+                "<b>❌ Please add a Bot or UserBot first in /settings to use AutoSave Monitoring!</b>\n\n"
+                "• <b>UserBot (Recommended):</b> Can monitor ANY private or restricted channel you are in.\n"
+                "• <b>Bot Token:</b> Can monitor channels where your bot is an Administrator.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ Open Settings", callback_data="settings#main")]])
+            )
         
-        src_msg = await bot.ask(user_id, text="**📡 Send Source Channel link or Chat ID to monitor:**\n(Example: `https://t.me/my_channel` or `-100123456789`)\n/cancel - `cancel`", timeout=300)
-        if not src_msg.text or src_msg.text.startswith("/"):
-            return await bot.send_message(user_id, "**Process cancelled !**")
+        src_msg = await bot.ask(
+            user_id,
+            text=(
+                "<b>📡 Send Source Channel link or Chat ID to monitor:</b>\n\n"
+                "Examples:\n"
+                "• <code>https://t.me/c/1234567890</code> (Private channel)\n"
+                "• <code>https://t.me/public_channel</code> (Public channel)\n"
+                "• <code>-1001234567890</code> (Direct Chat ID)\n\n"
+                "<i>Send /cancel to abort</i>"
+            ),
+            timeout=300
+        )
+        if not src_msg.text or src_msg.text.startswith("/cancel"):
+            return await bot.send_message(user_id, "**Process cancelled!**")
         
         src_raw = src_msg.text.strip()
         link_regex = re.compile(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)")
@@ -113,15 +132,20 @@ async def autosave_callback(bot, query: CallbackQuery):
         # Ask destination
         channels = await db.get_user_channels(user_id)
         default_dest = channels[0]['chat_id'] if channels else None
-        default_title = channels[0]['title'] if channels else "Global"
+        default_title = channels[0]['title'] if channels else "Global Default"
 
         dst_msg = await bot.ask(
             user_id,
-            text=f"**📤 Send Destination Channel link/ID, or send `/skip` to use default destination (`{default_title}`):**\n/cancel - `cancel`",
+            text=(
+                f"<b>📤 Send Destination Channel link/ID:</b>\n\n"
+                f"Or send <code>/skip</code> to use your default destination:\n"
+                f"👉 <b>Default:</b> <code>{default_title}</code>\n\n"
+                "<i>Send /cancel to abort</i>"
+            ),
             timeout=300
         )
         if not dst_msg.text or dst_msg.text.startswith("/cancel"):
-            return await bot.send_message(user_id, "**Process cancelled !**")
+            return await bot.send_message(user_id, "**Process cancelled!**")
         
         if dst_msg.text.lower() == "/skip":
             if not default_dest:
@@ -156,8 +180,15 @@ async def autosave_callback(bot, query: CallbackQuery):
 
         await bot.send_message(
             user_id,
-            f"**✅ Channel Monitored Successfully!**\n\n📡 **Source:** `{src_title}`\n📤 **Destination:** `{dst_title}`",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴜᴛᴏsᴀᴠᴇ", callback_data="autosave#main")]])
+            f"<b>✅ Channel Added to Live Monitoring!</b>\n\n"
+            f"📡 <b>Source:</b> <code>{src_title}</code>\n"
+            f"📤 <b>Destination:</b> <code>{dst_title}</code>\n"
+            f"⚡️ <b>Engine:</b> Skinet Verse AutoSave\n\n"
+            "<i>Click 'Start Monitor' to begin listening for new posts in real-time.</i>",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("▶️ sᴛᴀʀᴛ ᴍᴏɴɪᴛᴏʀ", callback_data="autosave#toggle_monitor")],
+                [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴜᴛᴏsᴀᴠᴇ", callback_data="autosave#main")]
+            ])
         )
 
     elif data == "list_channels":
@@ -305,13 +336,13 @@ async def autosave_callback(bot, query: CallbackQuery):
 
 async def start_autosave_monitor(user_id: int, bot_client: Client):
     _bot = await db.get_bot(user_id)
-    if not _bot or _bot.get('is_bot'):
-        return False, "Need UserBot. Add via /settings"
+    if not _bot:
+        return False, "Please add a Bot or UserBot in /settings first."
 
     monitored = await db.get_user_live_forwards(user_id)
     active_channels = [ch for ch in monitored if ch.get('active', True)]
     if not active_channels:
-        return False, "No active channels to monitor"
+        return False, "No active channels to monitor. Use ➕ Add Channel first."
 
     # Stop any existing monitor task
     if user_id in temp.LIVE_TASKS:
@@ -325,6 +356,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
     try:
         userbot = await start_clone_bot(CLIENT().client(_bot))
     except Exception as e:
+        logger.error(f"Failed to start client for autosave: {e}")
         return False, str(e)
 
     # Map monitored chat IDs to their destination info
@@ -336,6 +368,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
         except Exception:
             from_c_id = from_c
         chat_map[from_c_id] = ch
+        chat_map[str(from_c)] = ch
 
     # Register real-time incoming message handler
     @userbot.on_message()
@@ -371,7 +404,13 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
         try:
             clean_cap = user_configs.get('clean_caption', False)
             rep_words = user_configs.get('replace_words', {})
-            cap = custom_caption(message, user_configs.get('caption'), clean_caption=clean_cap, replace_words=rep_words)
+            cap = custom_caption(
+                message, 
+                user_configs.get('caption'), 
+                clean_caption=clean_cap, 
+                replace_words=rep_words,
+                user_configs=user_configs
+            )
             
             dump_target, dump_enabled = await db.get_admin_dump()
             if not dump_enabled:
@@ -432,12 +471,12 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                             await client.send_message(chat_id=dump_target, text=cap or message.text)
                         except Exception:
                             pass
-            logger.info(f"AutoSave: Forwarded new message {message.id} from {chat_id} to {to_chat}")
+            logger.info(f"Skinet AutoSave: Forwarded new message {message.id} from {chat_id} to {to_chat}")
             if Config.LOG_CHANNEL:
                 try:
                     await bot_client.send_message(
                         chat_id=Config.LOG_CHANNEL,
-                        text=f"📡 <b>#AutoSaveCaptured</b>\n\n👤 <b>User:</b> <code>{user_id}</code>\n📡 <b>Source:</b> <code>{chat_id}</code>\n🎯 <b>Destination:</b> <code>{to_chat}</code>\n🆔 <b>Message ID:</b> <code>{message.id}</code>"
+                        text=f"📡 <b>#AutoSaveCaptured</b>\n\n⚡️ <b>Engine:</b> Skinet Verse\n👤 <b>User:</b> <code>{user_id}</code>\n📡 <b>Source:</b> <code>{chat_id}</code>\n🎯 <b>Destination:</b> <code>{to_chat}</code>\n🆔 <b>Message ID:</b> <code>{message.id}</code>"
                     )
                 except Exception:
                     pass
@@ -446,3 +485,22 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
 
     temp.LIVE_TASKS[user_id] = userbot
     return True, None
+
+async def resume_all_autosave_monitors(bot_client: Client):
+    try:
+        active_forwards = await db.get_all_active_live_forwards()
+        if not active_forwards:
+            return
+        user_ids = list(set([doc['user_id'] for doc in active_forwards if 'user_id' in doc]))
+        logger.info(f"Resuming AutoSave live monitors for {len(user_ids)} users...")
+        for uid in user_ids:
+            try:
+                success, err = await start_autosave_monitor(uid, bot_client)
+                if success:
+                    logger.info(f"✅ AutoSave monitor resumed for user {uid}")
+                else:
+                    logger.warning(f"⚠️ AutoSave resume failed for user {uid}: {err}")
+            except Exception as e:
+                logger.error(f"Error resuming autosave for user {uid}: {e}")
+    except Exception as e:
+        logger.error(f"AutoSave resume routine error: {e}")

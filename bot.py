@@ -120,6 +120,13 @@ class Bot(Client):
         except Exception as err:
             logger.debug(f"Restart broadcast cleanup: {err}")
 
+        # Auto-resume live AutoSave channel monitors for all users
+        try:
+            from plugins.autosave import resume_all_autosave_monitors
+            asyncio.create_task(resume_all_autosave_monitors(self))
+        except Exception as e:
+            logger.debug(f"Could not initialize autosave auto-resumption: {e}")
+
     async def stop(self, *args):
         logger.info(f"🛑 Bot @{getattr(self, 'username', 'ForwardBot')} stopping...")
         await super().stop()

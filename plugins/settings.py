@@ -797,7 +797,7 @@ def course_seller_buttons(cfg):
         ],
         [
             InlineKeyboardButton(f"🔍 ʜɪᴅᴅᴇɴ ʟɪɴᴋs {hid_mark}", callback_data="settings#cs_toggle_hidden"),
-            InlineKeyboardButton("🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ", callback_data="settings#ftm")
+            InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm")
         ],
         [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
     ]
@@ -814,8 +814,8 @@ def ftm_text(cfg):
     tag_status = "❌ ʀᴇᴍᴏᴠᴇᴅ (ᴄʟᴇᴀɴ)" if not cfg.get('forward_tag') else "✅ ᴘʀᴇsᴇʀᴠᴇᴅ"
     
     return (
-        "<b><u>🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ (ғᴏʀᴡᴀʀᴅ ᴛᴇxᴛ & ᴍᴇᴅɪᴀ ᴍᴏᴅɪғɪᴇʀ)</u></b>\n\n"
-        "<b>Advanced sanitization, brand replacements, and upload tuning:</b>\n\n"
+        "<b><u>🛠 sᴋɪɴᴇᴛ ᴛᴇxᴛ & ᴍᴇᴅɪᴀ ᴍᴏᴅɪғɪᴇʀ ⚡️</u></b>\n\n"
+        "<b>Skinet Verse Content Sanitization & Re-Branding Suite:</b>\n\n"
         f"👤 <b>Username Remover:</b> {user_rem}\n"
         f"👤 <b>Username Replacer:</b> <code>{user_rep}</code>\n"
         f"🔗 <b>Link Remover:</b> {link_rem}\n"
@@ -882,7 +882,7 @@ def main_buttons(user_id=None):
        ],[
        InlineKeyboardButton('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ⚡️',
                     callback_data='settings#courseseller'),
-       InlineKeyboardButton('🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ 🛠',
+       InlineKeyboardButton('🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ 🛠',
                     callback_data='settings#ftm')
        ]]
   if is_admin:

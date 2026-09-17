@@ -4,14 +4,14 @@ from config import Config
 class Translation(object):
   START_TXT = """<b>ʜɪ {}
 
-ɪ'ᴍ ᴀɴ ᴀᴅᴠᴀɴᴄᴇᴅ ᴀᴜᴛᴏ ꜰᴏʀᴡᴀʀᴅ ʙᴏᴛ
-ɪ ᴄᴀɴ ꜰᴏʀᴡᴀʀᴅ ᴀʟʟ ᴍᴇssᴀɢᴇs ꜰʀᴏᴍ ᴏɴᴇ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴀɴᴏᴛʜᴇʀ ᴄʜᴀɴɴᴇʟ
+ɪ'ᴍ <b>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ꜰᴏʀᴡᴀʀᴅ ʙᴏᴛ</b> ⚡️
+ɪ ᴄᴀɴ ꜰᴏʀᴡᴀʀᴅ, ᴄʟᴏɴᴇ, ᴀɴᴅ ᴍᴏɴɪᴛᴏʀ ᴄʜᴀɴɴᴇʟs ᴀᴛ ᴜʟᴛʀᴀ-ꜰᴀsᴛ sᴘᴇᴇᴅ.
 
-ᴄʟɪᴄᴋ ʜᴇʟᴘ ʙᴜᴛᴛᴏɴ ᴛᴏ ᴋɴᴏᴡ ᴍᴏʀᴇ ᴀʙᴏᴜᴛ ᴍᴇ</b>"""
+ᴄʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!</b>"""
 
-  DONATE_TXT = """<b><i>Thanks for using Forward Bot! ❤️</i></b>"""
+  DONATE_TXT = """<b><i>Thanks for using Skinet Verse Forward Bot! ❤️</i></b>"""
 
-  HELP_TXT = """<b><u>🔆 ʜᴇʟᴘ</u></b>
+  HELP_TXT = """<b><u>🔆 sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ʜᴇʟᴘ</u></b>
 
 <u>**📚 Available Commands:**</u>
 
@@ -20,7 +20,7 @@ class Translation(object):
 ⏣ __/fwd <start> <end> - Direct range forward__
 ⏣ __/autosave - Smart AutoSave & Channel Monitoring__
 ⏣ __/tutorial - 12-Module Master Tutorial Hub__
-⏣ __/ftm - FTM Replacer & Sanitizer Guide__
+⏣ __/skinet - Skinet Text & Media Modifier Guide__
 ⏣ __/pause - Pause ongoing forwarding__
 ⏣ __/resume - Resume paused forwarding__
 ⏣ __/stop - Cancel your ongoing forwarding__
@@ -30,7 +30,7 @@ class Translation(object):
 
 <b><u>💢 Features:</u></b>
 <b>► __🎓 Course Seller Mode: Auto lecture numbering & table of contents__
-► __🛠 FTM Modifier: Competitor username & link replacers__
+► __🛠 Skinet Modifier: Competitor username & link replacers__
 ► __🚀 Smart AutoSave: Real-time automatic channel monitoring__
 ► __Smart Media Filters: Filter Videos, Photos, Documents, Audio__
 ► __Custom Upload Destinations: Per-channel or global targets__
@@ -47,13 +47,14 @@ class Translation(object):
 ► __Then use /forward to start forwarding messages__</b>"""
 
   ABOUT_TXT = """<b>
-╔════❰ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ ❱═❍⊱❁
+╔════❰ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ❱═❍⊱❁
 ║╭━━━━━━━━━━━━━━━➣
-║┣⪼📃 ʙᴏᴛ : ғᴏʀᴡᴀʀᴅ ʙᴏᴛ
+║┣⪼📃 ʙᴏᴛ : sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ
 ║┣⪼🗣️ ʟᴀɴɢᴜᴀɢᴇ : ᴘʏᴛʜᴏɴ3
 ║┣⪼📚 ʟɪʙʀᴀʀʏ : ᴘʏʀᴏɢʀᴀᴍ / ᴘʏʀᴏғᴏʀᴋ
 ║┣⪼⚡ ғᴇᴀᴛᴜʀᴇs : sᴘᴇᴇᴅ ᴄᴏɴᴛʀᴏʟ & ᴀɴᴛɪ-ʙᴀɴ
-║┣⪼🗒️ ᴠᴇʀsɪᴏɴ : 2.0.0
+║┣⪼💎 ᴇᴅɪᴛɪᴏɴ : sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ᴜʟᴛʀᴀ
+║┣⪼🗒️ ᴠᴇʀsɪᴏɴ : 2.5.0
 ║╰━━━━━━━━━━━━━━━➣
 ╚══════════════════❍⊱❁</b>"""
 

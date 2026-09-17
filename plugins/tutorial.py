@@ -8,12 +8,12 @@ TUTORIAL_MODULES = {
         "short": "Bot Overview",
         "text": (
             "<b><u>📚 MODULE 1: BOT OVERVIEW & GETTING STARTED</u></b>\n\n"
-            "Welcome to <b>Forward Bot</b> — an ultra-fast channel cloning, content migration, and automated distribution suite designed for Telegram channels and course creators!\n\n"
+            "Welcome to <b>Skinet Verse Forward Bot</b> — an ultra-fast channel cloning, content migration, and automated distribution suite designed for Telegram channels and course creators!\n\n"
             "<b>🎯 Core Capabilities:</b>\n"
-            "• <b>Full Channel Forwarding:</b> Copy thousands of lectures, videos, and PDFs.\n"
-            "• <b>Smart AutoSave:</b> Monitor private/public channels and forward new posts in real-time.\n"
+            "• <b>Full Channel Forwarding:</b> Copy thousands of lectures, videos, and PDFs with blazing speed.\n"
+            "• <b>Smart AutoSave:</b> Monitor private & public channels and auto-forward new posts 24/7 in real-time.\n"
             "• <b>Course Seller Mode ⚡️:</b> Auto-number lectures, strip competitor tags, and build an automated syllabus table of contents.\n"
-            "• <b>FTM Manager:</b> Remove and replace competitor usernames, links, and hidden hyperlinks.\n"
+            "• <b>Skinet Modifier:</b> Remove and replace competitor usernames, links, and hidden hyperlinks.\n"
             "• <b>Anti-Ban Engine:</b> Human-like delay jitter and dynamic FloodWait absorption.\n\n"
             "<b>⚡ Essential Commands:</b>\n"
             "• <code>/start</code> - Activate and initialize your bot account.\n"
@@ -94,10 +94,10 @@ TUTORIAL_MODULES = {
             "• 1 Connected Target Channel\n"
             "• Basic Media Filters (Videos, Documents)\n"
             "• Standard Caption formatting\n\n"
-            "<b>⚡ PRO / ULTRA TIER:</b>\n"
+            "<b>⚡ PRO / ULTRA TIER (Skinet Verse):</b>\n"
             "• 🚀 <b>Extreme Speed Mode:</b> 0.2s - 0.5s ultra-fast burst transfer\n"
             "• 🎓 <b>Course Seller Mode ⚡️:</b> Auto lecture numbering + Index Table of Contents\n"
-            "• 🛠 <b>FTM Manager:</b> Username & Link Replacer + Hidden Link Sanitizer\n"
+            "• 🛠 <b>Skinet Modifier:</b> Username & Link Replacer + Hidden Link Sanitizer\n"
             "• 🔄 <b>Smart AutoSave:</b> Real-time channel monitoring & automatic forwarding\n"
             "• 👤 <b>UserBot Integration:</b> Clone from private/restricted channels\n"
             "• 📦 <b>Unlimited Channels & Batch Size:</b> Zero throttling and multi-admin support"
@@ -120,7 +120,7 @@ TUTORIAL_MODULES = {
             "<b>📝 Sample Template:</b>\n"
             "<code>🎬 &lt;b&gt;{filename}&lt;/b&gt;\n"
             "📦 Size: {size} | ⏳ {duration}\n\n"
-            "🌟 &lt;i&gt;Uploaded by @MyCourseHub&lt;/i&gt;</code>\n\n"
+            "🌟 &lt;i&gt;Uploaded by Skinet Verse&lt;/i&gt;</code>\n\n"
             "💡 <i>Enable 'Clean Caption' to wipe competitor headers/footers before applying your custom format!</i>"
         ),
         "action_btn": InlineKeyboardButton("🖋️ Set Caption", callback_data="settings#caption")
@@ -155,7 +155,7 @@ TUTORIAL_MODULES = {
             "<b>3.</b> Set specific target destinations or use your global target.\n"
             "<b>4.</b> Whenever the source channel posts a new file, video, or note:\n"
             "   • The bot captures the message in real-time.\n"
-            "   • Applies your FTM filters, cleans links, replaces usernames.\n"
+            "   • Applies your Skinet Modifier filters, cleans links, replaces usernames.\n"
             "   • Automatically pushes the cleaned post to your target channel!\n\n"
             "⚡️ <i>Runs seamlessly in the background with zero battery or CPU drain on your device!</i>"
         ),
@@ -170,37 +170,37 @@ TUTORIAL_MODULES = {
             "<b>🛡 Clean Forward Standard:</b>\n"
             "• <b>Remove 'Forwarded From' Tag:</b> Turn off forward tags so messages appear as original native uploads posted directly by you.\n"
             "• <b>Custom Header & Footer Watermarks:</b> Embed your channel link or brand signature on every video and document caption.\n"
-            "• <b>Upload Type Cycling:</b> Convert raw media files into standard Streamable Videos or pure Documents via <b>🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ ➔ 📦 ᴜᴘʟᴏᴀᴅ ᴛʏᴘᴇ</b>.\n\n"
-            "💡 <i>Combine with FTM Username Replacer for 100% white-label course distribution!</i>"
+            "• <b>Upload Type Cycling:</b> Convert raw media files into standard Streamable Videos or pure Documents via <b>🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ ➔ 📦 ᴜᴘʟᴏᴀᴅ ᴛʏᴘᴇ</b>.\n\n"
+            "💡 <i>Combine with Skinet Username Replacer for 100% white-label course distribution!</i>"
         ),
-        "action_btn": InlineKeyboardButton("🛠 FTM Manager", callback_data="settings#ftm")
+        "action_btn": InlineKeyboardButton("🛠 Skinet Modifier", callback_data="settings#ftm")
     },
     10: {
-        "title": "🛠 10. FTM Replacers & Removers",
-        "short": "FTM Replacer Guide",
+        "title": "🛠 10. Skinet Replacers & Removers",
+        "short": "Skinet Replacer Guide",
         "text": (
-            "<b><u>📚 MODULE 10: FTM REMOVERS & REPLACERS (STEP-BY-STEP)</u></b>\n\n"
-            "<b>FTM (Forward Text & Media Modifier)</b> gives you complete control over competitor text, links, and tags.\n\n"
+            "<b><u>📚 MODULE 10: SKINET REMOVERS & REPLACERS (STEP-BY-STEP)</u></b>\n\n"
+            "<b>Skinet Text & Media Modifier (Powered by Skinet Verse)</b> gives you complete control over competitor text, links, and tags.\n\n"
             "<b>1️⃣ Competitor Username Remover:</b>\n"
-            "• Go to <code>/settings</code> ➔ <b>🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ</b> ➔ Tap <b>👤 ᴜsᴇʀɴᴀᴍᴇ: [ON/OFF]</b>.\n"
+            "• Go to <code>/settings</code> ➔ <b>🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ</b> ➔ Tap <b>👤 ᴜsᴇʀɴᴀᴍᴇ: [ON/OFF]</b>.\n"
             "• Automatically wipes all <code>@username</code> mentions from captions.\n\n"
             "<b>2️⃣ Competitor Username Replacer:</b>\n"
             "• Tap <b>✏️ sᴇᴛ ᴜsᴇʀɴᴀᴍᴇ ʀᴇᴘʟᴀᴄᴇʀ</b>.\n"
-            "• Send your handle: <code>@MyCourseHub</code>\n"
-            "• Any competitor handle like <code>@OtherSeller</code> is instantly converted to <code>@MyCourseHub</code>!\n\n"
+            "• Send your handle: <code>@SkinetVerse</code>\n"
+            "• Any competitor handle like <code>@OtherSeller</code> is instantly converted to <code>@SkinetVerse</code>!\n\n"
             "<b>3️⃣ External Link Remover:</b>\n"
             "• Tap <b>🔗 ʟɪɴᴋs: [ON/OFF]</b> to eliminate all <code>t.me/...</code> and web URLs.\n\n"
             "<b>4️⃣ Link Replacer:</b>\n"
             "• Tap <b>✏️ sᴇᴛ ʟɪɴᴋ ʀᴇᴘʟᴀᴄᴇʀ</b>.\n"
-            "• Send your channel link: <code>https://t.me/MyChannel</code>\n"
+            "• Send your channel link: <code>https://t.me/SkinetVerse</code>\n"
             "• Automatically redirects all external links in captions to your channel!\n\n"
             "<b>5️⃣ Hidden Link Sanitizer:</b>\n"
             "• Strips sneaky embedded links like <code>[Click Here](https://competitor.com)</code> or <code>&lt;a href='...'&gt;</code>.\n\n"
             "<b>6️⃣ Custom Word Replacements:</b>\n"
             "• Tap <b>🔤 ᴀᴅᴅ ᴡᴏʀᴅ ʀᴇᴘʟᴀᴄᴇᴍᴇɴᴛ</b>.\n"
-            "• Send rule as <code>old_word:new_word</code> (e.g. <code>PW:Codex</code>)."
+            "• Send rule as <code>old_word:new_word</code> (e.g. <code>PW:SkinetVerse</code>)."
         ),
-        "action_btn": InlineKeyboardButton("🛠 Open FTM Manager", callback_data="settings#ftm")
+        "action_btn": InlineKeyboardButton("🛠 Open Skinet Modifier", callback_data="settings#ftm")
     },
     11: {
         "title": "🔢 11. Alpha Mode & Skip Messages",
@@ -255,7 +255,7 @@ def tutorial_menu_keyboard():
     
     buttons.append([
         InlineKeyboardButton("🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ⚡️", callback_data="settings#courseseller"),
-        InlineKeyboardButton("🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ 🛠", callback_data="settings#ftm")
+        InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ 🛠", callback_data="settings#ftm")
     ])
     buttons.append([
         InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back")
@@ -283,9 +283,9 @@ def tutorial_page_keyboard(mod_id: int):
 @Client.on_message(filters.private & filters.command(['tutorial', 'guide']))
 async def tutorial_cmd(client: Client, message: Message):
     text = (
-        "<b><u>📚 FORWARD BOT MASTER TUTORIAL HUB</u></b>\n\n"
-        "Welcome to the official interactive knowledge base for <b>Forward Bot</b>.\n"
-        "Master channel cloning, FTM text sanitization, course automation, and private channel forwarding!\n\n"
+        "<b><u>📚 SKINET VERSE MASTER TUTORIAL HUB</u></b>\n\n"
+        "Welcome to the official interactive knowledge base for <b>Skinet Verse Forward Bot</b>.\n"
+        "Master channel cloning, Skinet text & media sanitization, course automation, and private channel forwarding!\n\n"
         "👇 <b>Select any module below to start learning:</b>"
     )
     await message.reply_text(
@@ -294,7 +294,7 @@ async def tutorial_cmd(client: Client, message: Message):
         disable_web_page_preview=True
     )
 
-@Client.on_message(filters.private & filters.command(['ftm']))
+@Client.on_message(filters.private & filters.command(['skinet', 'modifier', 'ftm']))
 async def ftm_cmd(client: Client, message: Message):
     mod = TUTORIAL_MODULES[10]
     await message.reply_text(
@@ -322,9 +322,9 @@ async def tutorial_callback(bot: Client, query: CallbackQuery):
 
     if action == "menu":
         text = (
-            "<b><u>📚 FORWARD BOT MASTER TUTORIAL HUB</u></b>\n\n"
-            "Welcome to the official interactive knowledge base for <b>Forward Bot</b>.\n"
-            "Master channel cloning, FTM text sanitization, course automation, and private channel forwarding!\n\n"
+            "<b><u>📚 SKINET VERSE MASTER TUTORIAL HUB</u></b>\n\n"
+            "Welcome to the official interactive knowledge base for <b>Skinet Verse Forward Bot</b>.\n"
+            "Master channel cloning, Skinet text & media sanitization, course automation, and private channel forwarding!\n\n"
             "👇 <b>Select any module below to start learning:</b>"
         )
         await query.message.edit_text(
