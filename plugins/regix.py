@@ -78,6 +78,7 @@ async def pub_(bot, message):
     base_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
     jitter_enabled = bool(speed_cfg.get('jitter', True))
     batch_size = int(speed_cfg.get('batch_size', 100 if base_delay <= 1.0 else 20))
+    course_items = []
     if Config.LOG_CHANNEL:
        try:
           await send(client, Config.LOG_CHANNEL,
@@ -136,10 +137,16 @@ async def pub_(bot, message):
                       await asyncio.sleep(max(1.0, b_sleep))
                       MSG = []
                 else:
-                   new_caption = custom_caption(message, caption, clean_caption=clean_caption, replace_words=replace_words)
-                   details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': button, "protect": protect}
-                   await copy(client, details, m, sts, dump_target=dump_target)
+                   lec_idx = len(course_items) + 1
+                   new_caption = custom_caption(message, caption, clean_caption=clean_caption, replace_words=replace_words, user_configs=user_configs, lecture_index=lec_idx)
+                   details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': button, "protect": protect, "upload_type": user_configs.get('upload_type', 'media')}
+                   sent_id = await copy(client, details, m, sts, dump_target=dump_target)
                    sts.add('total_files')
+                   if sent_id:
+                      media_obj = getattr(message, message.media.value, None) if message.media else None
+                      fname = getattr(media_obj, 'file_name', '') if media_obj else ''
+                      c_title = fname or (message.caption[:50] if message.caption else f"Lecture {lec_idx:02d}")
+                      course_items.append({'num': lec_idx, 'title': c_title, 'msg_id': sent_id})
                    sleep_time = human_delay(base_delay) if jitter_enabled else base_delay
                    await asyncio.sleep(sleep_time) 
         except Exception as e:
@@ -163,14 +170,23 @@ async def pub_(bot, message):
               )
            except Exception:
               pass
+
+        # ── Course Seller Mode: Auto Course List Maker ────────
+        if (user_configs.get('course_seller_mode') or user_configs.get('auto_course_list')) and course_items:
+           try:
+              await send_course_index_list(client, user, sts, course_items)
+           except Exception as err:
+              logger.warning(f"Error sending course list: {err}")
+
         await send(client, user, "<b>🎉 ғᴏʀᴡᴀᴅɪɴɢ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</b>")
         await edit(m, 'ᴄᴏᴍᴘʟᴇᴛᴇᴅ', "ᴄᴏᴍᴘʟᴇᴛᴇᴅ", sts) 
         await stop(client, user)
 
 async def copy(bot, msg, m, sts, dump_target=None):
    try:                                  
+     sent = None
      if msg.get("media") and msg.get("caption"):
-        await bot.send_cached_media(
+        sent = await bot.send_cached_media(
               chat_id=sts.get('TO'),
               file_id=msg.get("media"),
               caption=msg.get("caption"),
@@ -185,7 +201,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
            except Exception:
               pass
      elif msg.get("caption") and not msg.get("media"):
-        await bot.send_message(
+        sent = await bot.send_message(
               chat_id=sts.get('TO'),
               text=msg.get("caption"),
               reply_markup=msg.get('button'),
@@ -198,7 +214,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
            except Exception:
               pass
      else:
-        await bot.copy_message(
+        sent = await bot.copy_message(
               chat_id=sts.get('TO'),
               from_chat_id=sts.get('FROM'),    
               caption=msg.get("caption"),
@@ -214,14 +230,60 @@ async def copy(bot, msg, m, sts, dump_target=None):
                     message_id=msg.get("msg_id"))
            except Exception:
               pass
+     return getattr(sent, 'id', None)
    except FloodWait as e:
      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', e.value, sts)
      await asyncio.sleep(e.value + 1)
      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
-     await copy(bot, msg, m, sts, dump_target=dump_target)
+     return await copy(bot, msg, m, sts, dump_target=dump_target)
    except Exception as e:
      print(e)
      sts.add('deleted')
+     return None
+
+async def send_course_index_list(client, user, sts, course_items):
+   to_chat = sts.get('TO')
+   from_title = str(sts.get('FROM'))
+   clean_chat = str(to_chat).replace("-100", "").replace("-", "")
+
+   header = (
+      "📚 <b><u>ᴄᴏᴜʀsᴇ ʟᴇᴄᴛᴜʀᴇs ɪɴᴅᴇx / sʏʟʟᴀʙᴜs</u></b>\n"
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      f"🎯 <b>Source:</b> <code>{from_title}</code>\n"
+      f"📦 <b>Total Lectures:</b> <code>{len(course_items)}</code>\n\n"
+   )
+
+   chunk_size = 25
+   for chunk_idx in range(0, len(course_items), chunk_size):
+      chunk = course_items[chunk_idx:chunk_idx + chunk_size]
+      lines = []
+      for item in chunk:
+         num_str = f"{item['num']:02d}"
+         title = str(item['title']).replace("<", "&lt;").replace(">", "&gt;")
+         if item.get('msg_id'):
+            link = f"https://t.me/c/{clean_chat}/{item['msg_id']}"
+            lines.append(f"<b>[{num_str}]</b> <a href='{link}'>{title}</a>")
+         else:
+            lines.append(f"<b>[{num_str}]</b> {title}")
+
+      footer = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡️ <i>Generated by Forward Bot (Course Seller Mode)</i>"
+      full_text = header + "\n".join(lines) + footer
+
+      try:
+         sent_idx = await client.send_message(to_chat, full_text, disable_web_page_preview=True)
+         if chunk_idx == 0:
+            try:
+               await sent_idx.pin(disable_notification=True)
+            except Exception:
+               pass
+      except Exception:
+         pass
+
+      try:
+         await client.send_message(user, full_text, disable_web_page_preview=True)
+      except Exception:
+         pass
+
 
 async def forward(bot, msg, m, sts, protect, dump_target=None):
    try:                             
@@ -343,14 +405,69 @@ async def send(bot, user, text):
    except:
       pass 
 
-def clean_caption_text(text: str) -> str:
+def clean_caption_advanced(text: str, user_configs: dict = None, lecture_index: int = None, file_name: str = "") -> str:
   if not text:
-    return ""
-  text = re.sub(r'https?://(?:t\.me|telegram\.me|telegram\.dog)/\S+', '', text)
-  text = re.sub(r'https?://\S+|www\.\S+', '', text)
-  text = re.sub(r'@\w+', '', text)
-  text = re.sub(r'\n\s*\n', '\n\n', text).strip()
+    text = ""
+  user_configs = user_configs or {}
+  is_seller = bool(user_configs.get('course_seller_mode', False))
+  rem_user = is_seller or bool(user_configs.get('username_remover', False))
+  rep_user = user_configs.get('username_replacer')
+  rem_link = is_seller or bool(user_configs.get('link_remover', False))
+  rep_link = user_configs.get('link_replacer')
+  rem_hid = is_seller or bool(user_configs.get('hidden_link_remover', False))
+  clean_cap = is_seller or bool(user_configs.get('clean_caption', False))
+  replace_words = user_configs.get('replace_words', {})
+  auto_num = is_seller or bool(user_configs.get('auto_numbering', False))
+
+  # 1. Hidden link remover & replacer (HTML: <a href="url">text</a>)
+  if rem_hid or rem_link:
+    if rep_link:
+      text = re.sub(r'<a\s+href=["\'][^"\']+["\']>(.*?)</a>', rf'<a href="{rep_link}">\1</a>', text, flags=re.DOTALL)
+    else:
+      text = re.sub(r'<a\s+href=["\'][^"\']+["\']>(.*?)</a>', r'\1', text, flags=re.DOTALL)
+
+  # 2. Hidden link remover & replacer (Markdown: [text](url))
+  if rem_hid or rem_link:
+    if rep_link:
+      text = re.sub(r'\[([^\]]+)\]\(https?://[^\)]+\)', rf'[\1]({rep_link})', text)
+    else:
+      text = re.sub(r'\[([^\]]+)\]\(https?://[^\)]+\)', r'\1', text)
+
+  # 3. Direct links remover & replacer
+  if rem_link or clean_cap:
+    if rep_link:
+      text = re.sub(r'https?://(?:t\.me|telegram\.me|telegram\.dog)/\S+', rep_link, text)
+      text = re.sub(r'https?://\S+|www\.\S+', rep_link, text)
+    else:
+      text = re.sub(r'https?://(?:t\.me|telegram\.me|telegram\.dog)/\S+', '', text)
+      text = re.sub(r'https?://\S+|www\.\S+', '', text)
+
+  # 4. Username remover & replacer
+  if rem_user or clean_cap:
+    if rep_user:
+      text = re.sub(r'@\w+', rep_user, text)
+    else:
+      text = re.sub(r'@\w+', '', text)
+
+  # 5. Word replacements
+  if replace_words:
+    for old, new in replace_words.items():
+      if old:
+        text = text.replace(old, new)
+
+  # 6. Normalize whitespace
+  text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text).strip()
+
+  # 7. Lecture numbering prefix
+  if auto_num and lecture_index is not None:
+    prefix = f"<b>[{lecture_index:02d}]</b> "
+    if not text.startswith("[") and not text.startswith("<b>["):
+      text = prefix + (text if text else (file_name or f"Lecture {lecture_index:02d}"))
+
   return text
+
+def clean_caption_text(text: str) -> str:
+  return clean_caption_advanced(text, {'clean_caption': True})
 
 def apply_word_replacements(text: str, replace_words: dict) -> str:
   if not text or not replace_words:
@@ -359,33 +476,41 @@ def apply_word_replacements(text: str, replace_words: dict) -> str:
     text = text.replace(old, new)
   return text
 
-def custom_caption(msg, caption, clean_caption=False, replace_words=None):
+def custom_caption(msg, caption, clean_caption=False, replace_words=None, user_configs=None, lecture_index=None):
+  user_configs = dict(user_configs) if user_configs else {}
+  if clean_caption:
+    user_configs['clean_caption'] = True
+  if replace_words:
+    user_configs['replace_words'] = replace_words
+
+  file_name = ''
+  file_size = 0
+  fcaption = ''
+
   if msg.media:
-    if (msg.video or msg.document or msg.audio or msg.photo):
-      media = getattr(msg, msg.media.value, None)
-      if media:
-        file_name = getattr(media, 'file_name', '')
-        file_size = getattr(media, 'file_size', '')
-        fcaption = getattr(msg, 'caption', '')
-        if fcaption:
-          fcaption = fcaption.html
-          if clean_caption:
-            fcaption = clean_caption_text(fcaption)
-          if replace_words:
-            fcaption = apply_word_replacements(fcaption, replace_words)
-        if caption:
-          res = caption.format(filename=file_name, size=get_size(file_size), caption=fcaption or "")
-          if replace_words:
-            res = apply_word_replacements(res, replace_words)
-          return res
-        return fcaption
+    media_val = getattr(msg.media, 'value', str(msg.media))
+    media_obj = getattr(msg, media_val, None)
+    if media_obj:
+      file_name = getattr(media_obj, 'file_name', '') or ''
+      file_size = getattr(media_obj, 'file_size', 0) or 0
+    if msg.caption:
+      fcaption = msg.caption.html if hasattr(msg.caption, 'html') else str(msg.caption)
   elif msg.text:
-    txt = msg.text.html if hasattr(msg.text, 'html') else msg.text
-    if clean_caption:
-      txt = clean_caption_text(txt)
-    if replace_words:
-      txt = apply_word_replacements(txt, replace_words)
-    return txt
+    fcaption = msg.text.html if hasattr(msg.text, 'html') else str(msg.text)
+
+  cleaned = clean_caption_advanced(fcaption, user_configs, lecture_index=lecture_index, file_name=file_name)
+
+  if caption:
+    try:
+      res = caption.format(
+        filename=file_name,
+        size=get_size(file_size),
+        caption=cleaned or ""
+      )
+      return clean_caption_advanced(res, user_configs, lecture_index=None, file_name=file_name)
+    except Exception:
+      return cleaned
+  return cleaned if cleaned else None
   return None
 
 def get_size(size):

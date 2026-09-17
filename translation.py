@@ -19,6 +19,8 @@ class Translation(object):
 ⏣ __/forward - Forward messages__
 ⏣ __/fwd <start> <end> - Direct range forward__
 ⏣ __/autosave - Smart AutoSave & Channel Monitoring__
+⏣ __/tutorial - 12-Module Master Tutorial Hub__
+⏣ __/ftm - FTM Replacer & Sanitizer Guide__
 ⏣ __/pause - Pause ongoing forwarding__
 ⏣ __/resume - Resume paused forwarding__
 ⏣ __/stop - Cancel your ongoing forwarding__
@@ -27,7 +29,9 @@ class Translation(object):
 ⏣ __/reset - Reset your settings__</b>
 
 <b><u>💢 Features:</u></b>
-<b>► __Smart AutoSave: Real-time automatic channel monitoring__
+<b>► __🎓 Course Seller Mode: Auto lecture numbering & table of contents__
+► __🛠 FTM Modifier: Competitor username & link replacers__
+► __🚀 Smart AutoSave: Real-time automatic channel monitoring__
 ► __Smart Media Filters: Filter Videos, Photos, Documents, Audio__
 ► __Custom Upload Destinations: Per-channel or global targets__
 ► __Direct Range Forward: Forward ranges via message links__

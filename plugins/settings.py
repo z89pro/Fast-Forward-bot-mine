@@ -597,9 +597,266 @@ async def settings_query(bot, query):
     await update_configs(user_id, 'keywords', None)
     await query.message.edit_text(text="**sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ**",
                                    reply_markup=InlineKeyboardMarkup(buttons))
+
+  elif type == "courseseller":
+     configs = await get_configs(user_id)
+     await query.message.edit_text(
+        course_seller_text(configs),
+        reply_markup=course_seller_buttons(configs)
+     )
+
+  elif type == "cs_toggle_mode":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('course_seller_mode', False))
+     new_val = not curr
+     configs['course_seller_mode'] = new_val
+     if new_val:
+        configs['auto_course_list'] = True
+        configs['auto_numbering'] = True
+        configs['username_remover'] = True
+        configs['link_remover'] = True
+        configs['hidden_link_remover'] = True
+        configs['forward_tag'] = False
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Course Seller Mode: {'Activated ⚡️' if new_val else 'Disabled'}")
+     await query.message.edit_text(
+        course_seller_text(configs),
+        reply_markup=course_seller_buttons(configs)
+     )
+
+  elif type == "cs_toggle_list":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('auto_course_list', False))
+     configs['auto_course_list'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Course List Maker: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_num":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('auto_numbering', False))
+     configs['auto_numbering'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Lecture Numbering: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_user":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('username_remover', False))
+     configs['username_remover'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Username Remover: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_link":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('link_remover', False))
+     configs['link_remover'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Link Remover: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_hidden":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('hidden_link_remover', False))
+     configs['hidden_link_remover'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Hidden Link Sanitizer: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "ftm":
+     configs = await get_configs(user_id)
+     await query.message.edit_text(
+        ftm_text(configs),
+        reply_markup=ftm_buttons(configs)
+     )
+
+  elif type == "ftm_toggle_user":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('username_remover', False))
+     configs['username_remover'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Username Remover: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
+  elif type == "ftm_toggle_link":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('link_remover', False))
+     configs['link_remover'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Link Remover: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
+  elif type == "ftm_toggle_hidden":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('hidden_link_remover', False))
+     configs['hidden_link_remover'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Hidden Link Sanitizer: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
+  elif type == "ftm_toggle_tag":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('forward_tag', False))
+     configs['forward_tag'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Forward Tag: {'Preserved' if not curr else 'Removed (Clean)'}")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
+  elif type == "ftm_cycle_upload":
+     configs = await get_configs(user_id)
+     modes = ['media', 'video', 'document']
+     curr_mode = configs.get('upload_type', 'media')
+     next_mode = modes[(modes.index(curr_mode) + 1) % len(modes)] if curr_mode in modes else 'media'
+     configs['upload_type'] = next_mode
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Upload Type: {next_mode.upper()}")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
+  elif type == "ftm_set_user_rep":
+     await query.message.delete()
+     ask = await bot.ask(user_id, text="<b>👤 Send your replacement username (e.g. <code>@MyBrandCourses</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
+     if ask.text and not ask.text.startswith('/'):
+        val = None if ask.text.strip().lower() == 'none' else ask.text.strip()
+        configs = await get_configs(user_id)
+        configs['username_replacer'] = val
+        await db.update_configs(user_id, configs)
+        await bot.send_message(user_id, f"✅ Username replacer set to: <code>{val}</code>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='settings#ftm')]]))
+
+  elif type == "ftm_set_link_rep":
+     await query.message.delete()
+     ask = await bot.ask(user_id, text="<b>🔗 Send your replacement link (e.g. <code>https://t.me/MyChannel</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
+     if ask.text and not ask.text.startswith('/'):
+        val = None if ask.text.strip().lower() == 'none' else ask.text.strip()
+        configs = await get_configs(user_id)
+        configs['link_replacer'] = val
+        await db.update_configs(user_id, configs)
+        await bot.send_message(user_id, f"✅ Link replacer set to: <code>{val}</code>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='settings#ftm')]]))
+
+  elif type == "ftm_add_word":
+     await query.message.delete()
+     ask = await bot.ask(user_id, text="<b>🔤 Send word replacement rule as <code>old_word:new_word</code>:</b>\n(Example: <code>@competitor:@mychannel</code> or <code>badword:</code> to delete word)\n/cancel - Cancel", timeout=120)
+     if ask.text and ":" in ask.text and not ask.text.startswith('/'):
+        parts = ask.text.split(":", 1)
+        old, new = parts[0].strip(), parts[1].strip()
+        configs = await get_configs(user_id)
+        words = configs.get('replace_words', {})
+        words[old] = new
+        configs['replace_words'] = words
+        await db.update_configs(user_id, configs)
+        await bot.send_message(user_id, f"✅ Rule added: <code>'{old}' ➔ '{new}'</code>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='settings#ftm')]]))
+
+  elif type == "ftm_clear_words":
+     configs = await get_configs(user_id)
+     configs['replace_words'] = {}
+     await db.update_configs(user_id, configs)
+     await query.answer("All word replacement rules cleared!")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
   elif type.startswith("alert"):
     alert = type.split('_')[1]
     await query.answer(alert, show_alert=True)
+
+def course_seller_text(cfg):
+    mode_status = "🟢 ᴀᴄᴛɪᴠᴇ" if cfg.get('course_seller_mode') else "🔴 ᴅɪsᴀʙʟᴇᴅ"
+    list_status = "✅ ᴏɴ" if cfg.get('auto_course_list') else "❌ ᴏғғ"
+    num_status = "✅ ᴏɴ" if cfg.get('auto_numbering') else "❌ ᴏғғ"
+    user_rem = "✅ ᴏɴ" if cfg.get('username_remover') else "❌ ᴏғғ"
+    link_rem = "✅ ᴏɴ" if cfg.get('link_remover') else "❌ ᴏғғ"
+    hid_rem = "✅ ᴏɴ" if cfg.get('hidden_link_remover') else "❌ ᴏғғ"
+    
+    return (
+        "<b><u>🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ ⚡️</u></b>\n\n"
+        "<b>Power tools engineered specifically for Course Sellers & Content Distributors:</b>\n\n"
+        f"⚡️ <b>Master Seller Mode:</b> {mode_status}\n"
+        f"📚 <b>Auto Course List Maker:</b> {list_status}\n"
+        f"🔢 <b>Auto Lecture Numbering:</b> {num_status}\n"
+        f"👤 <b>Other Seller Username Remover:</b> {user_rem}\n"
+        f"🔗 <b>Link Remover & Replacer:</b> {link_rem}\n"
+        f"🔍 <b>Hidden Link Sanitizer:</b> {hid_rem}\n\n"
+        "<i>💡 When enabled, the bot automatically removes competitor ads, numbers your lectures, and creates a clean clickable syllabus table of contents!</i>"
+    )
+
+def course_seller_buttons(cfg):
+    mode_btn = "🛑 ᴅɪsᴀʙʟᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ" if cfg.get('course_seller_mode') else "⚡ ᴇɴᴀʙʟᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ"
+    list_mark = "✅" if cfg.get('auto_course_list') else "❌"
+    num_mark = "✅" if cfg.get('auto_numbering') else "❌"
+    user_mark = "✅" if cfg.get('username_remover') else "❌"
+    link_mark = "✅" if cfg.get('link_remover') else "❌"
+    hid_mark = "✅" if cfg.get('hidden_link_remover') else "❌"
+    
+    buttons = [
+        [InlineKeyboardButton(mode_btn, callback_data="settings#cs_toggle_mode")],
+        [
+            InlineKeyboardButton(f"📚 ᴄᴏᴜʀsᴇ ʟɪsᴛ ᴍᴀᴋᴇʀ {list_mark}", callback_data="settings#cs_toggle_list"),
+            InlineKeyboardButton(f"🔢 ᴀᴜᴛᴏ ɴᴜᴍʙᴇʀɪɴɢ {num_mark}", callback_data="settings#cs_toggle_num")
+        ],
+        [
+            InlineKeyboardButton(f"👤 ᴜsᴇʀɴᴀᴍᴇ ʀᴇᴍᴏᴠᴇʀ {user_mark}", callback_data="settings#cs_toggle_user"),
+            InlineKeyboardButton(f"🔗 ʟɪɴᴋ ʀᴇᴍᴏᴠᴇʀ {link_mark}", callback_data="settings#cs_toggle_link")
+        ],
+        [
+            InlineKeyboardButton(f"🔍 ʜɪᴅᴅᴇɴ ʟɪɴᴋs {hid_mark}", callback_data="settings#cs_toggle_hidden"),
+            InlineKeyboardButton("🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ", callback_data="settings#ftm")
+        ],
+        [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+def ftm_text(cfg):
+    user_rem = "✅ ᴏɴ" if cfg.get('username_remover') else "❌ ᴏғғ"
+    user_rep = cfg.get('username_replacer') or "None (Clean only)"
+    link_rem = "✅ ᴏɴ" if cfg.get('link_remover') else "❌ ᴏғғ"
+    link_rep = cfg.get('link_replacer') or "None (Clean only)"
+    hid_rem = "✅ ᴏɴ" if cfg.get('hidden_link_remover') else "❌ ᴏғғ"
+    replacements = cfg.get('replace_words', {})
+    up_type = str(cfg.get('upload_type', 'media')).upper()
+    tag_status = "❌ ʀᴇᴍᴏᴠᴇᴅ (ᴄʟᴇᴀɴ)" if not cfg.get('forward_tag') else "✅ ᴘʀᴇsᴇʀᴠᴇᴅ"
+    
+    return (
+        "<b><u>🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ (ғᴏʀᴡᴀʀᴅ ᴛᴇxᴛ & ᴍᴇᴅɪᴀ ᴍᴏᴅɪғɪᴇʀ)</u></b>\n\n"
+        "<b>Advanced sanitization, brand replacements, and upload tuning:</b>\n\n"
+        f"👤 <b>Username Remover:</b> {user_rem}\n"
+        f"👤 <b>Username Replacer:</b> <code>{user_rep}</code>\n"
+        f"🔗 <b>Link Remover:</b> {link_rem}\n"
+        f"🔗 <b>Link Replacer:</b> <code>{link_rep}</code>\n"
+        f"🔍 <b>Hidden Link Sanitizer:</b> {hid_rem}\n"
+        f"🔤 <b>Active Word Replacements:</b> <code>{len(replacements)} rules</code>\n"
+        f"📦 <b>Upload Stream Mode:</b> <code>{up_type}</code>\n"
+        f"🏷 <b>Forward Tag:</b> <code>{tag_status}</code>\n"
+    )
+
+def ftm_buttons(cfg):
+    user_mark = "✅ ᴏɴ" if cfg.get('username_remover') else "❌ ᴏғғ"
+    link_mark = "✅ ᴏɴ" if cfg.get('link_remover') else "❌ ᴏғғ"
+    hid_mark = "✅ ᴏɴ" if cfg.get('hidden_link_remover') else "❌ ᴏғғ"
+    tag_mark = "✅ ᴄʟᴇᴀɴ" if not cfg.get('forward_tag') else "⚠️ ᴛᴀɢɢᴇᴅ"
+    up_type = str(cfg.get('upload_type', 'media')).capitalize()
+    
+    buttons = [
+        [
+            InlineKeyboardButton(f"👤 ᴜsᴇʀɴᴀᴍᴇ: {user_mark}", callback_data="settings#ftm_toggle_user"),
+            InlineKeyboardButton("✏️ sᴇᴛ ᴜsᴇʀɴᴀᴍᴇ ʀᴇᴘʟᴀᴄᴇʀ", callback_data="settings#ftm_set_user_rep")
+        ],
+        [
+            InlineKeyboardButton(f"🔗 ʟɪɴᴋs: {link_mark}", callback_data="settings#ftm_toggle_link"),
+            InlineKeyboardButton("✏️ sᴇᴛ ʟɪɴᴋ ʀᴇᴘʟᴀᴄᴇʀ", callback_data="settings#ftm_set_link_rep")
+        ],
+        [
+            InlineKeyboardButton(f"🔍 ʜɪᴅᴅᴇɴ ʟɪɴᴋs: {hid_mark}", callback_data="settings#ftm_toggle_hidden"),
+            InlineKeyboardButton(f"🏷 ᴛᴀɢ: {tag_mark}", callback_data="settings#ftm_toggle_tag")
+        ],
+        [
+            InlineKeyboardButton("🔤 ᴀᴅᴅ ᴡᴏʀᴅ ʀᴇᴘʟᴀᴄᴇᴍᴇɴᴛ", callback_data="settings#ftm_add_word"),
+            InlineKeyboardButton("🗑 ʀᴇsᴇᴛ ᴡᴏʀᴅs", callback_data="settings#ftm_clear_words")
+        ],
+        [
+            InlineKeyboardButton(f"📦 ᴜᴘʟᴏᴀᴅ ᴛʏᴘᴇ: {up_type}", callback_data="settings#ftm_cycle_upload")
+        ],
+        [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
 def main_buttons(user_id=None):
   is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
   buttons = [[
@@ -622,6 +879,11 @@ def main_buttons(user_id=None):
                     callback_data='settings#speed'),
        InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ 🚀',
                     callback_data='autosave#main')
+       ],[
+       InlineKeyboardButton('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ⚡️',
+                    callback_data='settings#courseseller'),
+       InlineKeyboardButton('🛠 ꜰᴛᴍ ᴍᴀɴᴀɢᴇʀ 🛠',
+                    callback_data='settings#ftm')
        ]]
   if is_admin:
       buttons.append([

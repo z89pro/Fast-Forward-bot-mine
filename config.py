@@ -17,7 +17,7 @@ except ImportError:
 _DEFAULTS = {
     "API_ID":             "34439627",
     "API_HASH":           "e5c7efb57949e742889aa96bf64c4552",
-    "BOT_TOKEN":          "8225255242:AAFmXKLf5sldLXK5eaaQGolQsTszOi7lV58",
+    "BOT_TOKEN":          "8432833653:AAHrsIx0gasQwv7eAJv6DHbyYTjcPRNziyY",
     "BOT_SESSION":        "Auto_Forward",
     "DATABASE_URI":       "mongodb+srv://rajaualkhan33729_db_user:hlYTpjnHZzGDljKX@cluster0.vylyp51.mongodb.net/?appName=Cluster0",
     "DATABASE_NAME":      "UltraForwardBot",

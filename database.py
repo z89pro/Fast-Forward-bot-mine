@@ -120,21 +120,30 @@ class Database:
                'document': True,
                'animation': True,
                'sticker': True
-            }
+            },
+            'course_seller_mode': False,
+            'auto_course_list': False,
+            'auto_numbering': False,
+            'username_remover': False,
+            'username_replacer': None,
+            'link_remover': False,
+            'link_replacer': None,
+            'hidden_link_remover': False,
+            'hidden_link_replacer': None,
+            'remove_tags': True,
+            'upload_type': 'media',
+            'watermark_text': None
         }
         user = await self.col.find_one({'id':int(id)})
         if user:
             configs = user.get('configs', default)
+            for k, v in default.items():
+                if k not in configs:
+                    configs[k] = v
             if 'speed_cfg' not in configs or not isinstance(configs['speed_cfg'], dict):
                 configs['speed_cfg'] = default['speed_cfg']
-            if 'clean_caption' not in configs:
-                configs['clean_caption'] = False
             if 'replace_words' not in configs or not isinstance(configs['replace_words'], dict):
                 configs['replace_words'] = {}
-            if 'dump_channel' not in configs:
-                configs['dump_channel'] = None
-            if 'dump_enabled' not in configs:
-                configs['dump_enabled'] = False
             return configs
         return default 
        

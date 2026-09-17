@@ -21,9 +21,10 @@ main_buttons = [
     ],
     [
         InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
-        InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status')
+        InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ', callback_data='tutorial#menu')
     ],
     [
+        InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status'),
         InlineKeyboardButton('ℹ️ ᴀʙᴏᴜᴛ', callback_data='about')
     ]
 ]
@@ -92,13 +93,15 @@ async def help_command(client, message):
         reply_markup=InlineKeyboardMarkup(
             [[
             InlineKeyboardButton('• ʜᴏᴡ ᴛᴏ ᴜsᴇ ᴍᴇ ❓', callback_data='how_to_use'),
-            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main')
+            InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu')
             ],[
-            InlineKeyboardButton('• sᴇᴛᴛɪɴɢs ', callback_data='settings#main'),
-            InlineKeyboardButton('• sᴛᴀᴛᴜs ', callback_data='status')
+            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
+            InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs ', callback_data='settings#main')
             ],[
-            InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back'),
+            InlineKeyboardButton('• sᴛᴀᴛᴜs ', callback_data='status'),
             InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about')
+            ],[
+            InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back')
             ]]
         )
     )
@@ -112,13 +115,15 @@ async def helpcb(bot, query):
         reply_markup=InlineKeyboardMarkup(
             [[
             InlineKeyboardButton('• ʜᴏᴡ ᴛᴏ ᴜsᴇ ᴍᴇ ❓', callback_data='how_to_use'),
-            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main')
+            InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu')
             ],[
-            InlineKeyboardButton('• sᴇᴛᴛɪɴɢs ', callback_data='settings#main'),
-            InlineKeyboardButton('• sᴛᴀᴛᴜs ', callback_data='status')
+            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
+            InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs ', callback_data='settings#main')
             ],[
-            InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back'),
+            InlineKeyboardButton('• sᴛᴀᴛᴜs ', callback_data='status'),
             InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about')
+            ],[
+            InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back')
             ]]
         ))
 
@@ -126,7 +131,10 @@ async def helpcb(bot, query):
 async def how_to_use(bot, query):
     await query.message.edit_text(
         text=Translation.HOW_USE_TXT,
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='help')]]),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton('📚 ᴏᴘᴇɴ ꜰᴜʟʟ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu')],
+            [InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='help')]
+        ]),
         disable_web_page_preview=True
     )
 
