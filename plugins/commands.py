@@ -2,7 +2,10 @@ import os
 import sys
 import asyncio 
 import datetime
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 from pyrogram.types import Message
 from database import db, mongodb_version
 from config import Config, temp
@@ -196,8 +199,8 @@ async def status(bot, query):
 
 @Client.on_callback_query(filters.regex(r'^server_status'))
 async def server_status(bot, query):
-    ram = psutil.virtual_memory().percent
-    cpu = psutil.cpu_percent()
+    ram = psutil.virtual_memory().percent if psutil else "N/A"
+    cpu = psutil.cpu_percent() if psutil else "N/A"
 
     await query.message.edit_text(
         text=Translation.SERVER_TXT.format(cpu, ram),

@@ -7,10 +7,12 @@ Reads priority:
   3. Hardcoded defaults            (Fallback)
 """
 import os
-from dotenv import load_dotenv
-
-# Load .env only if it exists (doesn't overwrite existing system env vars)
-load_dotenv(override=False)
+try:
+    from dotenv import load_dotenv
+    # Load .env only if it exists (doesn't overwrite existing system env vars)
+    load_dotenv(override=False)
+except ImportError:
+    pass
 
 _DEFAULTS = {
     "API_ID":             "34439627",
