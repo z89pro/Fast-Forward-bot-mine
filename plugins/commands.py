@@ -22,14 +22,15 @@ def get_main_buttons(user_id=None):
             btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue')
         ),
         row(
+            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green'),
+            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue')
+        ),
+        row(
             btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue'),
-            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'green')
+            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green')
         ),
         row(
-            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green'),
-            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue')
-        ),
-        row(
+            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue'),
             btn('ℹ️ ᴀʙᴏᴜᴛ', 'about', 'blue')
         )
     ]
@@ -160,6 +161,10 @@ def get_help_buttons():
             btn('ℹ️ ᴀʙᴏᴜᴛ', 'about', 'blue')
         ),
         row(
+            btn('📜 ᴛᴇʀᴍs', 'terms_btn', 'blue'),
+            btn('🔒 ᴘʀɪᴠᴀᴄʏ', 'privacy_btn', 'blue')
+        ),
+        row(
             btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red')
         )
     )
@@ -172,6 +177,30 @@ async def help_command(client, message):
         chat_id=message.chat.id,
         text=Translation.HELP_TXT,
         reply_markup=get_help_buttons()
+    )
+
+#==================Terms & Privacy Commands==================#
+
+@Client.on_message(filters.private & filters.command(['terms', 'tos']))
+async def terms_command(client, message):
+    await message.reply_text(
+        text=Translation.TERMS_TXT,
+        reply_markup=markup(
+            row(btn('🔒 ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ', 'privacy_btn', 'blue')),
+            row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red'))
+        ),
+        disable_web_page_preview=True
+    )
+
+@Client.on_message(filters.private & filters.command(['privacy']))
+async def privacy_command(client, message):
+    await message.reply_text(
+        text=Translation.PRIVACY_TXT,
+        reply_markup=markup(
+            row(btn('📜 ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ', 'terms_btn', 'blue')),
+            row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red'))
+        ),
+        disable_web_page_preview=True
     )
 
 #==================Callback Functions==================#
@@ -206,9 +235,37 @@ async def back(bot, query):
 async def about(bot, query):
     await query.message.edit_text(
         text=Translation.ABOUT_TXT,
-        reply_markup=markup(row(btn('🔙 ʙᴀᴄᴋ', 'back', 'red'))),
+        reply_markup=markup(
+            row(
+                btn('📜 ᴛᴇʀᴍs', 'terms_btn', 'blue'),
+                btn('🔒 ᴘʀɪᴠᴀᴄʏ', 'privacy_btn', 'blue')
+            ),
+            row(btn('🔙 ʙᴀᴄᴋ', 'back', 'red'))
+        ),
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML,
+    )
+
+@Client.on_callback_query(filters.regex(r'^terms_btn'))
+async def terms_cb(bot, query):
+    await query.message.edit_text(
+        text=Translation.TERMS_TXT,
+        reply_markup=markup(
+            row(btn('🔒 ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ', 'privacy_btn', 'blue')),
+            row(btn('🔙 ʙᴀᴄᴋ', 'about', 'red'))
+        ),
+        disable_web_page_preview=True
+    )
+
+@Client.on_callback_query(filters.regex(r'^privacy_btn'))
+async def privacy_cb(bot, query):
+    await query.message.edit_text(
+        text=Translation.PRIVACY_TXT,
+        reply_markup=markup(
+            row(btn('📜 ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ', 'terms_btn', 'blue')),
+            row(btn('🔙 ʙᴀᴄᴋ', 'about', 'red'))
+        ),
+        disable_web_page_preview=True
     )
 
 @Client.on_callback_query(filters.regex(r'^donate'))

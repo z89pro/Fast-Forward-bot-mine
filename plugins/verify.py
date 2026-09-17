@@ -198,8 +198,8 @@ async def is_user_verified(user_id: int) -> bool:
     """
     Returns True if user has active verification, VIP referral pass, or admin bypass.
     """
-    # 1. Admin bypass
-    if user_id in Config.BOT_OWNER_ID:
+    # 1. Admin & Premium Bypass
+    if await db.is_admin(user_id) or await db.is_premium_user(user_id):
         return True
 
     # 2. Config check

@@ -145,3 +145,56 @@ An enterprise automated media pipeline engineered for high-concurrency channel m
 • If Source Chat is private, your UserBot must be a joined member or Admin.</i>
 
 👇 <b>Click "Yes, Proceed" below to start forwarding!</b>""" 
+
+  TERMS_TXT = """<blockquote><b>📜 <u>ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ — sᴋɪɴᴇᴛ ᴠᴇʀsᴇ</u></b></blockquote>
+
+<b>Last Updated: September 2026</b>
+
+By accessing or using <b>Skinet Verse</b>, you agree to comply with and be bound by the following terms:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<b>1. Purpose & Permitted Use:</b>
+• This bot is provided strictly for educational, personal data migration, and authorized channel backup purposes.
+• You must own or have explicit authorization from the channel administrators to migrate, clone, or mirror content.
+
+<b>2. Prohibited Activities:</b>
+• Unauthorized distribution of copyrighted media, intellectual property without rights, or proprietary paywalled content.
+• Transmission of illicit material, malicious software, spam, mass unauthorized advertising, or content violating Telegram ToS.
+• Attempting to reverse engineer, disrupt, or exploit the service infrastructure.
+
+<b>3. Fair Usage & System Stability:</b>
+• Strict rate-limiting and anti-flood delay mechanisms are enforced to maintain Telegram MTProto API compliance.
+• Abusive automated requests or bypass attempts may result in permanent access revocation.
+
+<b>4. Disclaimer of Warranty:</b>
+• The service is provided on an <i>"as is"</i> and <i>"as available"</i> basis without warranties of any kind.
+• Operators assume zero legal liability for user-transferred content or channel administrative actions.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<i>💡 Need help or clarification? Contact support or our administration team.</i>"""
+
+  PRIVACY_TXT = """<blockquote><b>🔒 <u>ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ — sᴋɪɴᴇᴛ ᴠᴇʀsᴇ</u></b></blockquote>
+
+<b>Last Updated: September 2026</b>
+
+Your privacy, data confidentiality, and account security are our highest architectural priorities.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<b>1. Zero Content Storage:</b>
+• <b>We do not store your forwarded files or media.</b> All media streams transit transiently in-memory directly through official Telegram MTProto endpoints.
+• No video, audio, document, or media files ever touch our physical server disks.
+
+<b>2. Session & Credential Security:</b>
+• UserBot session strings and Bot tokens are encrypted and isolated within secured MongoDB collections.
+• Credentials are used solely to execute forward/autosave tasks initiated by you.
+• You can delete your credentials anytime via <code>/settings</code> or <code>/reset</code>.
+
+<b>3. Diagnostics & Telemetry:</b>
+• Error diagnostics and task counters (message IDs, success/failure counts) are recorded to facilitate crash recovery and auto-resume.
+• System log channels record anonymous event telemetry to troubleshoot Telegram FloodWaits.
+
+<b>4. No Third-Party Sharing:</b>
+• We never sell, lease, disclose, or share your Telegram identity, channels, or personal data with any third parties or advertisers.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<i>💡 You retain full sovereignty over your data and can reset your account at any moment.</i>"""

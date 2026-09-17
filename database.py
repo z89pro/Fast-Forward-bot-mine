@@ -23,6 +23,9 @@ class Database:
         self.nfy = self.db.notify
         self.chl = self.db.channels 
         self.live = self.db.live_forwards 
+        self.tasks = self.db.active_tasks
+        self.premium = self.db.premium_users
+        self.orders = self.db.premium_orders 
         
     def new_user(self, id, name, referred_by=None):
         from datetime import datetime
@@ -499,6 +502,163 @@ class Database:
             {'$set': {key: value}},
             upsert=True
         )
+
+    # ── Auto-Resume Task Checkpoint System ─────────────────────────
+    async def save_active_task(self, task_id: str, data: dict):
+        import time
+        data["task_id"] = str(task_id)
+        data["status"] = data.get("status", "running")
+        data["updated_at"] = time.time()
+        await self.tasks.update_one(
+            {"task_id": str(task_id)},
+            {"$set": data},
+            upsert=True
+        )
+
+    async def update_task_progress(self, task_id: str, fetched: int, total_files: int, current_offset: int, duplicate: int = 0, deleted: int = 0, filtered: int = 0):
+        import time
+        await self.tasks.update_one(
+            {"task_id": str(task_id)},
+            {"$set": {
+                "fetched": int(fetched),
+                "total_files": int(total_files),
+                "current_offset": int(current_offset),
+                "duplicate": int(duplicate),
+                "deleted": int(deleted),
+                "filtered": int(filtered),
+                "updated_at": time.time()
+            }}
+        )
+
+    async def delete_active_task(self, task_id: str):
+        await self.tasks.delete_many({"task_id": str(task_id)})
+
+    async def get_active_tasks(self):
+        cursor = self.tasks.find({"status": "running"})
+        return [doc async for doc in cursor]
+
+    async def get_active_task(self, task_id: str):
+        return await self.tasks.find_one({"task_id": str(task_id)})
+
+    async def get_user_active_task(self, user_id: int):
+        return await self.tasks.find_one({"user_id": int(user_id), "status": "running"})
+
+    # ── Multi-Admin Management System ──────────────────────────────
+    async def get_all_admins(self) -> list:
+        admins = set(Config.BOT_OWNER_ID)
+        try:
+            doc = await self.db.admin_config.find_one({'_id': 'authorized_admins'})
+            if doc and isinstance(doc.get('admin_ids'), list):
+                for a in doc['admin_ids']:
+                    try:
+                        admins.add(int(a))
+                    except (ValueError, TypeError):
+                        pass
+        except Exception:
+            pass
+        return sorted(list(admins))
+
+    async def is_admin(self, user_id: int) -> bool:
+        if not user_id:
+            return False
+        if user_id in Config.BOT_OWNER_ID:
+            return True
+        admins = await self.get_all_admins()
+        return int(user_id) in admins
+
+    async def add_admin(self, user_id: int) -> bool:
+        uid = int(user_id)
+        await self.db.admin_config.update_one(
+            {'_id': 'authorized_admins'},
+            {'$addToSet': {'admin_ids': uid}},
+            upsert=True
+        )
+        if uid not in Config.BOT_OWNER_ID:
+            Config.BOT_OWNER_ID.append(uid)
+        return True
+
+    async def remove_admin(self, user_id: int) -> bool:
+        uid = int(user_id)
+        await self.db.admin_config.update_one(
+            {'_id': 'authorized_admins'},
+            {'$pull': {'admin_ids': uid}}
+        )
+        if uid in Config.BOT_OWNER_ID and len(Config.BOT_OWNER_ID) > 1:
+            Config.BOT_OWNER_ID.remove(uid)
+        return True
+
+    # ── Premium Subscription & Order System ────────────────────────
+    async def is_premium_user(self, user_id: int) -> bool:
+        if not user_id:
+            return False
+        if await self.is_admin(user_id):
+            return True
+        import time
+        now = time.time()
+        try:
+            doc = await self.premium.find_one({'user_id': int(user_id)})
+            if doc and doc.get('expires_at', 0) > now:
+                return True
+        except Exception:
+            pass
+        return False
+
+    async def get_premium_user(self, user_id: int):
+        import time
+        now = time.time()
+        try:
+            doc = await self.premium.find_one({'user_id': int(user_id)})
+            if doc and doc.get('expires_at', 0) > now:
+                return doc
+        except Exception:
+            pass
+        return None
+
+    async def set_premium_user(self, user_id: int, days: int, plan: str = "pro", activated_by: int = 0):
+        import time
+        now = time.time()
+        current = await self.premium.find_one({'user_id': int(user_id)})
+        base_time = max(now, current.get('expires_at', 0)) if current else now
+        new_expires = base_time + (int(days) * 86400)
+        
+        data = {
+            'user_id': int(user_id),
+            'plan': plan,
+            'expires_at': new_expires,
+            'activated_at': now,
+            'activated_by': int(activated_by)
+        }
+        await self.premium.update_one({'user_id': int(user_id)}, {'$set': data}, upsert=True)
+        # Also mirror into verification bypass
+        await self.set_user_verify_status(user_id, new_expires)
+        return new_expires
+
+    async def remove_premium_user(self, user_id: int):
+        await self.premium.delete_many({'user_id': int(user_id)})
+
+    async def get_all_premium_users(self):
+        import time
+        now = time.time()
+        cursor = self.premium.find({'expires_at': {'$gt': now}})
+        return [doc async for doc in cursor]
+
+    async def create_premium_order(self, order_data: dict):
+        await self.orders.update_one(
+            {'order_id': order_data['order_id']},
+            {'$set': order_data},
+            upsert=True
+        )
+        return order_data
+
+    async def get_premium_order(self, order_id: str):
+        return await self.orders.find_one({'order_id': str(order_id)})
+
+    async def update_premium_order(self, order_id: str, update_dict: dict):
+        await self.orders.update_one(
+            {'order_id': str(order_id)},
+            {'$set': update_dict}
+        )
+
     
 db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 

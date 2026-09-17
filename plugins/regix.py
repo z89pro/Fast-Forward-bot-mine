@@ -66,11 +66,30 @@ async def pub_(bot, message):
     except:
        await msg_edit(m, f"**ᴘʟᴇᴀsᴇ [ᴜsᴇʀʙᴏᴛ / ʙᴏᴛ](t.me/{_bot['username']}) ᴀᴅᴍɪɴ ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ғᴜʟʟ ᴘᴇʀᴍɪssɪᴏɴ.**", retry_btn(frwd_id), True)
        return await stop(client, user)
+    task_id = f"fwd_{user}_{frwd_id}"
+    return await execute_forward_task(
+        client=client,
+        user=user,
+        m=m,
+        sts=sts,
+        task_id=task_id,
+        _bot=_bot,
+        caption=caption,
+        forward_tag=forward_tag,
+        protect=protect,
+        button=button,
+        user_configs=user_configs,
+        is_resumed=False
+    )
+
+async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, forward_tag, protect, button, user_configs, is_resumed=False):
+    i = sts.get(full=True)
     temp.forwardings += 1
     await db.add_frwd(user)
-    await send(client, user, "<b>🚥 ғᴏʀᴡᴀʀᴅɪɴɢ sᴛᴀʀᴛᴇᴅ</b>")
+    if not is_resumed:
+        await send(client, user, "<b>🚥 ғᴏʀᴡᴀʀᴅɪɴɢ sᴛᴀʀᴛᴇᴅ</b>")
     sts.add(time=True)
-    user_configs = await db.get_configs(user)
+    
     clean_caption = user_configs.get('clean_caption', False)
     replace_words = user_configs.get('replace_words', {})
     dump_target = await db.get_effective_dump_channel()
@@ -79,108 +98,274 @@ async def pub_(bot, message):
     jitter_enabled = bool(speed_cfg.get('jitter', True))
     batch_size = int(speed_cfg.get('batch_size', 100 if base_delay <= 1.0 else 20))
     course_items = []
+
+    # ── Save active task in MongoDB checkpoint store ──
+    task_doc = {
+        "task_id": str(task_id),
+        "user_id": int(user),
+        "from_chat": sts.get("FROM"),
+        "to_chat": i.TO,
+        "limit": int(sts.get("limit")),
+        "skip": int(sts.get("skip")) if sts.get("skip") else 0,
+        "current_offset": int(sts.get("skip")) if sts.get("skip") else 0,
+        "fetched": sts.get("fetched") or 0,
+        "total_files": sts.get("total_files") or 0,
+        "duplicate": sts.get("duplicate") or 0,
+        "deleted": sts.get("deleted") or 0,
+        "filtered": sts.get("filtered") or 0,
+        "forward_tag": forward_tag,
+        "protect": protect,
+        "caption": caption,
+        "status": "running"
+    }
+    await db.save_active_task(task_id, task_doc)
+
     if Config.LOG_CHANNEL:
-       try:
-          await send(client, Config.LOG_CHANNEL,
-              f"📊 <b>#ForwardTaskStarted</b>\n\n"
-              f"👤 <b>User:</b> <code>{user}</code>\n"
-              f"📡 <b>Source:</b> <code>{sts.get('FROM')}</code>\n"
-              f"🎯 <b>Target:</b> <code>{i.TO}</code>\n"
-              f"📦 <b>Total:</b> <code>{sts.get('limit')}</code>\n"
-              f"⚡ <b>Speed Mode:</b> <code>{speed_cfg.get('mode', 'fast')}</code>"
-          )
-       except Exception:
-          pass
-    await msg_edit(m, "<code>ᴘʀᴏᴄᴇssɪɴɢ ...</code>") 
-    temp.IS_FRWD_CHAT.append(i.TO)
-    temp.lock[user] = locked = True
-    if locked:
         try:
-          MSG = []
-          pling=0
-          await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
-          print(f"Starting Forwarding Process... From :{sts.get('FROM')} To: {sts.get('TO')} Total: {sts.get('limit')} stats : {sts.get('skip')})")
-          async for message in client.iter_messages(
+            tag = "#ForwardTaskResumed" if is_resumed else "#ForwardTaskStarted"
+            await send(client, Config.LOG_CHANNEL,
+                f"📊 <b>{tag}</b>\n\n"
+                f"👤 <b>User:</b> <code>{user}</code>\n"
+                f"📡 <b>Source:</b> <code>{sts.get('FROM')}</code>\n"
+                f"🎯 <b>Target:</b> <code>{i.TO}</code>\n"
+                f"📦 <b>Total / Limit:</b> <code>{sts.get('limit')}</code>\n"
+                f"⏩ <b>Offset:</b> <code>{sts.get('skip') or 0}</code>\n"
+                f"⚡ <b>Speed Mode:</b> <code>{speed_cfg.get('mode', 'fast')}</code>"
+            )
+        except Exception:
+            pass
+
+    if m:
+        await msg_edit(m, "<code>ᴘʀᴏᴄᴇssɪɴɢ ...</code>") 
+    if i.TO not in temp.IS_FRWD_CHAT:
+        temp.IS_FRWD_CHAT.append(i.TO)
+    temp.lock[user] = True
+
+    try:
+        MSG = []
+        pling = 0
+        checkpoint_counter = 0
+        if m:
+            await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
+        start_offset = int(sts.get('skip')) if sts.get('skip') else 0
+        limit_target = int(sts.get('limit'))
+
+        async for message in client.iter_messages(
             client,
             chat_id=sts.get('FROM'), 
-            limit=int(sts.get('limit')), 
-            offset=int(sts.get('skip')) if sts.get('skip') else 0
-            ):
-                if await is_cancelled(client, user, m, sts):
-                   return
-                while temp.PAUSE.get(user) is True:
-                   if await is_cancelled(client, user, m, sts):
-                      return
-                   await asyncio.sleep(2)
-                if pling %20 == 0: 
-                   await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
-                pling += 1
-                sts.add('fetched')
-                if message == "DUPLICATE":
-                   sts.add('duplicate')
-                   continue 
-                elif message == "FILTERED":
-                   sts.add('filtered')
-                   continue 
-                if message.empty or message.service:
-                   sts.add('deleted')
-                   continue
-                if forward_tag:
-                   MSG.append(message.id)
-                   notcompleted = len(MSG)
-                   completed = sts.get('total') - sts.get('fetched')
-                   if ( notcompleted >= batch_size 
-                        or completed <= batch_size): 
-                      await forward(client, MSG, m, sts, protect, dump_target=dump_target)
-                      sts.add('total_files', notcompleted)
-                      b_sleep = human_delay(base_delay * 2) if jitter_enabled else (base_delay * 2)
-                      await asyncio.sleep(max(1.0, b_sleep))
-                      MSG = []
-                else:
-                   lec_idx = len(course_items) + 1
-                   new_caption = custom_caption(message, caption, clean_caption=clean_caption, replace_words=replace_words, user_configs=user_configs, lecture_index=lec_idx)
-                   details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': button, "protect": protect, "upload_type": user_configs.get('upload_type', 'media')}
-                   sent_id = await copy(client, details, m, sts, dump_target=dump_target)
-                   sts.add('total_files')
-                   if sent_id:
-                      media_obj = getattr(message, message.media.value, None) if message.media else None
-                      fname = getattr(media_obj, 'file_name', '') if media_obj else ''
-                      c_title = fname or (message.caption[:50] if message.caption else f"Lecture {lec_idx:02d}")
-                      course_items.append({'num': lec_idx, 'title': c_title, 'msg_id': sent_id})
-                   sleep_time = human_delay(base_delay) if jitter_enabled else base_delay
-                   await asyncio.sleep(sleep_time) 
-        except Exception as e:
+            limit=limit_target, 
+            offset=start_offset
+        ):
+            if await is_cancelled(client, user, m, sts, task_id=task_id):
+                return
+            while temp.PAUSE.get(user) is True:
+                if await is_cancelled(client, user, m, sts, task_id=task_id):
+                    return
+                await asyncio.sleep(2)
+            
+            if m and (pling % 20 == 0): 
+                await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
+            pling += 1
+            sts.add('fetched')
+
+            # Periodic MongoDB checkpoint for auto-resumption
+            checkpoint_counter += 1
+            if checkpoint_counter % 5 == 0:
+                current_mid = getattr(message, 'id', None) or (start_offset + pling)
+                await db.update_task_progress(
+                    task_id,
+                    fetched=sts.get('fetched') or 0,
+                    total_files=sts.get('total_files') or 0,
+                    current_offset=current_mid,
+                    duplicate=sts.get('duplicate') or 0,
+                    deleted=sts.get('deleted') or 0,
+                    filtered=sts.get('filtered') or 0
+                )
+
+            if message == "DUPLICATE":
+                sts.add('duplicate')
+                continue 
+            elif message == "FILTERED":
+                sts.add('filtered')
+                continue 
+            if message.empty or message.service:
+                sts.add('deleted')
+                continue
+
+            if forward_tag:
+                MSG.append(message.id)
+                notcompleted = len(MSG)
+                completed = sts.get('total') - sts.get('fetched')
+                if (notcompleted >= batch_size or completed <= batch_size): 
+                    await forward(client, MSG, m, sts, protect, dump_target=dump_target)
+                    sts.add('total_files', notcompleted)
+                    b_sleep = human_delay(base_delay * 2) if jitter_enabled else (base_delay * 2)
+                    await asyncio.sleep(max(1.0, b_sleep))
+                    MSG = []
+            else:
+                lec_idx = len(course_items) + 1
+                new_caption = custom_caption(message, caption, clean_caption=clean_caption, replace_words=replace_words, user_configs=user_configs, lecture_index=lec_idx)
+                details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': button, "protect": protect, "upload_type": user_configs.get('upload_type', 'media')}
+                sent_id = await copy(client, details, m, sts, dump_target=dump_target)
+                sts.add('total_files')
+                if sent_id:
+                    media_obj = getattr(message, message.media.value, None) if message.media else None
+                    fname = getattr(media_obj, 'file_name', '') if media_obj else ''
+                    c_title = fname or (message.caption[:50] if message.caption else f"Lecture {lec_idx:02d}")
+                    course_items.append({'num': lec_idx, 'title': c_title, 'msg_id': sent_id})
+                sleep_time = human_delay(base_delay) if jitter_enabled else base_delay
+                await asyncio.sleep(sleep_time)
+
+    except Exception as e:
+        if m:
             await msg_edit(m, f'<b>ERROR:</b>\n<code>{e}</code>', wait=True)
-            if sts.TO in temp.IS_FRWD_CHAT:
-                temp.IS_FRWD_CHAT.remove(sts.TO)
-            return await stop(client, user)
         if sts.TO in temp.IS_FRWD_CHAT:
             temp.IS_FRWD_CHAT.remove(sts.TO)
-        if Config.LOG_CHANNEL:
-           try:
-              await send(client, Config.LOG_CHANNEL,
-                  f"✅ <b>#ForwardTaskCompleted</b>\n\n"
-                  f"👤 <b>User:</b> <code>{user}</code>\n"
-                  f"📡 <b>Source:</b> <code>{sts.get('FROM')}</code>\n"
-                  f"🎯 <b>Target:</b> <code>{sts.get('TO')}</code>\n"
-                  f"📥 <b>Fetched:</b> <code>{sts.get('fetched') or 0}</code>\n"
-                  f"⚙️ <b>Forwarded:</b> <code>{sts.get('total_files') or 0}</code>\n"
-                  f"♻️ <b>Duplicate:</b> <code>{sts.get('duplicate') or 0}</code>\n"
-                  f"🗑️ <b>Deleted:</b> <code>{sts.get('deleted') or 0}</code>"
-              )
-           except Exception:
-              pass
+        await db.delete_active_task(task_id)
+        return await stop(client, user, task_id=task_id)
 
-        # ── Course Seller Mode: Auto Course List Maker ────────
-        if (user_configs.get('course_seller_mode') or user_configs.get('auto_course_list')) and course_items:
-           try:
-              await send_course_index_list(client, user, sts, course_items)
-           except Exception as err:
-              logger.warning(f"Error sending course list: {err}")
+    if sts.TO in temp.IS_FRWD_CHAT:
+        temp.IS_FRWD_CHAT.remove(sts.TO)
+    
+    # Task completed normally - remove checkpoint
+    await db.delete_active_task(task_id)
 
-        await send(client, user, "<b>🎉 ғᴏʀᴡᴀᴅɪɴɢ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</b>")
+    if Config.LOG_CHANNEL:
+        try:
+            await send(client, Config.LOG_CHANNEL,
+                f"✅ <b>#ForwardTaskCompleted</b>\n\n"
+                f"👤 <b>User:</b> <code>{user}</code>\n"
+                f"📡 <b>Source:</b> <code>{sts.get('FROM')}</code>\n"
+                f"🎯 <b>Target:</b> <code>{sts.get('TO')}</code>\n"
+                f"📥 <b>Fetched:</b> <code>{sts.get('fetched') or 0}</code>\n"
+                f"⚙️ <b>Forwarded:</b> <code>{sts.get('total_files') or 0}</code>\n"
+                f"♻️ <b>Duplicate:</b> <code>{sts.get('duplicate') or 0}</code>\n"
+                f"🗑️ <b>Deleted:</b> <code>{sts.get('deleted') or 0}</code>"
+            )
+        except Exception:
+            pass
+
+    # Course Seller Index
+    if (user_configs.get('course_seller_mode') or user_configs.get('auto_course_list')) and course_items:
+        try:
+            await send_course_index_list(client, user, sts, course_items)
+        except Exception as err:
+            logger.warning(f"Error sending course list: {err}")
+
+    await send(client, user, "<b>🎉 ғᴏʀᴡᴀᴅɪɴɢ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</b>")
+    if m:
         await edit(m, 'ᴄᴏᴍᴘʟᴇᴛᴇᴅ', "ᴄᴏᴍᴘʟᴇᴛᴇᴅ", sts) 
-        await stop(client, user)
+    await stop(client, user, task_id=task_id)
+
+async def auto_resume_unfinished_tasks(bot_app):
+    """
+    Startup recovery worker: queries MongoDB active_tasks and seamlessly resumes
+    interrupted forwarding jobs from their last recorded message checkpoint.
+    """
+    await asyncio.sleep(4)
+    try:
+        tasks = await db.get_active_tasks()
+    except Exception as e:
+        logger.warning(f"Error checking unfinished tasks for auto-resume: {e}")
+        return
+
+    if not tasks:
+        logger.info("✅ No unfinished forward tasks to resume.")
+        return
+
+    logger.info(f"🔄 Auto-resume: Found {len(tasks)} unfinished forward task(s)...")
+    for t in tasks:
+        asyncio.create_task(_resume_single_task(bot_app, t))
+
+async def _resume_single_task(bot_app, task_data):
+    user_id = task_data.get('user_id')
+    task_id = task_data.get('task_id')
+    if not user_id or not task_id:
+        return
+
+    _bot = await db.get_bot(user_id)
+    if not _bot:
+        logger.warning(f"Cannot resume task {task_id}: no bot found for user {user_id}")
+        await db.delete_active_task(task_id)
+        try:
+            await bot_app.send_message(
+                user_id,
+                "<blockquote><b>⚠️ Task Resumption Notice</b>\n\n"
+                "<i>Your previous forwarding task could not auto-resume because your bot/session is not configured. Please check /settings.</i></blockquote>"
+            )
+        except Exception:
+            pass
+        return
+
+    try:
+        client = await start_clone_bot(CLIENT.client(_bot))
+    except Exception as e:
+        logger.warning(f"Failed to start bot client for resumed task {task_id}: {e}")
+        await db.delete_active_task(task_id)
+        return
+
+    from_chat = task_data.get('from_chat')
+    to_chat = task_data.get('to_chat')
+    limit = int(task_data.get('limit', 0))
+    current_offset = int(task_data.get('current_offset') or task_data.get('skip', 0))
+
+    if current_offset >= limit:
+        logger.info(f"Task {task_id} was already at or past limit ({current_offset} >= {limit}), clearing.")
+        await db.delete_active_task(task_id)
+        try:
+            await client.stop()
+        except Exception:
+            pass
+        return
+
+    user_configs = await db.get_configs(user_id)
+    caption = task_data.get('caption') or user_configs.get('caption')
+    forward_tag = task_data.get('forward_tag', user_configs.get('forward_tag', False))
+    protect = task_data.get('protect', user_configs.get('protect', False))
+    from .test import parse_buttons
+    button = parse_buttons(user_configs.get('button') or '')
+
+    sts = STS(task_id)
+    sts.store(from_chat, to_chat, current_offset, limit)
+    sts.data[task_id]['fetched'] = task_data.get('fetched', current_offset)
+    sts.data[task_id]['total_files'] = task_data.get('total_files', 0)
+    sts.data[task_id]['duplicate'] = task_data.get('duplicate', 0)
+    sts.data[task_id]['deleted'] = task_data.get('deleted', 0)
+    sts.data[task_id]['filtered'] = task_data.get('filtered', 0)
+    sts.data[task_id]['user_id'] = user_id
+
+    # Send resume notification message to user
+    try:
+        resume_card = (
+            "<blockquote><b>🔄 <u>ᴀᴜᴛᴏ-ʀᴇsᴜᴍɪɴɢ ɪɴᴛᴇʀʀᴜᴘᴛᴇᴅ ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋ</u></b>\n\n"
+            f"📡 <b>Source:</b> <code>{from_chat}</code>\n"
+            f"🎯 <b>Target:</b> <code>{to_chat}</code>\n"
+            f"📦 <b>Resuming at Message:</b> <code>{current_offset}</code> / <code>{limit}</code>\n"
+            f"⚙️ <b>Previously Forwarded:</b> <code>{task_data.get('total_files', 0)}</code>\n\n"
+            "⚡ <i>Bot recovered successfully from reboot! Continuing forward job...</i></blockquote>"
+        )
+        m = await bot_app.send_message(user_id, resume_card)
+    except Exception as err:
+        logger.warning(f"Could not send resume card to user {user_id}: {err}")
+        m = None
+
+    temp.CANCEL[user_id] = False
+    temp.PAUSE[user_id] = False
+
+    await execute_forward_task(
+        client=client,
+        user=user_id,
+        m=m,
+        sts=sts,
+        task_id=task_id,
+        _bot=_bot,
+        caption=caption,
+        forward_tag=forward_tag,
+        protect=protect,
+        button=button,
+        user_configs=user_configs,
+        is_resumed=True
+    )
 
 async def copy(bot, msg, m, sts, dump_target=None):
    try:                                  
@@ -368,7 +553,7 @@ async def edit(msg, title, status, sts):
       ])
    await msg_edit(msg, text, colored_markup(button))
 
-async def is_cancelled(client, user, msg, sts):
+async def is_cancelled(client, user, msg, sts, task_id=None):
    if temp.CANCEL.get(user) == True:
       if sts.TO in temp.IS_FRWD_CHAT:
           temp.IS_FRWD_CHAT.remove(sts.TO)
@@ -383,19 +568,35 @@ async def is_cancelled(client, user, msg, sts):
             )
          except Exception:
             pass
-      await edit(msg, "ᴄᴀɴᴄᴇʟʟᴇᴅ", "ᴄᴏᴍᴘʟᴇᴛᴇᴅ", sts)
+      if msg:
+          try:
+              await edit(msg, "ᴄᴀɴᴄᴇʟʟᴇᴅ", "ᴄᴏᴍᴘʟᴇᴛᴇᴅ", sts)
+          except Exception:
+              pass
       await send(client, user, "<b>❌ ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ</b>")
-      await stop(client, user)
+      await stop(client, user, task_id=task_id)
       return True 
    return False 
 
-async def stop(client, user):
+async def stop(client, user, task_id=None):
    try:
      await client.stop()
    except:
      pass 
    await db.rmve_frwd(user)
-   temp.forwardings -= 1
+   if task_id:
+     try:
+       await db.delete_active_task(task_id)
+     except Exception:
+       pass
+   else:
+     try:
+       t = await db.get_user_active_task(user)
+       if t:
+         await db.delete_active_task(t["task_id"])
+     except Exception:
+       pass
+   temp.forwardings = max(0, temp.forwardings - 1)
    temp.lock[user] = False 
    temp.PAUSE[user] = False
 
@@ -598,8 +799,21 @@ async def stop_forwarding(bot, message):
         temp.lock[user_id] = False
         temp.CANCEL[user_id] = True
         temp.PAUSE[user_id] = False
+        try:
+            t = await db.get_user_active_task(user_id)
+            if t:
+                await db.delete_active_task(t["task_id"])
+        except Exception:
+            pass
         await message.reply("🛑 ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ !", quote=True)
     else:
+        try:
+            t = await db.get_user_active_task(user_id)
+            if t:
+                await db.delete_active_task(t["task_id"])
+                return await message.reply("🛑 ᴀᴄᴛɪᴠᴇ ᴛᴀsᴋ ᴄʟᴇᴀʀᴇᴅ ғʀᴏᴍ ᴅᴀᴛᴀʙᴀsᴇ.", quote=True)
+        except Exception:
+            pass
         await message.reply("❌ ɴᴏ ᴏɴɢᴏɪɴɢ ғᴏʀᴡᴀʀᴅɪɴɢ ᴘʀᴏᴄᴇss ᴛᴏ ᴄᴀɴᴄᴇʟ.", quote=True)
 
 @Client.on_message(filters.command("pause"))

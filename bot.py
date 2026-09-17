@@ -84,6 +84,7 @@ class Bot(Client):
                 BotCommand("forward", "Start message forwarding"),
                 BotCommand("fwd", "Direct range forward links"),
                 BotCommand("autosave", "Smart AutoSave & live monitoring"),
+                BotCommand("plans", "Premium VIP passes & purchase"),
                 BotCommand("referral", "Refer friends & earn rewards"),
                 BotCommand("verify", "Check verification or get pass"),
                 BotCommand("setverify", "Token verification settings (Admin)"),
@@ -94,6 +95,8 @@ class Bot(Client):
                 BotCommand("config", "Bot system configuration (Owner)"),
                 BotCommand("unequify", "Remove duplicates in channel"),
                 BotCommand("reset", "Reset settings to default"),
+                BotCommand("terms", "Terms of service"),
+                BotCommand("privacy", "Privacy policy"),
                 BotCommand("help", "Help and features guide"),
                 BotCommand("status", "Check bot statistics")
             ])
@@ -183,31 +186,15 @@ class Bot(Client):
                     except Exception:
                         pass
 
-        # ── 4. Notify Users with Interrupted Forwarding Tasks ──
-        restart_text = (
-            "<blockquote><b>๏[-ิ_•ิ]๏ Bot Has Restarted!</b>\n\n"
-            "<i>The bot has rebooted. If your task was interrupted, please resend your forward link.</i></blockquote>"
-        )
+        # ── 4. Auto-Resume Interrupted Forwarding Tasks from Checkpoint ──
         try:
-            users = await db.get_all_frwd()
-            async for u in users:
-                cid = u.get("user_id")
-                if cid:
-                    try:
-                        await self.send_message(cid, restart_text)
-                    except FloodWait as fw:
-                        await asyncio.sleep(fw.value + 1)
-                        try:
-                            await self.send_message(cid, restart_text)
-                        except Exception:
-                            pass
-                    except Exception:
-                        pass
-            await db.rmve_frwd(all=True)
-        except Exception as err:
-            logger.debug(f"Restart broadcast cleanup: {err}")
+            from plugins.regix import auto_resume_unfinished_tasks
+            asyncio.create_task(auto_resume_unfinished_tasks(self))
+            logger.info("✅ Auto-resume forward task recovery worker launched.")
+        except Exception as e:
+            logger.warning(f"Could not initialize forward auto-resumption: {e}")
 
-        # Auto-resume live AutoSave channel monitors for all users
+        # ── 5. Auto-resume live AutoSave channel monitors for all users ──
         try:
             from plugins.autosave import resume_all_autosave_monitors
             asyncio.create_task(resume_all_autosave_monitors(self))

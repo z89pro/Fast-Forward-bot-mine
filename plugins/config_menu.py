@@ -10,8 +10,8 @@ from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, mar
 
 logger = logging.getLogger("SkinetConfig")
 
-def is_owner(user_id: int) -> bool:
-    return bool(user_id and user_id in Config.BOT_OWNER_ID)
+async def is_admin(user_id: int) -> bool:
+    return await db.is_admin(user_id)
 
 def mask_secret(s: str) -> str:
     if not s or not isinstance(s, str):
@@ -26,24 +26,27 @@ async def build_config_view() -> str:
     fsub_chan = f"<code>{Config.FORCE_SUB_CHANNEL}</code>" if Config.FORCE_SUB_CHANNEL else "<i>None (Not set)</i>"
     log_chan = f"<code>{Config.LOG_CHANNEL}</code>" if Config.LOG_CHANNEL else "<i>None (Not set)</i>"
     dump_chan = f"<code>{Config.DUMP_CHANNEL}</code>" if Config.DUMP_CHANNEL else "<i>None (Not set)</i>"
-    admins_str = " ".join([f"<code>{x}</code>" for x in Config.BOT_OWNER_ID]) if Config.BOT_OWNER_ID else "<i>None</i>"
+    all_admins = await db.get_all_admins()
+    admins_str = " ".join([f"<code>{x}</code>" for x in all_admins]) if all_admins else "<i>None</i>"
     masked_token = mask_secret(Config.BOT_TOKEN)
     masked_hash = mask_secret(Config.API_HASH)
     fast_delay = getattr(Config, 'FAST_DELAY', 1.0)
     vcfg = await db.get_verify_config()
     v_status = "🟢 <b>Enabled</b>" if vcfg.get('enabled') else "🔴 <b>Disabled</b>"
     v_info = f"{vcfg.get('duration', 24)}h ({vcfg.get('steps', 1)} Step)"
+    upi_val = getattr(Config, 'UPI_ID', '') or "<i>Not Set</i>"
     
     text = (
         "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ</u></b></blockquote>\n\n"
         "<i>Modify global bot environment values dynamically from Telegram. Changes persist in MongoDB across server restarts!</i>\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👑 <b>Bot Owner(s):</b> {admins_str}\n"
+        f"👑 <b>Authorized Admins ({len(all_admins)}):</b> {admins_str}\n"
         f"📡 <b>Log Channel ID:</b> {log_chan}\n"
         f"📦 <b>Dump Channel ID:</b> {dump_chan}\n"
         f"📢 <b>Force Sub Channel:</b> {fsub_chan}\n"
         f"🔒 <b>Force Sub Enforced:</b> {fsub_status}\n"
         f"🛡️ <b>Token Verification:</b> {v_status} (<code>{v_info}</code>)\n"
+        f"💳 <b>UPI Payment ID:</b> <code>{upi_val}</code>\n"
         f"🤖 <b>Bot Token:</b> <code>{masked_token}</code>\n"
         f"🔑 <b>API ID / Hash:</b> <code>{Config.API_ID}</code> / <code>{masked_hash}</code>\n"
         f"⚡️ <b>Default Speed Delay:</b> <code>{fast_delay}s</code>\n"
@@ -71,14 +74,15 @@ def build_config_buttons(vcfg=None) -> InlineKeyboardMarkup:
             InlineKeyboardButton("⚙️ ᴠᴇʀɪғʏ sᴇᴛᴛɪɴɢs", callback_data="config#verify_settings")
         ],
         [
-            InlineKeyboardButton("👑 ᴀᴅᴍɪɴ ɪᴅs", callback_data="config#set_admins"),
-            InlineKeyboardButton("⚡️ sᴘᴇᴇᴅ ᴅᴇʟᴀʏ", callback_data="config#set_speed")
+            InlineKeyboardButton("👑 ᴍᴀɴᴀɢᴇ ᴀᴅᴍɪɴs", callback_data="config#manage_admins"),
+            InlineKeyboardButton("💳 ᴜᴘɪ ᴘᴀʏᴍᴇɴᴛ ɪᴅ", callback_data="config#set_upi")
         ],
         [
-            InlineKeyboardButton("🤖 ʙᴏᴛ ᴛᴏᴋᴇɴ", callback_data="config#set_token"),
-            InlineKeyboardButton("🔑 ᴀᴘɪ ɪᴅ / ʜᴀsʜ", callback_data="config#set_api")
+            InlineKeyboardButton("⚡️ sᴘᴇᴇᴅ ᴅᴇʟᴀʏ", callback_data="config#set_speed"),
+            InlineKeyboardButton("🤖 ʙᴏᴛ ᴛᴏᴋᴇɴ", callback_data="config#set_token")
         ],
         [
+            InlineKeyboardButton("🔑 ᴀᴘɪ ɪᴅ / ʜᴀsʜ", callback_data="config#set_api"),
             InlineKeyboardButton("🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ ɴᴏᴡ", callback_data="config#restart")
         ],
         [
@@ -94,9 +98,9 @@ def build_config_buttons(vcfg=None) -> InlineKeyboardMarkup:
 @Client.on_message(filters.private & filters.command(["config", "env", "vars"]))
 async def config_cmd(bot: Client, message: Message):
     user_id = message.from_user.id
-    if not is_owner(user_id):
+    if not await is_admin(user_id):
         return await message.reply_text(
-            "⚠️ <b>Access Denied:</b> This configuration dashboard is strictly restricted to Bot Owners.",
+            "⚠️ <b>Access Denied:</b> This configuration dashboard is strictly restricted to Bot Admins & Owners.",
             quote=True
         )
     text = await build_config_view()
@@ -109,8 +113,8 @@ async def config_cmd(bot: Client, message: Message):
 @Client.on_callback_query(filters.regex(r"^config"))
 async def config_callback(bot: Client, query: CallbackQuery):
     user_id = query.from_user.id
-    if not is_owner(user_id):
-        return await query.answer("⚠️ Access Denied! Restricted to Bot Owners only.", show_alert=True)
+    if not await is_admin(user_id):
+        return await query.answer("⚠️ Access Denied! Restricted to Bot Admins & Owners only.", show_alert=True)
 
     data = query.data.split("#")[1] if "#" in query.data else "main"
 
@@ -273,14 +277,142 @@ async def config_callback(bot: Client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
+    elif data == "manage_admins":
+        admins = await db.get_all_admins()
+        primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
+        admin_lines = []
+        for a in admins:
+            tag = " 👑 (Primary Owner)" if a == primary_owner else " 🛡️ (Admin)"
+            admin_lines.append(f"• <code>{a}</code>{tag}")
+        admins_body = "\n".join(admin_lines) if admin_lines else "<i>None</i>"
+
+        text = (
+            "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴍᴜʟᴛɪ-ᴀᴅᴍɪɴ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ</u></b></blockquote>\n\n"
+            f"<b>Total Authorized Admins:</b> <code>{len(admins)}</code>\n\n"
+            f"{admins_body}\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "<i>Authorized administrators have full access to system configuration, premium VIP approvals, shortener management, and live logs.</i>\n\n"
+            "👇 <b>Select an action below:</b>"
+        )
+        btns = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("➕ ᴀᴅᴅ ᴀᴅᴍɪɴ", callback_data="config#add_admin_prompt"),
+                InlineKeyboardButton("➖ ʀᴇᴍᴏᴠᴇ ᴀᴅᴍɪɴ", callback_data="config#del_admin_prompt")
+            ],
+            [
+                InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")
+            ]
+        ])
+        await query.message.edit_text(text, reply_markup=btns)
+
+    elif data == "add_admin_prompt":
+        await query.message.delete()
+        ask = await bot.ask(
+            user_id,
+            text=(
+                "<b>👑 Send the Telegram User ID to promote as Admin:</b>\n\n"
+                "Example: <code>987654321</code>\n"
+                "<i>User ID can be found via @userinfobot or /status.</i>\n\n"
+                "<i>/cancel - Abort</i>"
+            ),
+            timeout=120
+        )
+        if not ask.text or ask.text.startswith("/cancel"):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
+
+        val = ask.text.strip()
+        if not val.isdigit():
+            return await bot.send_message(
+                user_id,
+                "<b>❌ Invalid ID! User ID must be numbers only.</b>",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
+            )
+        new_admin = int(val)
+        await db.add_admin(new_admin)
+        await bot.send_message(
+            user_id,
+            f"✅ <b>Successfully added user <code>{new_admin}</code> to authorized administrators!</b>",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴅᴍɪɴs", callback_data="config#manage_admins")]])
+        )
+
+    elif data == "del_admin_prompt":
+        await query.message.delete()
+        admins = await db.get_all_admins()
+        primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
+        ask = await bot.ask(
+            user_id,
+            text=(
+                f"👑 <b>Current Admins:</b> <code>{' '.join(str(x) for x in admins)}</code>\n\n"
+                "<b>Send the Telegram User ID to remove from Admins:</b>\n"
+                "<i>Note: Primary owner cannot be removed.</i>\n\n"
+                "<i>/cancel - Abort</i>"
+            ),
+            timeout=120
+        )
+        if not ask.text or ask.text.startswith("/cancel"):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
+
+        val = ask.text.strip()
+        if not val.isdigit():
+            return await bot.send_message(
+                user_id,
+                "<b>❌ Invalid ID! Must be digits only.</b>",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
+            )
+        del_admin = int(val)
+        if primary_owner and del_admin == primary_owner:
+            return await bot.send_message(
+                user_id,
+                "<b>⚠️ Primary bot owner cannot be removed!</b>",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
+            )
+        await db.remove_admin(del_admin)
+        await bot.send_message(
+            user_id,
+            f"✅ <b>Successfully removed <code>{del_admin}</code> from administrators!</b>",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴀᴅᴍɪɴs", callback_data="config#manage_admins")]])
+        )
+
+    elif data == "set_upi":
+        await query.message.delete()
+        curr_upi = getattr(Config, 'UPI_ID', '') or 'None'
+        ask = await bot.ask(
+            user_id,
+            text=(
+                f"💳 <b>Current UPI ID:</b> <code>{curr_upi}</code>\n\n"
+                "<b>Send new UPI ID for receiving premium payments:</b>\n"
+                "Example: <code>yourname@upi</code> or <code>merchant@okhdfcbank</code>\n"
+                "Send <code>none</code> to remove.\n\n"
+                "<i>/cancel - Abort</i>"
+            ),
+            timeout=120
+        )
+        if not ask.text or ask.text.startswith("/cancel"):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
+
+        new_upi = ask.text.strip()
+        if new_upi.lower() in ("none", "0", "off"):
+            new_upi = ""
+        Config.UPI_ID = new_upi
+        await db.update_system_config("UPI_ID", new_upi)
+        await bot.send_message(
+            user_id,
+            f"✅ <b>UPI Payment ID updated to:</b> <code>{new_upi or 'None'}</code>",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
+        )
+
     elif data == "set_admins":
         await query.message.delete()
-        curr = " ".join([str(x) for x in Config.BOT_OWNER_ID])
+        admins = await db.get_all_admins()
+        curr = " ".join([str(x) for x in admins])
         ask = await bot.ask(
             user_id,
             text=(
                 f"👑 <b>Current Admin IDs:</b> <code>{curr}</code>\n\n"
-                "<b>Send space-separated Telegram user IDs to set as bot owners:</b>\n"
+                "<b>Send space-separated Telegram user IDs to set as authorized admins:</b>\n"
                 "Example: <code>8349955493 987654321</code>\n\n"
                 "<i>Note: Your ID will always be preserved so you cannot lock yourself out.</i>\n"
                 "<i>/cancel - Abort</i>"
@@ -296,8 +428,8 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if user_id not in parsed:
             parsed.append(user_id)
         
-        Config.BOT_OWNER_ID = parsed
-        await db.update_system_config("BOT_OWNER_ID", parsed)
+        for aid in parsed:
+            await db.add_admin(aid)
 
         await bot.send_message(
             user_id,
@@ -433,3 +565,50 @@ async def config_callback(bot: Client, query: CallbackQuery):
             pass
         await asyncio.sleep(2)
         os.execl(sys.executable, sys.executable, *sys.argv)
+
+
+# ================= MULTI-ADMIN COMMANDS =================
+
+@Client.on_message(filters.private & filters.command(["addadmin"]))
+async def cmd_add_admin(bot: Client, message: Message):
+    if not await db.is_admin(message.from_user.id):
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.")
+    args = message.command[1:]
+    if not args or not args[0].isdigit():
+        return await message.reply_text("<b>Usage:</b> <code>/addadmin &lt;user_id&gt;</code>\n\nExample: <code>/addadmin 987654321</code>")
+    new_uid = int(args[0])
+    await db.add_admin(new_uid)
+    await message.reply_text(f"✅ User <code>{new_uid}</code> has been granted Administrator privileges.")
+
+
+@Client.on_message(filters.private & filters.command(["deladmin"]))
+async def cmd_del_admin(bot: Client, message: Message):
+    if not await db.is_admin(message.from_user.id):
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.")
+    args = message.command[1:]
+    if not args or not args[0].isdigit():
+        return await message.reply_text("<b>Usage:</b> <code>/deladmin &lt;user_id&gt;</code>\n\nExample: <code>/deladmin 987654321</code>")
+    del_uid = int(args[0])
+    primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
+    if primary_owner and del_uid == primary_owner:
+        return await message.reply_text("⚠️ <b>Cannot remove primary Bot Owner.</b>")
+    await db.remove_admin(del_uid)
+    await message.reply_text(f"✅ User <code>{del_uid}</code> removed from Administrator privileges.")
+
+
+@Client.on_message(filters.private & filters.command(["admins"]))
+async def cmd_admins(bot: Client, message: Message):
+    if not await db.is_admin(message.from_user.id):
+        return await message.reply_text("⚠️ <b>Access Denied:</b> Restricted to Bot Admins & Owners.")
+    admins = await db.get_all_admins()
+    primary = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
+    lines = []
+    for a in admins:
+        tag = " 👑 (Primary Owner)" if a == primary else " 🛡️ (Admin)"
+        lines.append(f"• <code>{a}</code>{tag}")
+    admin_text = (
+        "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs</u></b></blockquote>\n\n"
+        f"<b>Total Count:</b> <code>{len(admins)}</code>\n\n" + "\n".join(lines)
+    )
+    await message.reply_text(admin_text)
+

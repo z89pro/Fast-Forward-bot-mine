@@ -42,6 +42,10 @@ _DEFAULTS = {
     "SHORTENER_API3":     "",
     "TOKEN_TIMEOUT":      "30",
     "VERIFY_TUTORIAL":    "",
+    "UPI_ID":             "",
+    "UPI_NAME":           "Skinet Premium",
+    "ADMIN_CONTACT":      "@TheSkinet",
+    "CRYPTO_ADDRESS":     "",
 }
 
 def _get(key: str, alt_keys: tuple = ()) -> str:
@@ -97,6 +101,10 @@ class Config:
     SHORTENER_API3 = _get("SHORTENER_API3")
     TOKEN_TIMEOUT = int(_get("TOKEN_TIMEOUT")) if _get("TOKEN_TIMEOUT").isdigit() else 30
     VERIFY_TUTORIAL = _get("VERIFY_TUTORIAL")
+    UPI_ID = _get("UPI_ID")
+    UPI_NAME = _get("UPI_NAME") or "Skinet Premium"
+    ADMIN_CONTACT = _get("ADMIN_CONTACT") or "@TheSkinet"
+    CRYPTO_ADDRESS = _get("CRYPTO_ADDRESS")
 
 
 class temp(object):
