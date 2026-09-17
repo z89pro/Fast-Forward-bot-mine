@@ -26,6 +26,8 @@ from config import Config, temp
 from database import db
 from keep_alive import keep_alive
 from font_styler import patch_pyrogram_font
+from translation import Translation
+from buttons import colored_markup, btn
 
 # Initialize Universal Small Caps Font Engine
 patch_pyrogram_font()
@@ -138,40 +140,36 @@ class Bot(Client):
             except Exception as e:
                 logger.debug(f"Local restart file cleanup error: {e}")
 
+        restart_markup = colored_markup([
+            [btn("🚀 sʏsᴛᴇᴍ sᴛᴀᴛᴜs", "status", "blue"), btn("⚙️ ᴄᴏɴғɪɢ", "config#main", "green")]
+        ])
+
+        reboot_done_text = Translation.RESTARTED_TXT.format(
+            getattr(self, 'username', 'bot'),
+            getattr(self, 'id', 0),
+            stamp,
+            pyrogram_version,
+            python_version()
+        )
+
         if reboot_notice:
             r_chat_id = reboot_notice.get('chat_id')
             r_msg_id = reboot_notice.get('message_id')
             if r_chat_id and r_msg_id:
                 restarted_chat_id = r_chat_id
-                reboot_done_text = (
-                    "<blockquote><b>🤖 Bot Has Restarted!</b>\n\n"
-                    "✅ <i>System rebooted successfully and all services are online!</i>\n\n"
-                    f"⏰ <b>Time:</b> <code>{stamp} IST</code>\n"
-                    f"⚡ <b>Engine:</b> <code>Skinet Verse v2.0 Fast Final</code>\n"
-                    f"🚀 <b>Status:</b> <code>Active & Ready</code></blockquote>"
-                )
                 try:
-                    await self.edit_message_text(r_chat_id, r_msg_id, reboot_done_text)
+                    await self.edit_message_text(r_chat_id, r_msg_id, reboot_done_text, reply_markup=restart_markup)
                     logger.info(f"Updated restart status message for chat {r_chat_id}")
                 except Exception:
                     try:
-                        await self.send_message(r_chat_id, reboot_done_text)
+                        await self.send_message(r_chat_id, reboot_done_text, reply_markup=restart_markup)
                     except Exception:
                         pass
 
         # ── 2. Broadcast Restart Notice to LOG_CHANNEL ──
         if Config.LOG_CHANNEL:
-            log_restart_text = (
-                "<blockquote><b>🤖 Bot Has Restarted!</b>\n\n"
-                f"<b>Bot:</b> @{self.username} (<code>{self.id}</code>)\n"
-                f"<b>Status:</b> <code>Online & Ready ✅</code>\n"
-                f"<b>Time:</b> <code>{stamp} IST</code>\n"
-                f"<b>Engine:</b> <code>Skinet Verse v2.0 Fast Final</code>\n"
-                f"<b>Pyrogram:</b> <code>v{pyrogram_version}</code> | <b>Python:</b> <code>v{python_version()}</code>\n"
-                f"<b>Database:</b> <code>MongoDB Connected</code></blockquote>"
-            )
             try:
-                await self.send_message(Config.LOG_CHANNEL, log_restart_text)
+                await self.send_message(Config.LOG_CHANNEL, reboot_done_text, reply_markup=restart_markup)
                 logger.info(f"Sent restart notice to LOG_CHANNEL: {Config.LOG_CHANNEL}")
             except Exception as e:
                 logger.warning(
@@ -179,19 +177,18 @@ class Bot(Client):
                     f"Please ensure @{getattr(self, 'username', 'bot')} is added as an Admin with post permissions in that channel."
                 )
 
-        # ── 3. Notify Bot Owner(s) if not already notified in active chat ──
-        if Config.BOT_OWNER_ID:
-            for oid in Config.BOT_OWNER_ID:
-                if oid != restarted_chat_id:
-                    try:
-                        owner_notice = (
-                            "<blockquote><b>🤖 Bot Has Restarted!</b>\n\n"
-                            f"@{self.username} is back online and ready for tasks.\n\n"
-                            f"⏰ <code>{stamp} IST</code></blockquote>"
-                        )
-                        await self.send_message(oid, owner_notice)
-                    except Exception:
-                        pass
+        # ── 3. Notify Bot Owner(s) and Administrators ──
+        try:
+            admins_to_notify = await db.get_all_admins()
+        except Exception:
+            admins_to_notify = Config.BOT_OWNER_ID or []
+
+        for aid in admins_to_notify:
+            if aid != restarted_chat_id:
+                try:
+                    await self.send_message(aid, reboot_done_text, reply_markup=restart_markup)
+                except Exception:
+                    pass
 
         # ── 4. Auto-Resume Interrupted Forwarding Tasks from Checkpoint ──
         try:

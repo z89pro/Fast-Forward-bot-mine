@@ -128,10 +128,19 @@ async def start(client, message):
 
 #==================Restart Function==================#
 
-@Client.on_message(filters.private & filters.command(['restart']) & filters.user(Config.BOT_OWNER_ID))
+@Client.on_message(filters.private & filters.command(['restart', 'reboot']))
 async def restart(client, message):
+    user_id = message.from_user.id
+    if not await db.is_admin(user_id):
+        return await message.reply_text("⚠️ <b>Access Denied:</b> This command is restricted to Bot Administrators.")
+
+    from datetime import datetime, timezone, timedelta
+    ist = timezone(timedelta(hours=5, minutes=30))
+    stamp = datetime.now(ist).strftime("%d-%b-%Y %I:%M:%S %p")
+    user_name = message.from_user.first_name or "Admin"
+
     msg = await message.reply_text(
-        text="<blockquote><b>🔄 Restarting Skinet Verse Bot Engine...</b>\n\n<i>Rebooting core processes and reloading all configurations. Please wait 5-10 seconds...</i></blockquote>"
+        text=Translation.RESTART_TXT.format(user_name, stamp)
     )
     try:
         await db.set_restart_status(message.chat.id, msg.id)
@@ -143,7 +152,7 @@ async def restart(client, message):
             json.dump({'chat_id': message.chat.id, 'message_id': msg.id}, f)
     except Exception:
         pass
-    await asyncio.sleep(2)
+    await asyncio.sleep(1.5)
     os.execl(sys.executable, sys.executable, *sys.argv)
     
 def get_help_buttons():

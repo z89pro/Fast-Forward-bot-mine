@@ -36,6 +36,8 @@ An enterprise-grade Telegram channel cloning, media migration, and course distri
 ⏣ <code>/unequify</code> — Channel duplicate message cleaner
 ⏣ <code>/settings</code> — Complete bot customization menu
 ⏣ <code>/config</code> — Owner system configuration (Admin)
+⏣ <code>/restart</code> — Reboot bot engine & reload configs (Admin)
+⏣ <code>/broadcast</code> — Multi-format broadcast to all users (Admin)
 ⏣ <code>/setverify</code> — Token verification config (Admin)
 ⏣ <code>/userstats</code> — Admin user analytics dashboard
 ⏣ <code>/reset</code> — Reset configurations to default
@@ -198,6 +200,28 @@ Your privacy, data confidentiality, and account security are our highest archite
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <i>💡 You retain full sovereignty over your data and can reset your account at any moment.</i>"""
+
+  RESTART_TXT = """<blockquote><b>🔄 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ʀᴇʙᴏᴏᴛ</u></b></blockquote>
+
+⚡ <i>Rebooting core engine and reloading all configurations...</i>
+
+⏳ <b>Status:</b> <code>Restarting... (5-10s)</code>
+👤 <b>Initiated By:</b> <code>{}</code>
+⏰ <b>Timestamp:</b> <code>{} IST</code>"""
+
+  RESTARTED_TXT = """<blockquote><b>🤖 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ʙᴏᴛ ʜᴀs ʀᴇsᴛᴀʀᴛᴇᴅ!</u></b></blockquote>
+
+✅ <i>System rebooted successfully and all core services are online!</i>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 <b>Bot:</b> @{} (<code>{}</code>)
+🚀 <b>Status:</b> <code>Online & Ready ✅</code>
+⏰ <b>Time:</b> <code>{} IST</code>
+⚡ <b>Engine:</b> <code>Skinet Verse v2.5 Ultra Edition</code>
+📚 <b>Pyrogram:</b> <code>v{}</code> | 🐍 <b>Python:</b> <code>v{}</code>
+🛡 <b>Database:</b> <code>MongoDB Connected & Operational</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<i>⚡ Powered by Skinet Verse Official</i>"""
 
 
 # ── Universal Small Caps Post-Processor ──────────────────────────────
