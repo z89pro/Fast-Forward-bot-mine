@@ -24,8 +24,8 @@ def mask_secret(s: str) -> str:
 async def build_config_view() -> str:
     fsub_status = "🟢 <b>Enabled</b>" if Config.FORCE_SUB_ON else "🔴 <b>Disabled</b>"
     fsub_chan = f"<code>{Config.FORCE_SUB_CHANNEL}</code>" if Config.FORCE_SUB_CHANNEL else "<i>None (Not set)</i>"
-    log_chan = f"<code>{Config.LOG_CHANNEL}</code>" if Config.LOG_CHANNEL else "<i>None (Not set)</i>"
-    dump_chan = f"<code>{Config.DUMP_CHANNEL}</code>" if Config.DUMP_CHANNEL else "<i>None (Not set)</i>"
+    log_chan = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
+    dump_chan = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
     all_admins = await db.get_all_admins()
     admins_str = " ".join([f"<code>{x}</code>" for x in all_admins]) if all_admins else "<i>None</i>"
     masked_token = mask_secret(Config.BOT_TOKEN)
@@ -173,13 +173,17 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "set_log":
         await query.message.delete()
+        curr_log = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
         ask = await bot.ask(
             user_id,
             text=(
-                "<b>📡 Send new Log Channel ID:</b>\n\n"
-                "Example: <code>-1003584084546</code>\n"
-                "Send <code>0</code> to disable logging\n"
-                "<i>/cancel - Abort</i>"
+                "<blockquote><b>📡 <u>sᴇᴛ ʟᴏɢ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
+                f"<b>Current Value:</b> {curr_log}\n\n"
+                "Send the Telegram Channel ID where system telemetry and restart events will be dumped.\n\n"
+                "• <b>Example:</b> <code>-1001234567890</code>\n"
+                "• <b>Disable:</b> Send <code>0</code> to keep disabled\n"
+                "• <b>Cancel:</b> Send <code>/cancel</code> to abort\n\n"
+                "⚠️ <i>Ensure the bot is added as an Administrator in that channel first!</i>"
             ),
             timeout=120
         )
@@ -194,11 +198,11 @@ async def config_callback(bot: Client, query: CallbackQuery):
                 "<b>❌ Invalid Channel ID! Must be numbers (e.g. -1001234567890).</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
-        
+
         new_val = int(raw)
         Config.LOG_CHANNEL = new_val
         await db.update_system_config("LOG_CHANNEL", new_val)
-        
+
         # Test notification dispatch
         if new_val != 0:
             try:
@@ -206,21 +210,26 @@ async def config_callback(bot: Client, query: CallbackQuery):
             except Exception as e:
                 logger.warning(f"Could not dispatch test ping to new log channel {new_val}: {e}")
 
+        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(Disabled)</i>"
         await bot.send_message(
             user_id,
-            f"✅ <b>Log Channel updated to:</b> <code>{new_val}</code>",
+            f"✅ <b>Log Channel updated to:</b> {disp}",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
     elif data == "set_dump":
         await query.message.delete()
+        curr_dump = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(Disabled)</i>"
         ask = await bot.ask(
             user_id,
             text=(
-                "<b>📦 Send new Dump Channel ID:</b>\n\n"
-                "Example: <code>-1001234567890</code>\n"
-                "Send <code>0</code> to disable media dump\n"
-                "<i>/cancel - Abort</i>"
+                "<blockquote><b>📦 <u>sᴇᴛ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
+                f"<b>Current Value:</b> {curr_dump}\n\n"
+                "Send the Telegram Channel ID where media files will be archived.\n\n"
+                "• <b>Example:</b> <code>-1001234567890</code>\n"
+                "• <b>Disable:</b> Send <code>0</code> to keep disabled\n"
+                "• <b>Cancel:</b> Send <code>/cancel</code> to abort\n\n"
+                "⚠️ <i>Ensure the bot is added as an Administrator in that channel first!</i>"
             ),
             timeout=120
         )
@@ -235,15 +244,16 @@ async def config_callback(bot: Client, query: CallbackQuery):
                 "<b>❌ Invalid Channel ID! Must be numbers.</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
-        
+
         new_val = int(raw)
         Config.DUMP_CHANNEL = new_val
         await db.update_system_config("DUMP_CHANNEL", new_val)
         await db.update_admin_dump(new_val, enabled=bool(new_val != 0))
 
+        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(Disabled)</i>"
         await bot.send_message(
             user_id,
-            f"✅ <b>Dump Channel updated to:</b> <code>{new_val}</code>",
+            f"✅ <b>Dump Channel updated to:</b> {disp}",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
