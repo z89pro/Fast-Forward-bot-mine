@@ -6,7 +6,7 @@ try:
     import psutil
 except ImportError:
     psutil = None
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from database import db, mongodb_version
 from config import Config, temp
 from platform import python_version
