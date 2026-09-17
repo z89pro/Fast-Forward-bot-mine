@@ -85,6 +85,7 @@ class Bot(Client):
                 BotCommand("resume", "Resume paused forwarding"),
                 BotCommand("stop", "Cancel ongoing forwarding"),
                 BotCommand("settings", "Configure bot settings"),
+                BotCommand("config", "Bot system configuration (Owner)"),
                 BotCommand("unequify", "Remove duplicates in channel"),
                 BotCommand("reset", "Reset settings to default"),
                 BotCommand("help", "Help and features guide"),
@@ -93,6 +94,12 @@ class Bot(Client):
             logger.info("✅ Telegram bot command menu registered.")
         except Exception as e:
             logger.warning(f"Failed to set bot commands: {e}")
+
+        # Ensure latest dynamic system configs are active in-memory
+        try:
+            await db.load_system_config_into_env()
+        except Exception as e:
+            logger.debug(f"Load system config error: {e}")
 
         self.id = me.id
         self.username = me.username
@@ -135,6 +142,12 @@ class Bot(Client):
 if __name__ == "__main__":
     # Start web keep-alive server first on Koyeb/Render port
     keep_alive()
+
+    # Pre-load persistent system config from MongoDB before Pyrogram starts
+    try:
+        asyncio.run(db.load_system_config_into_env())
+    except Exception as e:
+        logger.debug(f"Pre-load config error: {e}")
 
     app = Bot()
     try:

@@ -888,6 +888,9 @@ def main_buttons(user_id=None):
   if is_admin:
       buttons.append([
           InlineKeyboardButton('📦 ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ (ᴀᴅᴍɪɴ)', callback_data='settings#dump'),
+          InlineKeyboardButton('⚙️ ʙᴏᴛ ᴄᴏɴғɪɢ (ᴀᴅᴍɪɴ)', callback_data='config#main')
+      ])
+      buttons.append([
           InlineKeyboardButton('ᴇxᴛʀᴀ sᴇᴛᴛɪɴɢs 🧪', callback_data='settings#nextfilters')
       ])
   else:

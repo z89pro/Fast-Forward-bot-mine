@@ -26,6 +26,7 @@ class Translation(object):
 ⏣ __/stop - Cancel your ongoing forwarding__
 ⏣ __/unequify - Delete duplicate messages in channels__
 ⏣ __/settings - Configure your settings__
+⏣ __/config - Bot System Configuration (Admin)__
 ⏣ __/reset - Reset your settings__</b>
 
 <b><u>💢 Features:</u></b>

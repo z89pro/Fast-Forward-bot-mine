@@ -237,6 +237,43 @@ class Database:
     
     async def get_all_frwd(self):
        return self.nfy.find({})
+
+    async def get_system_config(self):
+        doc = await self.db.admin_config.find_one({'_id': 'system_config'})
+        return doc.get('data', {}) if doc else {}
+
+    async def update_system_config(self, key: str, val):
+        await self.db.admin_config.update_one(
+            {'_id': 'system_config'},
+            {'$set': {f'data.{key}': val}},
+            upsert=True
+        )
+
+    async def load_system_config_into_env(self):
+        try:
+            cfg = await self.get_system_config()
+            if not cfg:
+                return
+            if 'LOG_CHANNEL' in cfg:
+                Config.LOG_CHANNEL = int(cfg['LOG_CHANNEL'])
+            if 'DUMP_CHANNEL' in cfg:
+                Config.DUMP_CHANNEL = int(cfg['DUMP_CHANNEL'])
+            if 'FORCE_SUB_CHANNEL' in cfg:
+                Config.FORCE_SUB_CHANNEL = str(cfg['FORCE_SUB_CHANNEL'])
+            if 'FORCE_SUB_ON' in cfg:
+                Config.FORCE_SUB_ON = bool(cfg['FORCE_SUB_ON'])
+            if 'BOT_OWNER_ID' in cfg and isinstance(cfg['BOT_OWNER_ID'], list):
+                Config.BOT_OWNER_ID = [int(x) for x in cfg['BOT_OWNER_ID']]
+            if 'BOT_TOKEN' in cfg and cfg['BOT_TOKEN']:
+                Config.BOT_TOKEN = str(cfg['BOT_TOKEN'])
+            if 'API_ID' in cfg and cfg['API_ID']:
+                Config.API_ID = int(cfg['API_ID'])
+            if 'API_HASH' in cfg and cfg['API_HASH']:
+                Config.API_HASH = str(cfg['API_HASH'])
+            if 'FAST_DELAY' in cfg:
+                Config.FAST_DELAY = float(cfg['FAST_DELAY'])
+        except Exception as e:
+            print(f"Error loading system config from DB: {e}")
     
 db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 
