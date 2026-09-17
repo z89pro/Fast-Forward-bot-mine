@@ -30,6 +30,18 @@ _DEFAULTS = {
     "REFERRAL_ENABLED":   "True",
     "REFERRAL_POINTS_PER_JOIN": "10",
     "REFERRAL_WELCOME_BONUS": "5",
+    "VERIFY_ENABLED":     "True",
+    "VERIFY_DURATION":    "24",
+    "VERIFY_STEPS":       "1",
+    "VERIFY_MODE":        "step",
+    "SHORTENER_URL":      "shareus.io",
+    "SHORTENER_API":      "",
+    "SHORTENER_URL2":     "",
+    "SHORTENER_API2":     "",
+    "SHORTENER_URL3":     "",
+    "SHORTENER_API3":     "",
+    "TOKEN_TIMEOUT":      "30",
+    "VERIFY_TUTORIAL":    "",
 }
 
 def _get(key: str, alt_keys: tuple = ()) -> str:
@@ -73,6 +85,19 @@ class Config:
     REFERRAL_POINTS_PER_JOIN = int(_get("REFERRAL_POINTS_PER_JOIN")) if _get("REFERRAL_POINTS_PER_JOIN").isdigit() else 10
     REFERRAL_WELCOME_BONUS = int(_get("REFERRAL_WELCOME_BONUS")) if _get("REFERRAL_WELCOME_BONUS").isdigit() else 5
 
+    VERIFY_ENABLED = _get("VERIFY_ENABLED").lower() in ("true", "1", "yes")
+    VERIFY_DURATION = int(_get("VERIFY_DURATION")) if _get("VERIFY_DURATION").isdigit() else 24
+    VERIFY_STEPS = int(_get("VERIFY_STEPS")) if _get("VERIFY_STEPS").isdigit() else 1
+    VERIFY_MODE = _get("VERIFY_MODE") or "step"
+    SHORTENER_URL = _get("SHORTENER_URL") or "shareus.io"
+    SHORTENER_API = _get("SHORTENER_API")
+    SHORTENER_URL2 = _get("SHORTENER_URL2")
+    SHORTENER_API2 = _get("SHORTENER_API2")
+    SHORTENER_URL3 = _get("SHORTENER_URL3")
+    SHORTENER_API3 = _get("SHORTENER_API3")
+    TOKEN_TIMEOUT = int(_get("TOKEN_TIMEOUT")) if _get("TOKEN_TIMEOUT").isdigit() else 30
+    VERIFY_TUTORIAL = _get("VERIFY_TUTORIAL")
+
 
 class temp(object):
     lock = {}
@@ -100,6 +125,11 @@ DUMP_CHANNEL   = Config.DUMP_CHANNEL
 FORCE_SUB_CHANNEL = Config.FORCE_SUB_CHANNEL
 FORCE_SUB_ON   = Config.FORCE_SUB_ON
 PORT           = Config.PORT
+VERIFY_ENABLED = Config.VERIFY_ENABLED
+VERIFY_DURATION = Config.VERIFY_DURATION
+VERIFY_STEPS   = Config.VERIFY_STEPS
+SHORTENER_URL  = Config.SHORTENER_URL
+SHORTENER_API  = Config.SHORTENER_API
 
 # ── Forward Engine Default Presets ─────────────────────────────
 FAST_BATCH_SIZE    = 100

@@ -82,6 +82,8 @@ class Bot(Client):
                 BotCommand("fwd", "Direct range forward links"),
                 BotCommand("autosave", "Smart AutoSave & live monitoring"),
                 BotCommand("referral", "Refer friends & earn rewards"),
+                BotCommand("verify", "Check verification or get pass"),
+                BotCommand("setverify", "Token verification settings (Admin)"),
                 BotCommand("pause", "Pause ongoing forwarding"),
                 BotCommand("resume", "Resume paused forwarding"),
                 BotCommand("stop", "Cancel ongoing forwarding"),

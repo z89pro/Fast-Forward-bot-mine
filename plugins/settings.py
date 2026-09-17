@@ -12,10 +12,16 @@ CLIENT = CLIENT()
 @Client.on_message(filters.command('settings'))
 async def settings(client, message):
    await message.delete()
+   text = (
+      "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴄᴏɴᴛʀᴏʟ ᴘᴀɴᴇʟ & sᴇᴛᴛɪɴɢs</u></b></blockquote>\n\n"
+      "Customize your bots, destinations, captions, speed limits, and content sanitization filters.\n\n"
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      "👇 <i>Choose a module below to configure:</i>"
+   )
    await message.reply_text(
-     "<b>cʜᴀɴɢᴇ ʏᴏᴜʀ sᴇᴛᴛɪɴɢs ᴀs ʏᴏᴜʀ ᴡɪsʜ.</b>",
+     text,
      reply_markup=main_buttons(message.from_user.id)
-     )
+   )
     
 @Client.on_callback_query(filters.regex(r'^settings'))
 async def settings_query(bot, query):
@@ -24,8 +30,14 @@ async def settings_query(bot, query):
   buttons = [[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data="settings#main")]]
   
   if type=="main":
+     text = (
+        "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴄᴏɴᴛʀᴏʟ ᴘᴀɴᴇʟ & sᴇᴛᴛɪɴɢs</u></b></blockquote>\n\n"
+        "Customize your bots, destinations, captions, speed limits, and content sanitization filters.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👇 <i>Choose a module below to configure:</i>"
+     )
      await query.message.edit_text(
-       "<b>cʜᴀɴɢᴇ ʏᴏᴜʀ sᴇᴛᴛɪɴɢs ᴀs ʏᴏᴜʀ ᴡɪsʜ.</b>",
+       text,
        reply_markup=main_buttons(user_id))
 
   elif type=="speed":
@@ -100,7 +112,10 @@ async def settings_query(bot, query):
      buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ', 
                       callback_data="settings#main")])
      await query.message.edit_text(
-       "<b><u>ᴍʏ ʙᴏᴛs</b></u>\n\n<b>ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴀʟʟ ʙᴏᴛ ғʀᴏᴍ ʜᴇʀᴇ</b>",
+       "<blockquote><b>🤖 <u>ᴍʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ʙᴏᴛs & ᴜsᴇʀʙᴏᴛs</u></b></blockquote>\n\n"
+       "Manage your forwarding bots, user accounts, and Pyrogram sessions.\n\n"
+       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+       "👇 <i>Select a bot below to edit or add a new one:</i>",
        reply_markup=InlineKeyboardMarkup(buttons))
   
   elif type=="addbot":
@@ -151,7 +166,10 @@ async def settings_query(bot, query):
      buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ', 
                       callback_data="settings#main")])
      await query.message.edit_text( 
-       "<b><u>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟs</b></u>\n\n<b>ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴛᴀʀɢᴇᴛ ᴄʜᴀᴛ ʜᴇʀᴇ ‼️</b>",
+       "<blockquote><b>🏷 <u>ʏᴏᴜʀ ᴛᴀʀɢᴇᴛ & sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟs</u></b></blockquote>\n\n"
+       "Manage your connected channels, groups, and target destinations.\n\n"
+       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+       "👇 <i>Select a channel below to view details or add new:</i>",
        reply_markup=InlineKeyboardMarkup(buttons))
    
   elif type=="addchannel":  
@@ -233,9 +251,13 @@ async def settings_query(bot, query):
      buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ', 
                       callback_data="settings#main")])
      await query.message.edit_text(
-        "<b><u>CUSTOM CAPTION & CLEANER</b></u>\n\n"
-        "<b>Configure custom captions or enable auto-cleaning to automatically strip foreign links, usernames & promotional ads from captions!</b>\n\n"
-        "<b><u>AVAILABLE FILLINGS:</b></u>\n- <code>{filename}</code> : Filename\n- <code>{size}</code> : File size\n- <code>{caption}</code> : default caption",
+        "<blockquote><b>🖋️ <u>ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ & ᴀᴜᴛᴏ-sᴀɴɪᴛɪᴢᴇʀ</u></b></blockquote>\n\n"
+        "Configure custom message captions or enable auto-cleaning to automatically strip competitor links, usernames & promotional ads.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "<b><u>AVAILABLE FILLINGS:</u></b>\n"
+        "• <code>{filename}</code> : File Name\n"
+        "• <code>{size}</code> : Formatted File Size\n"
+        "• <code>{caption}</code> : Original Caption",
         reply_markup=InlineKeyboardMarkup(buttons))
                                 
   elif type=="toggle_cleancaption":
@@ -261,9 +283,13 @@ async def settings_query(bot, query):
      buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ', 
                       callback_data="settings#main")])
      await query.message.edit_text(
-        "<b><u>CUSTOM CAPTION & CLEANER</b></u>\n\n"
-        "<b>Configure custom captions or enable auto-cleaning to automatically strip foreign links, usernames & promotional ads from captions!</b>\n\n"
-        "<b><u>AVAILABLE FILLINGS:</b></u>\n- <code>{filename}</code> : Filename\n- <code>{size}</code> : File size\n- <code>{caption}</code> : default caption",
+        "<blockquote><b>🖋️ <u>ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ & ᴀᴜᴛᴏ-sᴀɴɪᴛɪᴢᴇʀ</u></b></blockquote>\n\n"
+        "Configure custom message captions or enable auto-cleaning to automatically strip competitor links, usernames & promotional ads.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "<b><u>AVAILABLE FILLINGS:</u></b>\n"
+        "• <code>{filename}</code> : File Name\n"
+        "• <code>{size}</code> : Formatted File Size\n"
+        "• <code>{caption}</code> : Original Caption",
         reply_markup=InlineKeyboardMarkup(buttons))
                                 
   elif type=="seecaption":   
@@ -322,8 +348,13 @@ async def settings_query(bot, query):
      buttons.append([InlineKeyboardButton('↩ Back', 
                       callback_data="settings#main")])
      await query.message.edit_text(
-        "<b><u>CUSTOM BUTTON</b></u>\n\n<b>You can set an inline button for messages.</b>\n\n<b><u>FORMAT:</b></u>\n`[Button Name][buttonurl:https://t.me/your_link]`\n",
-        reply_markup=InlineKeyboardMarkup(buttons))
+         "<blockquote><b>⏹ <u>ᴄᴜsᴛᴏᴍ ɪɴʟɪɴᴇ ʙᴜᴛᴛᴏɴ</u></b></blockquote>\n\n"
+         "Attach interactive buttons to all your forwarded messages.\n\n"
+         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+         "<b><u>FORMAT SPECIFICATION:</u></b>\n"
+         "• <code>[Button Text][buttonurl:https://t.me/yourlink]</code>\n"
+         "• <code>[Row 1][buttonurl:link1] | [Row 1 Col 2][buttonurl:link2]</code>",
+         reply_markup=InlineKeyboardMarkup(buttons))
   
   elif type=="addbutton":
      await query.message.delete()
@@ -373,8 +404,11 @@ async def settings_query(bot, query):
      buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ', 
                       callback_data="settings#main")])
      await query.message.edit_text(
-        "<b><u>DATABASE</u>\n\nDatabase is required for store your duplicate messages permenant. other wise stored duplicate media may be disappeared when after bot restart.</b>",
-        reply_markup=InlineKeyboardMarkup(buttons))
+         "<blockquote><b>🗃 <u>ᴍᴏɴɢᴏᴅʙ ᴅᴀᴛᴀʙᴀsᴇ ᴄᴏɴɴᴇᴄᴛɪᴏɴ</u></b></blockquote>\n\n"
+         "Database is required to store duplicate message signatures permanently. Without MongoDB, duplicate tracking resets when the bot restarts.\n\n"
+         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+         "👇 <i>Configure your custom MongoDB cluster URI below:</i>",
+         reply_markup=InlineKeyboardMarkup(buttons))
   elif type=="addurl":
      await query.message.delete()
      uri = await bot.ask(user_id, "<b>please send your mongodb url.</b>\n\n<i>get your Mongodb url from [here](https://mongodb.com)</i>", disable_web_page_preview=True)
@@ -415,11 +449,13 @@ async def settings_query(bot, query):
      btn.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")])
      
      await query.message.edit_text(
-        "<b><u>📦 MEDIA DUMP / BACKUP CHANNEL (ADMIN ONLY)</u></b>\n\n"
-        "A separate dedicated channel where all forwarded media/files from all users are permanently backed up.\n\n"
-        f"<b>• Current Dump Target:</b> {current_info}\n"
-        f"<b>• Media Dump Status:</b> {state_mark}\n\n"
-        "<i>👑 Only bot admins can configure this channel. Normal users cannot access this setting.</i>",
+        "<blockquote><b>📦 <u>ᴍᴇᴅɪᴀ ᴅᴜᴍᴘ / ʙᴀᴄᴋᴜᴘ ᴄʜᴀɴɴᴇʟ (ᴀᴅᴍɪɴ)</u></b></blockquote>\n\n"
+        "A dedicated backup channel where all forwarded media/files from all users are mirrored and saved permanently.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"• <b>ᴄᴜʀʀᴇɴᴛ ᴅᴜᴍᴘ ᴛᴀʀɢᴇᴛ:</b> {current_info}\n"
+        f"• <b>ᴍᴇᴅɪᴀ ᴅᴜᴍᴘ sᴛᴀᴛᴜs:</b> <code>{state_mark}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👑 <i>Only bot admins can configure this channel.</i>",
         reply_markup=InlineKeyboardMarkup(btn)
      )
 
@@ -440,11 +476,13 @@ async def settings_query(bot, query):
         btn[1].append(InlineKeyboardButton("🗑️ ʀᴇᴍᴏᴠᴇ", callback_data="settings#deletedump"))
      btn.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")])
      await query.message.edit_text(
-        "<b><u>📦 MEDIA DUMP / BACKUP CHANNEL (ADMIN ONLY)</u></b>\n\n"
-        "A separate dedicated channel where all forwarded media/files from all users are permanently backed up.\n\n"
-        f"<b>• Current Dump Target:</b> {current_info}\n"
-        f"<b>• Media Dump Status:</b> {state_mark}\n\n"
-        "<i>👑 Only bot admins can configure this channel. Normal users cannot access this setting.</i>",
+        "<blockquote><b>📦 <u>ᴍᴇᴅɪᴀ ᴅᴜᴍᴘ / ʙᴀᴄᴋᴜᴘ ᴄʜᴀɴɴᴇʟ (ᴀᴅᴍɪɴ)</u></b></blockquote>\n\n"
+        "A dedicated backup channel where all forwarded media/files from all users are mirrored and saved permanently.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"• <b>ᴄᴜʀʀᴇɴᴛ ᴅᴜᴍᴘ ᴛᴀʀɢᴇᴛ:</b> {current_info}\n"
+        f"• <b>ᴍᴇᴅɪᴀ ᴅᴜᴍᴘ sᴛᴀᴛᴜs:</b> <code>{state_mark}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👑 <i>Only bot admins can configure this channel.</i>",
         reply_markup=InlineKeyboardMarkup(btn)
      )
 
@@ -480,17 +518,22 @@ async def settings_query(bot, query):
         [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
      ]
      await query.message.edit_text(
-        "<b><u>📦 MEDIA DUMP / BACKUP CHANNEL (ADMIN ONLY)</u></b>\n\n"
-        "A separate dedicated channel where all forwarded media/files from all users are permanently backed up.\n\n"
-        "<b>• Current Dump Target:</b> Not Set\n"
-        "<b>• Status:</b> ❌ ᴏғғ\n\n"
-        "<i>👑 Only bot admins can configure this channel. Normal users cannot access this setting.</i>",
+        "<blockquote><b>📦 <u>ᴍᴇᴅɪᴀ ᴅᴜᴍᴘ / ʙᴀᴄᴋᴜᴘ ᴄʜᴀɴɴᴇʟ (ᴀᴅᴍɪɴ)</u></b></blockquote>\n\n"
+        "A dedicated backup channel where all forwarded media/files from all users are mirrored and saved permanently.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "• <b>ᴄᴜʀʀᴇɴᴛ ᴅᴜᴍᴘ ᴛᴀʀɢᴇᴛ:</b> Not Set\n"
+        "• <b>ᴍᴇᴅɪᴀ ᴅᴜᴍᴘ sᴛᴀᴛᴜs:</b> <code>❌ ᴏғғ</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👑 <i>Only bot admins can configure this channel.</i>",
         reply_markup=InlineKeyboardMarkup(btn)
      )
       
   elif type=="filters":
      await query.message.edit_text(
-        "<b><u>💠 CUSTOM FILTERS 💠</b></u>\n\n**configure the type of messages which you want forward**",
+        "<blockquote><b>🕵‍♀ <u>ᴄᴜsᴛᴏᴍ ᴍᴇssᴀɢᴇ ғɪʟᴛᴇʀs</u> 🕵‍♀</b></blockquote>\n\n"
+        "Configure which media and message formats to transfer or ignore.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👇 <i>Click any filter below to toggle ON / OFF:</i>",
         reply_markup=await filters_buttons(user_id))
   elif type=="nextfilters":
      await query.edit_message_reply_markup( 
@@ -766,15 +809,17 @@ def course_seller_text(cfg):
     hid_rem = "✅ ᴏɴ" if cfg.get('hidden_link_remover') else "❌ ᴏғғ"
     
     return (
-        "<b><u>🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ ⚡️</u></b>\n\n"
+        "<blockquote><b>🎓 <u>ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ ⚡️</u></b></blockquote>\n\n"
         "<b>Power tools engineered specifically for Course Sellers & Content Distributors:</b>\n\n"
-        f"⚡️ <b>Master Seller Mode:</b> {mode_status}\n"
-        f"📚 <b>Auto Course List Maker:</b> {list_status}\n"
-        f"🔢 <b>Auto Lecture Numbering:</b> {num_status}\n"
-        f"👤 <b>Other Seller Username Remover:</b> {user_rem}\n"
-        f"🔗 <b>Link Remover & Replacer:</b> {link_rem}\n"
-        f"🔍 <b>Hidden Link Sanitizer:</b> {hid_rem}\n\n"
-        "<i>💡 When enabled, the bot automatically removes competitor ads, numbers your lectures, and creates a clean clickable syllabus table of contents!</i>"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"⚡️ <b>Master Seller Mode:</b> <code>{mode_status}</code>\n"
+        f"📚 <b>Auto Course List Maker:</b> <code>{list_status}</code>\n"
+        f"🔢 <b>Auto Lecture Numbering:</b> <code>{num_status}</code>\n"
+        f"👤 <b>Competitor Username Remover:</b> <code>{user_rem}</code>\n"
+        f"🔗 <b>Link Remover & Replacer:</b> <code>{link_rem}</code>\n"
+        f"🔍 <b>Hidden Link Sanitizer:</b> <code>{hid_rem}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "💡 <i>When enabled, the bot automatically removes competitor ads, numbers your lectures, and creates a clean clickable syllabus table of contents!</i>"
     )
 
 def course_seller_buttons(cfg):
@@ -814,16 +859,19 @@ def ftm_text(cfg):
     tag_status = "❌ ʀᴇᴍᴏᴠᴇᴅ (ᴄʟᴇᴀɴ)" if not cfg.get('forward_tag') else "✅ ᴘʀᴇsᴇʀᴠᴇᴅ"
     
     return (
-        "<b><u>🛠 sᴋɪɴᴇᴛ ᴛᴇxᴛ & ᴍᴇᴅɪᴀ ᴍᴏᴅɪғɪᴇʀ ⚡️</u></b>\n\n"
+        "<blockquote><b>🛠 <u>sᴋɪɴᴇᴛ ᴛᴇxᴛ & ᴍᴇᴅɪᴀ ᴍᴏᴅɪғɪᴇʀ ⚡️</u></b></blockquote>\n\n"
         "<b>Skinet Verse Content Sanitization & Re-Branding Suite:</b>\n\n"
-        f"👤 <b>Username Remover:</b> {user_rem}\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>Username Remover:</b> <code>{user_rem}</code>\n"
         f"👤 <b>Username Replacer:</b> <code>{user_rep}</code>\n"
-        f"🔗 <b>Link Remover:</b> {link_rem}\n"
+        f"🔗 <b>Link Remover:</b> <code>{link_rem}</code>\n"
         f"🔗 <b>Link Replacer:</b> <code>{link_rep}</code>\n"
-        f"🔍 <b>Hidden Link Sanitizer:</b> {hid_rem}\n"
+        f"🔍 <b>Hidden Link Sanitizer:</b> <code>{hid_rem}</code>\n"
         f"🔤 <b>Active Word Replacements:</b> <code>{len(replacements)} rules</code>\n"
         f"📦 <b>Upload Stream Mode:</b> <code>{up_type}</code>\n"
         f"🏷 <b>Forward Tag:</b> <code>{tag_status}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "💡 <i>Toggle switches or configure custom replacement phrases using the buttons below.</i>"
     )
 
 def ftm_buttons(cfg):
@@ -957,18 +1005,20 @@ def speed_text(cfg):
   jitter_str = "✅ ᴇɴᴀʙʟᴇᴅ (±30% random jitter)" if jitter else "❌ ᴅɪsᴀʙʟᴇᴅ"
 
   return (
-    "<b><u>⚡ sᴘᴇᴇᴅ ᴄᴏɴᴛʀᴏʟ & ᴀɴᴛɪ-ʙᴀɴ sᴇᴛᴛɪɴɢs ⚡</u></b>\n\n"
+    "<blockquote><b>⚡ <u>sᴘᴇᴇᴅ ᴄᴏɴᴛʀᴏʟ & ᴀɴᴛɪ-ʙᴀɴ sᴇᴛᴛɪɴɢs</u> ⚡</b></blockquote>\n\n"
     "Configure message forwarding speed, delay intervals, and anti-ban protections.\n\n"
-    f"<b>• ᴄᴜʀʀᴇɴᴛ ᴍᴏᴅᴇ:</b> <code>{mode_str}</code>\n"
-    f"<b>• ʙᴀsᴇ ᴅᴇʟᴀʏ:</b> <code>{delay:.1f} sec</code>\n"
-    f"<b>• ʜᴜᴍᴀɴ ᴊɪᴛᴛᴇʀ:</b> <code>{jitter_str}</code>\n"
-    f"<b>• ʙᴀᴛᴄʜ sɪᴢᴇ:</b> <code>{batch_size} msgs</code>\n\n"
-    "<i>💡 <b>Modes Reference:</b>\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    f"• <b>ᴄᴜʀʀᴇɴᴛ ᴍᴏᴅᴇ:</b> <code>{mode_str}</code>\n"
+    f"• <b>ʙᴀsᴇ ᴅᴇʟᴀʏ:</b> <code>{delay:.1f} sec</code>\n"
+    f"• <b>ʜᴜᴍᴀɴ ᴊɪᴛᴛᴇʀ:</b> <code>{jitter_str}</code>\n"
+    f"• <b>ʙᴀᴛᴄʜ sɪᴢᴇ:</b> <code>{batch_size} msgs</code>\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    "💡 <b>Modes Reference:</b>\n"
     "• <b>⚡ Fast:</b> 1.0s delay (recommended for normal forwarding)\n"
     "• <b>🏃 Normal:</b> 3.0s delay (balanced speed & safety)\n"
     "• <b>🐢 Safe:</b> 5.0s delay (best for userbots to avoid bans)\n"
     "• <b>🚀 Extreme:</b> 0.5s delay (fastest transfer, recommended for bot tokens)\n"
-    "• <b>🎲 Anti-Ban Jitter:</b> Randomizes delays like a human to evade Telegram automated pattern bans</i>"
+    "• <b>🎲 Anti-Ban Jitter:</b> Randomizes delays like a human to evade Telegram automated pattern bans"
   )
 
 def size_limit(limit):

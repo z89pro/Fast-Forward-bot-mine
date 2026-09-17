@@ -24,9 +24,15 @@ class Database:
         self.live = self.db.live_forwards 
         
     def new_user(self, id, name, referred_by=None):
+        from datetime import datetime
+        now = datetime.now()
         return dict(
             id = int(id),
             name = name,
+            first_seen = now,
+            last_seen = now,
+            forward_count = 0,
+            activity_count = 1,
             ban_status=dict(
                 is_banned=False,
                 ban_reason="",
@@ -45,6 +51,19 @@ class Database:
         user = self.new_user(id, name, referred_by=referred_by)
         await self.col.insert_one(user)
     
+    async def touch_user(self, id, name=None):
+        from datetime import datetime
+        update = {'last_seen': datetime.now()}
+        if name:
+            update['name'] = name
+        await self.col.update_one({'id': int(id)}, {'$set': update, '$inc': {'activity_count': 1}})
+
+    async def increment_user_forwards(self, id, count=1):
+        await self.col.update_one({'id': int(id)}, {'$inc': {'forward_count': count}})
+
+    async def get_user(self, id):
+        return await self.col.find_one({'id': int(id)})
+
     async def is_user_exist(self, id):
         user = await self.col.find_one({'id':int(id)})
         return bool(user)
@@ -176,6 +195,17 @@ class Database:
     async def get_all_active_live_forwards(self):
         cursor = self.live.find({'active': True})
         return [doc async for doc in cursor]
+
+    async def toggle_live_status(self, user_id, from_chat):
+        doc = await self.live.find_one({'user_id': int(user_id), 'from_chat': str(from_chat)})
+        if not doc:
+            return False
+        new_val = not doc.get('active', True)
+        await self.live.update_one(
+            {'user_id': int(user_id), 'from_chat': str(from_chat)},
+            {'$set': {'active': new_val}}
+        )
+        return new_val
 
     async def get_admin_dump(self):
         doc = await self.db.admin_config.find_one({'_id': 'dump_settings'})
@@ -365,6 +395,59 @@ class Database:
     async def get_referral_ledger(self, limit=20):
         cursor = self.db.referral_ledger.find({}).sort('_id', -1).limit(limit)
         return [doc async for doc in cursor]
+
+    # ── Token Verification Engine Database Methods ─────────────────
+    async def get_user_verify_status(self, user_id: int):
+        user = await self.col.find_one({'id': int(user_id)})
+        if user:
+            return user.get('verify_expires', 0)
+        return 0
+
+    async def set_user_verify_status(self, user_id: int, expires_at: float):
+        await self.col.update_one(
+            {'id': int(user_id)},
+            {'$set': {'verify_expires': float(expires_at)}},
+            upsert=True
+        )
+
+    async def get_verify_config(self):
+        doc = await self.db.admin_config.find_one({'_id': 'verify_settings'})
+        if not doc:
+            return {
+                'enabled': Config.VERIFY_ENABLED,
+                'duration': Config.VERIFY_DURATION,
+                'steps': Config.VERIFY_STEPS,
+                'mode': Config.VERIFY_MODE,
+                'shortener_url': Config.SHORTENER_URL,
+                'shortener_api': Config.SHORTENER_API,
+                'shortener_url2': Config.SHORTENER_URL2,
+                'shortener_api2': Config.SHORTENER_API2,
+                'shortener_url3': Config.SHORTENER_URL3,
+                'shortener_api3': Config.SHORTENER_API3,
+                'timeout': Config.TOKEN_TIMEOUT,
+                'tutorial': Config.VERIFY_TUTORIAL,
+            }
+        return {
+            'enabled': doc.get('enabled', Config.VERIFY_ENABLED),
+            'duration': int(doc.get('duration', Config.VERIFY_DURATION)),
+            'steps': int(doc.get('steps', Config.VERIFY_STEPS)),
+            'mode': doc.get('mode', Config.VERIFY_MODE),
+            'shortener_url': doc.get('shortener_url', Config.SHORTENER_URL),
+            'shortener_api': doc.get('shortener_api', Config.SHORTENER_API),
+            'shortener_url2': doc.get('shortener_url2', Config.SHORTENER_URL2),
+            'shortener_api2': doc.get('shortener_api2', Config.SHORTENER_API2),
+            'shortener_url3': doc.get('shortener_url3', Config.SHORTENER_URL3),
+            'shortener_api3': doc.get('shortener_api3', Config.SHORTENER_API3),
+            'timeout': int(doc.get('timeout', Config.TOKEN_TIMEOUT)),
+            'tutorial': doc.get('tutorial', Config.VERIFY_TUTORIAL),
+        }
+
+    async def update_verify_config(self, key, value):
+        await self.db.admin_config.update_one(
+            {'_id': 'verify_settings'},
+            {'$set': {key: value}},
+            upsert=True
+        )
     
 db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 

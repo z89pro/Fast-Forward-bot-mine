@@ -29,25 +29,33 @@ async def build_config_view() -> str:
     masked_token = mask_secret(Config.BOT_TOKEN)
     masked_hash = mask_secret(Config.API_HASH)
     fast_delay = getattr(Config, 'FAST_DELAY', 1.0)
+    vcfg = await db.get_verify_config()
+    v_status = "🟢 <b>Enabled</b>" if vcfg.get('enabled') else "🔴 <b>Disabled</b>"
+    v_info = f"{vcfg.get('duration', 24)}h ({vcfg.get('steps', 1)} Step)"
     
     text = (
-        "⚙️ <b><u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ</u></b> ⚙️\n\n"
+        "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ</u></b></blockquote>\n\n"
         "<i>Modify global bot environment values dynamically from Telegram. Changes persist in MongoDB across server restarts!</i>\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"👑 <b>Bot Owner(s):</b> {admins_str}\n"
         f"📡 <b>Log Channel ID:</b> {log_chan}\n"
         f"📦 <b>Dump Channel ID:</b> {dump_chan}\n"
         f"📢 <b>Force Sub Channel:</b> {fsub_chan}\n"
         f"🔒 <b>Force Sub Enforced:</b> {fsub_status}\n"
+        f"🛡️ <b>Token Verification:</b> {v_status} (<code>{v_info}</code>)\n"
         f"🤖 <b>Bot Token:</b> <code>{masked_token}</code>\n"
         f"🔑 <b>API ID / Hash:</b> <code>{Config.API_ID}</code> / <code>{masked_hash}</code>\n"
         f"⚡️ <b>Default Speed Delay:</b> <code>{fast_delay}s</code>\n"
-        f"🗄 <b>Database Name:</b> <code>{Config.DATABASE_NAME}</code>\n\n"
+        f"🗄 <b>Database Name:</b> <code>{Config.DATABASE_NAME}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "👇 <b>Select any parameter below to update its value:</b>"
     )
     return text
 
-def build_config_buttons() -> InlineKeyboardMarkup:
+def build_config_buttons(vcfg=None) -> InlineKeyboardMarkup:
     fsub_mark = "✅ ᴏɴ" if Config.FORCE_SUB_ON else "❌ ᴏғғ"
+    v_enabled = vcfg.get("enabled", True) if vcfg else Config.VERIFY_ENABLED
+    v_mark = "✅ ᴏɴ" if v_enabled else "❌ ᴏғғ"
     buttons = [
         [
             InlineKeyboardButton("📡 ʟᴏɢ ᴄʜᴀɴɴᴇʟ", callback_data="config#set_log"),
@@ -56,6 +64,10 @@ def build_config_buttons() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("📢 ғᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ", callback_data="config#set_fsub"),
             InlineKeyboardButton(f"🔒 ғ-sᴜʙ: {fsub_mark}", callback_data="config#toggle_fsub")
+        ],
+        [
+            InlineKeyboardButton(f"🛡️ ᴠᴇʀɪғʏ: {v_mark}", callback_data="config#toggle_verify"),
+            InlineKeyboardButton("⚙️ ᴠᴇʀɪғʏ sᴇᴛᴛɪɴɢs", callback_data="config#verify_settings")
         ],
         [
             InlineKeyboardButton("👑 ᴀᴅᴍɪɴ ɪᴅs", callback_data="config#set_admins"),
@@ -87,7 +99,8 @@ async def config_cmd(bot: Client, message: Message):
             quote=True
         )
     text = await build_config_view()
-    await message.reply_text(text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
+    vcfg = await db.get_verify_config()
+    await message.reply_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
 
 
 # ================= CALLBACK QUERY ROUTER =================
@@ -102,7 +115,8 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     if data == "main":
         text = await build_config_view()
-        await query.message.edit_text(text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
+        vcfg = await db.get_verify_config()
+        await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
 
     elif data == "toggle_fsub":
         Config.FORCE_SUB_ON = not Config.FORCE_SUB_ON
@@ -110,7 +124,47 @@ async def config_callback(bot: Client, query: CallbackQuery):
         status_txt = "Enabled" if Config.FORCE_SUB_ON else "Disabled"
         await query.answer(f"Force Sub is now {status_txt}!")
         text = await build_config_view()
-        await query.message.edit_text(text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
+        vcfg = await db.get_verify_config()
+        await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
+
+    elif data == "toggle_verify":
+        vcfg = await db.get_verify_config()
+        new_val = not vcfg.get("enabled", True)
+        await db.update_verify_config("enabled", new_val)
+        Config.VERIFY_ENABLED = new_val
+        status_txt = "Enabled" if new_val else "Disabled"
+        await query.answer(f"Token verification is now {status_txt}!")
+        text = await build_config_view()
+        vcfg["enabled"] = new_val
+        await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
+
+    elif data == "verify_settings":
+        await query.answer()
+        vcfg = await db.get_verify_config()
+        status_txt = "🟢 ᴇɴᴀʙʟᴇᴅ" if vcfg.get("enabled") else "🔴 ᴅɪsᴀʙʟᴇᴅ"
+        s1 = f"{vcfg.get('shortener_url', 'None')} (API: {'Set' if vcfg.get('shortener_api') else 'None'})"
+        s2 = f"{vcfg.get('shortener_url2', 'None')} (API: {'Set' if vcfg.get('shortener_api2') else 'None'})"
+        s3 = f"{vcfg.get('shortener_url3', 'None')} (API: {'Set' if vcfg.get('shortener_api3') else 'None'})"
+        txt = (
+            "<blockquote><b>🛡️ <u>ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴇᴛᴛɪɴɢs</u></b></blockquote>\n\n"
+            f"• <b>sᴛᴀᴛᴜs:</b> <code>{status_txt}</code>\n"
+            f"• <b>ᴘᴀss ᴅᴜʀᴀᴛɪᴏɴ:</b> <code>{vcfg.get('duration', 24)} Hours</code>\n"
+            f"• <b>ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴇᴘs:</b> <code>{vcfg.get('steps', 1)} Step(s)</code>\n"
+            f"• <b>ʟɪɴᴋ ᴛɪᴍᴇᴏᴜᴛ:</b> <code>{vcfg.get('timeout', 30)} Minutes</code>\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"<b>Shortener 1:</b> <code>{s1}</code>\n"
+            f"<b>Shortener 2:</b> <code>{s2}</code>\n"
+            f"<b>Shortener 3:</b> <code>{s3}</code>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "<i>💡 Use <code>/setverify</code> in chat to change steps, duration, and add shortener API keys.</i>"
+        )
+        await query.message.edit_text(
+            txt,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#main")]
+            ]),
+            disable_web_page_preview=True
+        )
 
     elif data == "set_log":
         await query.message.delete()

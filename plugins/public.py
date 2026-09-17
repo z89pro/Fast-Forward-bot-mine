@@ -17,6 +17,9 @@ async def run(bot, message):
     buttons = []
     btn_data = {}
     user_id = message.from_user.id
+    from plugins.verify import is_user_verified, send_verify_prompt
+    if not await is_user_verified(user_id):
+        return await send_verify_prompt(bot, message, user_id)
     _bot = await db.get_bot(user_id)
     if not _bot:
       return await message.reply("<code>__**You didn't add any bot. Please add a bot using /settings !**__</code>")

@@ -12,31 +12,50 @@ from config import Config, temp
 from platform import python_version
 from translation import Translation
 from pyrogram import Client, filters, enums, __version__ as pyrogram_version
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaDocument
-
-main_buttons = [
-    [
-        InlineKeyboardButton('❗️ ʜᴇʟᴘ', callback_data='help'),
-        InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs', callback_data='settings#main')
-    ],
-    [
-        InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
-        InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ', callback_data='tutorial#menu')
-    ],
-    [
-        InlineKeyboardButton('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', callback_data='referral#main'),
-        InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status')
-    ],
-    [
-        InlineKeyboardButton('ℹ️ ᴀʙᴏᴜᴛ', callback_data='about')
+def get_main_buttons(user_id=None):
+    is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
+    buttons = [
+        [
+            InlineKeyboardButton('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', callback_data='autosave#main'),
+            InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs', callback_data='settings#main')
+        ],
+        [
+            InlineKeyboardButton('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', callback_data='tutorial#menu'),
+            InlineKeyboardButton('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', callback_data='referral#main')
+        ],
+        [
+            InlineKeyboardButton('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', callback_data='verify_menu_btn'),
+            InlineKeyboardButton('📊 sᴛᴀᴛᴜs', callback_data='status')
+        ],
+        [
+            InlineKeyboardButton('ℹ️ ᴀʙᴏᴜᴛ', callback_data='about')
+        ]
     ]
-]
+    if is_admin:
+        buttons.append([
+            InlineKeyboardButton('📈 ᴜsᴇʀ ᴛʀᴀᴄᴋɪɴɢ', callback_data='utr_overview'),
+            InlineKeyboardButton('⚙️ sʏsᴛᴇᴍ ᴄᴏɴғɪɢ', callback_data='config#main')
+        ])
+    return InlineKeyboardMarkup(buttons)
+
+main_buttons = get_main_buttons()
 
 #===================Start Function===================#
 
 @Client.on_message(filters.private & filters.command(['start']))
 async def start(client, message):
     user = message.from_user
+
+    # Verification token deep-link: /start vrf_{token} or /start verify_{token}
+    if len(message.command) > 1 and (message.command[1].startswith("verify_") or message.command[1].startswith("vrf_")):
+        try:
+            from plugins.verify import handle_verify_callback
+            handled = await handle_verify_callback(client, message, message.command[1])
+            if handled:
+                return
+        except Exception:
+            pass
+
     if Config.FORCE_SUB_ON and Config.FORCE_SUB_CHANNEL:
         try:
             member = await client.get_chat_member(Config.FORCE_SUB_CHANNEL, user.id)
@@ -94,8 +113,10 @@ async def start(client, message):
                 )
             except Exception:
                 pass
+    else:
+        await db.touch_user(user.id, message.from_user.mention)
 
-    reply_markup = InlineKeyboardMarkup(main_buttons)
+    reply_markup = get_main_buttons(user.id)
     extra_welcome = "\n\n🎁 <i>You joined via an invite link! Claim your welcome bonus in /referral!</i>" if (is_new and ref_id) else ""
     await client.send_message(
         chat_id=message.chat.id,
@@ -170,7 +191,7 @@ async def how_to_use(bot, query):
 
 @Client.on_callback_query(filters.regex(r'^back'))
 async def back(bot, query):
-    reply_markup = InlineKeyboardMarkup(main_buttons)
+    reply_markup = get_main_buttons(query.from_user.id)
     await query.message.edit_text(
        reply_markup=reply_markup,
        text=Translation.START_TXT.format(
@@ -277,4 +298,24 @@ async def clone_cmd(client, message):
              InlineKeyboardButton("🚀 AutoSave", callback_data="autosave#main")]
         ])
     )
+
+#===================Verify Menu Callback===================#
+
+@Client.on_callback_query(filters.regex(r'^verify_menu_btn'))
+async def verify_menu_callback(bot, query):
+    user_id = query.from_user.id
+    from plugins.verify import is_user_verified, send_verify_prompt, get_remaining_verify_time
+    verified = await is_user_verified(user_id)
+    if verified:
+        rem_sec = get_remaining_verify_time(user_id)
+        if rem_sec > 0:
+            hrs = rem_sec // 3600
+            mins = (rem_sec % 3600) // 60
+            exp_text = f"{hrs}h {mins}m remaining"
+        else:
+            exp_text = "Permanent VIP / Admin Access"
+        await query.answer(f"✅ Verified! ({exp_text})", show_alert=True)
+    else:
+        await query.answer()
+        await send_verify_prompt(bot, query.message, user_id)
 

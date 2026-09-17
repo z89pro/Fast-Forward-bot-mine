@@ -29,6 +29,10 @@ TEXT = Translation.TEXT
 async def pub_(bot, message):
     user = message.from_user.id
     temp.CANCEL[user] = False
+    from plugins.verify import is_user_verified, send_verify_prompt
+    if not await is_user_verified(user):
+        await message.answer("⚠️ Verification required! Please complete verification.", show_alert=True)
+        return await send_verify_prompt(bot, message.message, user)
     frwd_id = message.data.split("_")[2]
     if temp.lock.get(user) and str(temp.lock.get(user))=="True":
       return await message.answer("ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ ᴜɴᴛɪʟʟ ᴘʀᴇᴠɪᴏᴜs ᴛᴀsᴋ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.", show_alert=True)

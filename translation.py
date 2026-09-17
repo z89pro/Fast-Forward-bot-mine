@@ -2,85 +2,96 @@ import os
 from config import Config
 
 class Translation(object):
-  START_TXT = """<b>ʜɪ {}
+  START_TXT = """<blockquote><b>⚡️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴜʟᴛʀᴀ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ</u></b></blockquote>
 
-ɪ'ᴍ <b>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ꜰᴏʀᴡᴀʀᴅ ʙᴏᴛ</b> ⚡️
-ɪ ᴄᴀɴ ꜰᴏʀᴡᴀʀᴅ, ᴄʟᴏɴᴇ, ᴀɴᴅ ᴍᴏɴɪᴛᴏʀ ᴄʜᴀɴɴᴇʟs ᴀᴛ ᴜʟᴛʀᴀ-ꜰᴀsᴛ sᴘᴇᴇᴅ.
+👋 <b>Welcome, {}!</b>
 
-ᴄʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!</b>"""
+An enterprise-grade Telegram channel cloning, media migration, and course distribution engine.
 
-  DONATE_TXT = """<b><i>Thanks for using Skinet Verse Forward Bot! ❤️</i></b>"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 <b>Engine:</b> <code>🟢 Online & Ready</code>
+⚡️ <b>Version:</b> <code>v2.5.0 Ultra Edition</code>
+🛡 <b>Anti-Ban Core:</b> <code>Active Jitter & FloodWait Shield</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  HELP_TXT = """<b><u>🔆 sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ʜᴇʟᴘ</u></b>
+👇 <i>Choose an action below to get started:</i>"""
 
-<u>**📚 Available Commands:**</u>
+  DONATE_TXT = """<blockquote><b>❤️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ sᴜᴘᴘᴏʀᴛ</u></b></blockquote>\n\n<i>Thank you for using Skinet Verse! Your support keeps the servers fast and 100% free.</i>"""
 
-<b>⏣ __/start - Check I'm alive__ 
-⏣ __/forward - Forward messages__
-⏣ __/fwd <start> <end> - Direct range forward__
-⏣ __/autosave - Smart AutoSave & Channel Monitoring__
-⏣ __/tutorial - 12-Module Master Tutorial Hub__
-⏣ __/skinet - Skinet Text & Media Modifier Guide__
-⏣ __/referral - Refer & Earn Rewards Hub__
-⏣ __/topref - Top 10 Referral Leaderboard__
-⏣ __/pause - Pause ongoing forwarding__
-⏣ __/resume - Resume paused forwarding__
-⏣ __/stop - Cancel your ongoing forwarding__
-⏣ __/unequify - Delete duplicate messages in channels__
-⏣ __/settings - Configure your settings__
-⏣ __/config - Bot System Configuration (Admin)__
-⏣ __/reset - Reset your settings__</b>
+  HELP_TXT = """<blockquote><b>🔆 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴍᴀsᴛᴇʀ ᴄᴏᴍᴍᴀɴᴅ ʜᴜʙ</u></b></blockquote>
 
-<b><u>💢 Features:</u></b>
-<b>► __🎓 Course Seller Mode: Auto lecture numbering & table of contents__
-► __🛠 Skinet Modifier: Competitor username & link replacers__
-► __🚀 Smart AutoSave: Real-time automatic channel monitoring__
-► __Smart Media Filters: Filter Videos, Photos, Documents, Audio__
-► __Custom Upload Destinations: Per-channel or global targets__
-► __Direct Range Forward: Forward ranges via message links__
-► __Pause & Resume: Interactive pause/resume for forward tasks__
-► __Auto-Clean Captions: Strip foreign links, ads, usernames__
-► __Custom Speed Control: Extreme, Fast, Normal, Safe & Anti-Ban Jitter__
-► __Skip duplicate messages, filter extensions & file sizes__</b>"""
+<b>📚 Available Commands:</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏣ <code>/start</code> — Start bot & view main card
+⏣ <code>/forward</code> — Interactive channel forward wizard
+⏣ <code>/fwd &lt;link1&gt; &lt;link2&gt;</code> — Instant direct range forward
+⏣ <code>/autosave</code> — Real-time 24/7 channel monitoring
+⏣ <code>/tutorial</code> — 12-Module Master Knowledge Hub
+⏣ <code>/skinet</code> — Skinet Text & Media Modifier Guide
+⏣ <code>/referral</code> — Refer & Earn VIP rewards
+⏣ <code>/verify</code> — Check verification pass status
+⏣ <code>/topref</code> — Top 10 Referral Leaderboard
+⏣ <code>/pause</code> / <code>/resume</code> — Pause & resume forward tasks
+⏣ <code>/stop</code> — Gracefully cancel ongoing tasks
+⏣ <code>/unequify</code> — Channel duplicate message cleaner
+⏣ <code>/settings</code> — Complete bot customization menu
+⏣ <code>/config</code> — Owner system configuration (Admin)
+⏣ <code>/setverify</code> — Token verification config (Admin)
+⏣ <code>/userstats</code> — Admin user analytics dashboard
+⏣ <code>/reset</code> — Reset configurations to default
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  HOW_USE_TXT = """<b><u>⚠️ Before Forwarding:</u></b>
-<b>► __Add a bot token or login with userbot in /settings__
-► __Add at least one target channel in /settings__ `(your bot/userbot must be admin there)`
-► __If the source channel is private, your userbot must be a member there__
-► __Then use /forward to start forwarding messages__</b>"""
+<b>✨ Key Highlights:</b>
+• 🎓 <b>Course Seller Mode:</b> Auto lecture numbering & syllabus TOC
+• 🛠 <b>Skinet Modifier:</b> Competitor username & link replacement
+• 🚀 <b>Smart AutoSave:</b> Real-time channel listener & auto-post
+• ⚡️ <b>Custom Speed:</b> Extreme (0.5s) to Safe (5s) modes"""
 
-  ABOUT_TXT = """<b>
-╔════❰ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ❱═❍⊱❁
-║╭━━━━━━━━━━━━━━━➣
-║┣⪼📃 ʙᴏᴛ : sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ
-║┣⪼🗣️ ʟᴀɴɢᴜᴀɢᴇ : ᴘʏᴛʜᴏɴ3
-║┣⪼📚 ʟɪʙʀᴀʀʏ : ᴘʏʀᴏɢʀᴀᴍ / ᴘʏʀᴏғᴏʀᴋ
-║┣⪼⚡ ғᴇᴀᴛᴜʀᴇs : sᴘᴇᴇᴅ ᴄᴏɴᴛʀᴏʟ & ᴀɴᴛɪ-ʙᴀɴ
-║┣⪼💎 ᴇᴅɪᴛɪᴏɴ : sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ᴜʟᴛʀᴀ
-║┣⪼🗒️ ᴠᴇʀsɪᴏɴ : 2.5.0
-║╰━━━━━━━━━━━━━━━➣
-╚══════════════════❍⊱❁</b>"""
+  HOW_USE_TXT = """<blockquote><b>📖 <u>ɢᴇᴛᴛɪɴɢ sᴛᴀʀᴛᴇᴅ — ǫᴜɪᴄᴋ sᴇᴛᴜᴘ ɢᴜɪᴅᴇ</u></b></blockquote>
 
-  STATUS_TXT = """<b>
-╔════❰ ʙᴏᴛ sᴛᴀᴛᴜs  ❱═❍⊱❁
-║╭━━━━━━━━━━━━━━━➣
-║┣⪼👱 ᴛᴏᴛᴀʟ  ᴜsᴇʀs : <code>{}</code>
-║┃
-║┣⪼🤖 ᴛᴏᴛᴀʟ ʙᴏᴛs : <code>{}</code>
-║┃
-║┣⪼🔃 ғᴏʀᴡᴀʀᴅɪɴɢs : <code>{}</code>
-║┃
-║┣⪼🏷️ ᴄʜᴀɴɴᴇʟs : <code>{}</code>
-║╰━━━━━━━━━━━━━━━➣
-╚══════════════════❍⊱❁</b>""" 
+<b>Follow these 3 simple steps to start forwarding:</b>
 
-  SERVER_TXT = """<b>
-╔════❰ sᴇʀᴠᴇʀ sᴛᴀᴛs  ❱═❍⊱❁۪۪
-║╭━━━━━━━━━━━━━━━➣
-║┣⪼ ᴄᴘᴜ: <code>{}%</code>
-║┣⪼ ʀᴀᴍ: <code>{}%</code>
-║╰━━━━━━━━━━━━━━━➣
-╚══════════════════❍⊱❁۪۪</b>"""
+1️⃣ <b>Add a Bot Token or UserBot:</b>
+   • Open <code>/settings</code> ➔ <b>🤖 ʙᴏᴛs</b> ➔ <b>✚ ᴀᴅᴅ ʙᴏᴛ ✚</b>
+   • Send your Bot token from @BotFather, or login a UserBot for private channels.
+
+2️⃣ <b>Link Your Target Channel:</b>
+   • Open <code>/settings</code> ➔ <b>🏷 ᴄʜᴀɴɴᴇʟs</b> ➔ <b>✚ ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ ✚</b>
+   • Forward any message from your target channel (ensure bot is Admin!).
+
+3️⃣ <b>Start Forwarding:</b>
+   • Send <code>/forward</code> to launch the interactive wizard.
+   • Or use <code>/fwd &lt;link1&gt; &lt;link2&gt;</code> for instant batch forwarding!"""
+
+  ABOUT_TXT = """<blockquote><b>ℹ️ <u>ᴀʙᴏᴜᴛ — sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ</u></b></blockquote>
+
+An enterprise automated media pipeline engineered for high-concurrency channel migration and seamless brand sanitization.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 <b>Bot:</b> <code>Skinet Verse Forward Bot</code>
+💎 <b>Edition:</b> <code>Ultra Pro Max v2.5</code>
+🗣 <b>Language:</b> <code>Python 3.10+</code>
+📚 <b>Framework:</b> <code>Pyrogram / Pyrofork Layer 223+</code>
+⚡️ <b>Engine:</b> <code>AsyncIO Multi-Worker</code>
+🛡 <b>Security:</b> <code>In-Memory Sessions & FloodWait Defense</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<i>⚡️ Powered by Skinet Verse Official</i>"""
+
+  STATUS_TXT = """<blockquote><b>📊 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ sᴛᴀᴛᴜs</u></b></blockquote>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 <b>Total Users:</b> <code>{}</code>
+🤖 <b>Connected Bots:</b> <code>{}</code>
+🔁 <b>Active Forward Tasks:</b> <code>{}</code>
+🏷 <b>Connected Channels:</b> <code>{}</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━""" 
+
+  SERVER_TXT = """<blockquote><b>⚙️ <u>sᴇʀᴠᴇʀ ʀᴇsᴏᴜʀᴄᴇ sᴛᴀᴛs</u></b></blockquote>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💻 <b>CPU Load:</b> <code>{}%</code>
+🧠 <b>RAM Usage:</b> <code>{}%</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
   
   FROM_MSG = "<b>❪ SET SOURCE CHAT ❫\n\nForward the last message or send message link of source chat.\n/cancel - Cancel this process</b>"
 
@@ -90,52 +101,47 @@ class Translation(object):
 
   CANCEL = "<b>Process Cancelled Successfully!</b>"
 
-  BOT_DETAILS = "<b><u>📄 BOT DETAILS</u></b>\n\n<b>➣ NAME:</b> <code>{}</code>\n<b>➣ BOT ID:</b> <code>{}</code>\n<b>➣ USERNAME:</b> @{}"
+  BOT_DETAILS = "<blockquote><b>🤖 <u>ᴄᴏɴɴᴇᴄᴛᴇᴅ ʙᴏᴛ ᴅᴇᴛᴀɪʟs</u></b></blockquote>\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n➣ <b>ɴᴀᴍᴇ:</b> <code>{}</code>\n➣ <b>ʙᴏᴛ ɪᴅ:</b> <code>{}</code>\n➣ <b>ᴜsᴇʀɴᴀᴍᴇ:</b> @{}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-  USER_DETAILS = "<b><u>📄 USERBOT DETAILS</u></b>\n\n<b>➣ NAME:</b> <code>{}</code>\n<b>➣ USER ID:</b> <code>{}</code>\n<b>➣ USERNAME:</b> @{}"  
+  USER_DETAILS = "<blockquote><b>👤 <u>ᴄᴏɴɴᴇᴄᴛᴇᴅ ᴜsᴇʀʙᴏᴛ ᴅᴇᴛᴀɪʟs</u></b></blockquote>\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n➣ <b>ɴᴀᴍᴇ:</b> <code>{}</code>\n➣ <b>ᴜsᴇʀ ɪᴅ:</b> <code>{}</code>\n➣ <b>ᴜsᴇʀɴᴀᴍᴇ:</b> @{}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━"  
          
-  TEXT = """<b>╔════❰ ғᴏʀᴡᴀʀᴅ sᴛᴀᴛᴜs  ❱═❍⊱❁
-║╭━━━━━━━━━━━━━━━➣
-║┣⪼<b>𖨠 ᴛᴏᴛᴀʟ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ғᴇᴛᴄʜᴇᴅ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ᴅᴜᴘʟɪᴄᴀᴛᴇ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 sᴋɪᴘᴘᴇᴅ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ғɪʟᴛᴇʀᴇᴅ ᴍᴇssᴀɢᴇs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ᴄᴜʀʀᴇɴᴛ sᴛᴀᴛᴜs: </b> <code>{}</code>
-║┃
-║┣⪼<b>𖨠 ᴘᴇʀᴄᴇɴᴛᴀɢᴇ: </b> <code>{}</code>%
-║╰━━━━━━━━━━━━━━━➣ 
-╚════❰ <b>{}</b> ❱══❍⊱❁"""
+  TEXT = """<blockquote><b>⚡️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ғᴏʀᴡᴀʀᴅ sᴛᴀᴛᴜs</u></b></blockquote>
 
-  DUPLICATE_TEXT = """
-╔════❰ ᴜɴᴇǫᴜɪғʏ sᴛᴀᴛᴜs ❱═❍⊱❁۪۪
-║╭━━━━━━━━━━━━━━━➣
-║┣⪼ <b>ғᴇᴛᴄʜᴇᴅ ғɪʟᴇs:</b> <code>{}</code>
-║┃
-║┣⪼ <b>ᴅᴜᴘʟɪᴄᴀᴛᴇ ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{}</code> 
-║╰━━━━━━━━━━━━━━━➣
-╚════❰ {} ❱══❍⊱❁۪۪
-"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 <b>ᴛᴏᴛᴀʟ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+📥 <b>ғᴇᴛᴄʜᴇᴅ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+📤 <b>ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+♻️ <b>ᴅᴜᴘʟɪᴄᴀᴛᴇ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+🗑 <b>ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+⏩ <b>sᴋɪᴘᴘᴇᴅ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+🚫 <b>ғɪʟᴛᴇʀᴇᴅ ᴍᴇssᴀɢᴇs:</b> <code>{}</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡️ <b>sᴛᴀᴛᴜs:</b> <code>{}</code>
+📊 <b>ᴘʀᴏɢʀᴇss:</b> <code>{}%</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<blockquote><b>{}</b></blockquote>"""
 
-  DOUBLE_CHECK = """<b><u>ᴅᴏᴜʙʟᴇ ᴄʜᴇᴄᴋɪɴɢ 📋</u></b>
+  DUPLICATE_TEXT = """<blockquote><b>♻️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴜɴᴇǫᴜɪғʏ sᴛᴀᴛᴜs</u></b></blockquote>
 
-<b>ʙᴇꜰᴏʀᴇ ꜰᴏʀᴡᴀʀᴅɪɴɢ ᴛʜᴇ ᴍᴇssᴀɢᴇs ᴄʟɪᴄᴋ ᴛʜᴇ ʏᴇs ʙᴜᴛᴛᴏɴ ᴏɴʟʏ ᴀꜰᴛᴇʀ ᴄʜᴇᴄᴋɪɴɢ ᴛʜᴇ ꜰᴏʟʟᴏᴡɪɴɢ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📥 <b>ғᴇᴛᴄʜᴇᴅ ғɪʟᴇs:</b> <code>{}</code>
+🗑 <b>ᴅᴜᴘʟɪᴄᴀᴛᴇ ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{}</code>
+⚡️ <b>sᴛᴀᴛᴜs:</b> <code>{}</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
-<b>★ ʏᴏᴜʀ ʙᴏᴛ: {botname}</b>
-<b>★ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ: {from_chat}</b>
-<b>★ ᴛᴀʀɢᴇᴛ ᴄʜᴀᴛ: {to_chat}</b>
-<b>★ sᴋɪᴘ ᴍᴇssᴀɢᴇs: {skip}</b>
+  DOUBLE_CHECK = """<blockquote><b>📋 <u>ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ</u></b></blockquote>
 
-<i><b>° {botname} ᴍᴜsᴛ ʙᴇ ᴀᴅᴍɪɴ ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀᴛ</b> ({to_chat})</i>
-<i><b>° ɪꜰ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ ɪs ᴘʀɪᴠᴀᴛᴇ ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ ᴍᴜsᴛ ʙᴇ ᴍᴇᴍʙᴇʀ ᴏʀ ʏᴏᴜʀ ʙᴏᴛ ᴍᴜsᴛ ʙᴇ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇʀᴇ ᴀʟsᴏ</b></i>
+<b>Review the task configuration before initiating migration:</b>
 
-<b>ɪꜰ ᴛʜᴇ ᴀʙᴏᴠᴇ ɪs ᴄʜᴇᴄᴋᴇᴅ ᴛʜᴇɴ ᴛʜᴇ ʏᴇs ʙᴜᴛᴛᴏɴ ᴄᴀɴ ʙᴇ ᴄʟɪᴄᴋᴇᴅ</b>""" 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 <b>Active Worker:</b> <code>{botname}</code>
+📥 <b>Source Chat:</b> <code>{from_chat}</code>
+📤 <b>Target Chat:</b> <code>{to_chat}</code>
+⏩ <b>Skip Offset:</b> <code>{skip} msgs</code>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ <i><b>Verification Checklist:</b>
+• <code>{botname}</code> must be an Admin with post permissions in Target Chat ({to_chat}).
+• If Source Chat is private, your UserBot must be a joined member or Admin.</i>
+
+👇 <b>Click "Yes, Proceed" below to start forwarding!</b>""" 
