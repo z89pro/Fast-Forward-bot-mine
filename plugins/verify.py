@@ -478,7 +478,7 @@ async def setverify_command(bot: Client, message: Message):
     if user_id not in Config.BOT_OWNER_ID:
         return await message.reply_text("⛔ <b>This command is restricted to Bot Administrators only.</b>", quote=True)
 
-    args = message.text.split()[1:]
+    args = (message.text or message.caption or "").split()[1:]
     cfg = await db.get_verify_config()
 
     if not args or args[0].lower() in ("status", "info"):

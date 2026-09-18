@@ -353,7 +353,7 @@ async def status(bot, query):
 
     status_rows = []
     if is_adm:
-        status_rows.append(row(btn('🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ (ᴀᴅᴍɪɴ)', 'config#restart', 'yellow')))
+        status_rows.append(row(btn('🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ (ᴀᴅᴍɪɴ)', 'config#restart', 'red')))
     status_rows.append(
         row(
             btn('• ʙᴀᴄᴋ', 'help', 'red'),
@@ -366,6 +366,31 @@ async def status(bot, query):
         reply_markup=markup(*status_rows),
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
+    )
+
+@Client.on_message(filters.private & filters.command(['status', 'stats']))
+async def status_command(client: Client, message: Message):
+    users_count, bots_count = await db.total_users_bots_count()
+    total_channels = await db.total_channels()
+    is_adm = await db.is_admin(message.from_user.id)
+
+    status_rows = []
+    if is_adm:
+        status_rows.append(row(btn('🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ (ᴀᴅᴍɪɴ)', 'config#restart', 'red')))
+    status_rows.append(
+        row(
+            btn('🧭 ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ', 'cmd_tab_all', 'blue'),
+            btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue')
+        )
+    )
+    status_rows.append(row(btn('🔙 ʜᴏᴍᴇ', 'back', 'red')))
+
+    await message.reply_text(
+        text=Translation.STATUS_TXT.format(users_count, bots_count, temp.forwardings, total_channels),
+        reply_markup=markup(*status_rows),
+        parse_mode=enums.ParseMode.HTML,
+        disable_web_page_preview=True,
+        quote=True
     )
 
 @Client.on_callback_query(filters.regex(r'^server_status'))
@@ -468,7 +493,7 @@ async def setcoursebutton_cmd(client: Client, message: Message):
             "<i>To remove the button, send: <code>/setcoursebutton none</code></i>",
             quote=True
         )
-    raw_arg = message.text.split(None, 1)[1].strip()
+    raw_arg = (message.text or message.caption or "").split(None, 1)[1].strip()
     configs = await db.get_configs(user_id)
     if raw_arg.lower() in ('none', 'off', 'clear', 'delete', 'remove'):
         configs['course_sticky_button'] = None
@@ -493,7 +518,7 @@ async def setbanner_cmd(client: Client, message: Message):
             "<i>ᴛʜɪs ʙᴀɴɴᴇʀ ɪs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴘʀᴇᴘᴇɴᴅᴇᴅ ᴛᴏ ᴇᴠᴇʀʏ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ & ᴡᴇʙ sʏʟʟᴀʙᴜs!</i>",
             quote=True
         )
-    banner_text = message.text.split(None, 1)[1].strip()
+    banner_text = (message.text or message.caption or "").split(None, 1)[1].strip()
     configs = await db.get_configs(user_id)
     configs['course_brand_header'] = banner_text
     await db.update_configs(user_id, configs)
@@ -523,7 +548,7 @@ async def setfooter_cmd(client: Client, message: Message):
             "<i>ᴛʜɪs ʙᴀɴɴᴇʀ ɪs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴀᴘᴘᴇɴᴅᴇᴅ ᴛᴏ ᴇᴠᴇʀʏ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ & ᴡᴇʙ sʏʟʟᴀʙᴜs!</i>",
             quote=True
         )
-    footer_text = message.text.split(None, 1)[1].strip()
+    footer_text = (message.text or message.caption or "").split(None, 1)[1].strip()
     configs = await db.get_configs(user_id)
     configs['course_brand_footer'] = footer_text
     await db.update_configs(user_id, configs)
@@ -662,20 +687,26 @@ COMMAND_CATEGORIES = {
 }
 
 def get_commands_markup(current_tab="all"):
+    # (label, callback, color)
     tabs = [
-        ("🧭 ᴀʟʟ", "cmd_tab_all"),
-        ("📤 ғᴏʀᴡᴀʀᴅ", "cmd_tab_forward"),
-        ("🎓 sᴇʟʟᴇʀ", "cmd_tab_seller"),
-        ("💎 ᴠɪᴘ", "cmd_tab_vip"),
-        ("🛡️ ᴀᴅᴍɪɴ", "cmd_tab_admin")
+        ("🧭 ᴀʟʟ", "cmd_tab_all", "blue"),
+        ("📤 ғᴏʀᴡᴀʀᴅ", "cmd_tab_forward", "green"),
+        ("🎓 sᴇʟʟᴇʀ", "cmd_tab_seller", "blue"),
+        ("💎 ᴠɪᴘ", "cmd_tab_vip", "green"),
+        ("🛡️ ᴀᴅᴍɪɴ", "cmd_tab_admin", "red"),
     ]
-    row1 = [InlineKeyboardButton(f"• {title} •" if code == f"cmd_tab_{current_tab}" else title, callback_data=code) for title, code in tabs[:3]]
-    row2 = [InlineKeyboardButton(f"• {title} •" if code == f"cmd_tab_{current_tab}" else title, callback_data=code) for title, code in tabs[3:]]
+
+    def tab_btn(title, code, color):
+        active = code == f"cmd_tab_{current_tab}"
+        return btn(f"▸ {title} ◂" if active else title, code, color)
+
+    row1 = [tab_btn(t, c, col) for t, c, col in tabs[:3]]
+    row2 = [tab_btn(t, c, col) for t, c, col in tabs[3:]]
     row3 = [
-        InlineKeyboardButton("⚙️ sᴇᴛᴛɪɴɢs", callback_data="settings#main"),
-        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        btn("⚙️ sᴇᴛᴛɪɴɢs", "settings#main", "green"),
+        btn("❌ ᴄʟᴏsᴇ", "close_btn", "red"),
     ]
-    return InlineKeyboardMarkup([row1, row2, row3])
+    return markup(row1, row2, row3)
 
 @Client.on_message(filters.command(['commands', 'menu', 'cmds']))
 async def commands_menu_cmd(client: Client, message: Message):
@@ -730,7 +761,7 @@ async def id_command(client: Client, message: Message):
 
     # 2. Argument passed? e.g. /id -1001234567890 or /id @mychannel
     if len(message.command) > 1:
-        arg = message.text.split(None, 1)[1].strip()
+        arg = (message.text or message.caption or "").split(None, 1)[1].strip()
         res = await resolve_channel_input(arg, client)
         if res.get("chat_id"):
             fwd_info = {
@@ -796,7 +827,7 @@ async def setdump_command(client: Client, message: Message):
 
     # 2. Command argument
     if len(message.command) > 1:
-        arg = message.text.split(None, 1)[1].strip()
+        arg = (message.text or message.caption or "").split(None, 1)[1].strip()
         if arg == "0":
             Config.DUMP_CHANNEL = 0
             await db.update_system_config("DUMP_CHANNEL", 0)
@@ -880,7 +911,7 @@ KNOWN_COMMANDS = {
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
     "deladmin", "admins", "cancel", "yes", "no", "setbanner", "setheader", "delbanner",
     "clearbanner", "delheader", "setfooter", "setbrandfooter", "delfooter", "clearfooter",
-    "viewbranding", "branding"
+    "viewbranding", "branding", "status", "stats"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)

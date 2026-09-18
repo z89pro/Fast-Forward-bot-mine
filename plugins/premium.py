@@ -22,6 +22,7 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 from pyrogram import Client, filters, enums
+from pyrogram import StopPropagation
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from buttons import btn, btn_url, row, markup, colored_markup
 
@@ -1023,7 +1024,26 @@ async def cb_prem_cancel(bot: Client, query: CallbackQuery):
 
 # ── Proof Submission Listener (Text & Photo) ──────────────────────────
 
-@Client.on_message(filters.private & (filters.text | filters.photo) & ~filters.command(["start", "help", "plans", "premium", "settings", "cancel"]))
+def _awaiting_proof(flt, client, message) -> bool:
+    """True only while the sender actually has a pending proof submission.
+
+    The filter must be state-aware: a plain "private & text" filter also matches
+    every other command, and since Pyrogram runs only the first matching handler
+    of a group, it would silently swallow commands depending on the order the
+    plugin files happen to be loaded in.
+    """
+    user = message.from_user
+    if not (user and user.id in _SUBMIT_STATE):
+        return False
+    # Any command is an escape hatch out of the submission flow, not proof text.
+    return not (message.text or message.caption or "").lstrip().startswith("/")
+
+
+@Client.on_message(
+    filters.private
+    & (filters.text | filters.photo)
+    & filters.create(_awaiting_proof)
+)
 async def proof_submission_listener(bot: Client, message: Message):
     user_id = message.from_user.id
     st = _SUBMIT_STATE.get(user_id)
@@ -1036,7 +1056,8 @@ async def proof_submission_listener(bot: Client, message: Message):
 
     order = await db.get_premium_order(order_id)
     if not order or order.get("status") != "pending":
-        return await message.reply_text("❌ <b>ᴛʜɪs ᴏʀᴅᴇʀ ɪs ɪɴᴠᴀʟɪᴅ ᴏʀ ᴇxᴘɪʀᴇᴅ. ᴘʟᴇᴀsᴇ ᴄʀᴇᴀᴛᴇ ᴀ ɴᴇᴡ ᴏʀᴅᴇʀ ɪɴ /plans.</b>")
+        await message.reply_text("❌ <b>ᴛʜɪs ᴏʀᴅᴇʀ ɪs ɪɴᴠᴀʟɪᴅ ᴏʀ ᴇxᴘɪʀᴇᴅ. ᴘʟᴇᴀsᴇ ᴄʀᴇᴀᴛᴇ ᴀ ɴᴇᴡ ᴏʀᴅᴇʀ ɪɴ /plans.</b>")
+        raise StopPropagation
 
     plan_info = PLANS.get(order["plan"], PLANS["pro"])
     now_ist = datetime.now(tz=IST).strftime("%d-%b-%Y %I:%M:%S %p")
@@ -1097,6 +1118,18 @@ async def proof_submission_listener(bot: Client, message: Message):
                 await bot.send_message(target, text=admin_alert_text, reply_markup=admin_actions)
         except Exception as e:
             logger.warning(f"Could not notify admin {target} of premium proof: {e}")
+
+    # Handled: stop dispatch so the global non-command fallback (group 100)
+    # does not also send its welcome card for this same message.
+    raise StopPropagation
+
+
+@Client.on_message(filters.private & filters.command(["cancel"]))
+async def cancel_submission_cmd(bot: Client, message: Message):
+    user_id = message.from_user.id
+    if _SUBMIT_STATE.pop(user_id, None):
+        return await message.reply_text("❌ <b>ᴘᴀʏᴍᴇɴᴛ ᴘʀᴏᴏғ sᴜʙᴍɪssɪᴏɴ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>", quote=True)
+    return await message.reply_text("ℹ️ <b>ɴᴏᴛʜɪɴɢ ᴛᴏ ᴄᴀɴᴄᴇʟ.</b>", quote=True)
 
 
 # ── Admin Approval & Rejection Callbacks ──────────────────────────────

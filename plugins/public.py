@@ -31,7 +31,9 @@ async def run(bot, message):
     from plugins.range_parser import parse_multi_ranges, format_ranges_summary, calculate_total_messages
 
     # Direct multi-range or link forwarding: /fwd <link/ranges...>
-    raw_args = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
+    raw_args = ""
+    if len(message.command) > 1:
+        raw_args = (message.text or message.caption or "").split(None, 1)[1]
     if raw_args:
         try:
             parsed_chat, parsed_ranges = parse_multi_ranges(raw_args)
@@ -91,6 +93,7 @@ async def run(bot, message):
         return 
 
     detected_ranges = None
+    res = {}
 
     if fromid.text and not fromid.forward_date and not getattr(fromid, "forward_origin", None):
         # Check if user sent range links or multi-ranges in the prompt
