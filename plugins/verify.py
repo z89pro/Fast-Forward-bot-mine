@@ -134,25 +134,43 @@ async def _call_shortener_api(domain: str, api_key: str, long_url: str) -> str |
             logger.debug(f"shareus call failed: {e}")
         return None
 
-    # 2. Standard AdLinkFly / Generic Shortener API
-    endpoint = f"https://{clean_domain}/api?api={api_key}&url={long_url}"
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(endpoint, timeout=aiohttp.ClientTimeout(total=8)) as resp:
-                if resp.status == 200:
-                    data = await resp.json(content_type=None)
-                    if isinstance(data, dict):
-                        return (
-                            data.get("shortenedUrl")
-                            or data.get("shortLink")
-                            or data.get("short_url")
-                            or data.get("url")
-                        )
-                    text = (await resp.text()).strip()
-                    if text.startswith("http"):
-                        return text
-    except Exception as e:
-        logger.debug(f"shortener {clean_domain} failed: {e}")
+    # 2. Standard AdLinkFly / Instalinks / Generic Shortener APIs
+    # Try different query parameter conventions used by various shortener scripts
+    for param_name in ("api", "token", "api_key", "key"):
+        endpoint = f"https://{clean_domain}/api?{param_name}={api_key}&url={long_url}"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(endpoint, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                    if resp.status == 200:
+                        try:
+                            data = await resp.json(content_type=None)
+                            if isinstance(data, dict):
+                                res = (
+                                    data.get("shortenedUrl")
+                                    or data.get("shortLink")
+                                    or data.get("short_url")
+                                    or data.get("short")
+                                    or data.get("result")
+                                    or data.get("url")
+                                    or data.get("shortlink")
+                                )
+                                if isinstance(res, str) and res.startswith("http"):
+                                    return res
+                                if isinstance(data.get("data"), dict):
+                                    d_url = (
+                                        data["data"].get("url")
+                                        or data["data"].get("short_url")
+                                        or data["data"].get("shortenedUrl")
+                                    )
+                                    if isinstance(d_url, str) and d_url.startswith("http"):
+                                        return d_url
+                        except Exception:
+                            pass
+                        text = (await resp.text()).strip()
+                        if text.startswith("http://") or text.startswith("https://"):
+                            return text
+        except Exception as e:
+            logger.debug(f"shortener {clean_domain} with param {param_name} failed: {e}")
 
     return None
 

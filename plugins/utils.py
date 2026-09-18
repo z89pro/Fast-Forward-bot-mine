@@ -1,6 +1,19 @@
+import asyncio
 import time as tm
 from database import db 
 from .test import parse_buttons
+
+async def auto_delete(message, delay=5):
+    """Wait for delay seconds, then delete the message cleanly."""
+    if not message:
+        return
+    try:
+        if delay and delay > 0:
+            await asyncio.sleep(delay)
+        if hasattr(message, "delete"):
+            await message.delete()
+    except Exception:
+        pass
 
 STATUS = {}
 

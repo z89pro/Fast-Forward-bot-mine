@@ -332,22 +332,8 @@ class Database:
        await self.bot.delete_many(query)
       
     async def get_userbot(self, user_id: int):
-       """Fetch the user's UserBot session (is_bot: False). If caller is admin/owner, fallback to team userbot."""
-       ubot = await self.bot.find_one({'user_id': int(user_id), 'is_bot': False})
-       if ubot:
-           return ubot
-       # Check if caller is an admin or owner — allow sharing configured admin userbots
-       try:
-           admins = await self.get_all_admins()
-           if user_id in admins or user_id in Config.BOT_OWNER_ID:
-               for aid in admins:
-                   if aid != user_id:
-                       shared_ub = await self.bot.find_one({'user_id': int(aid), 'is_bot': False})
-                       if shared_ub:
-                           return shared_ub
-       except Exception:
-           pass
-       return None
+       """Fetch the user's UserBot session (is_bot: False). Strictly scoped to user_id."""
+       return await self.bot.find_one({'user_id': int(user_id), 'is_bot': False})
 
     async def get_custom_bot(self, user_id: int):
        """Fetch the user's Bot Token (is_bot: True)."""

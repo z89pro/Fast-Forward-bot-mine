@@ -1030,11 +1030,13 @@ async def non_command_handler(client: Client, message: Message):
     # 4. Check if it's a known command -> let registered handlers execute
     if raw_text.startswith("/"):
         cmd_word = raw_text.split()[0].lstrip("/").split("@")[0].lower()
+        from plugins.utils import auto_delete
+        asyncio.create_task(auto_delete(message, delay=5))
         if cmd_word in KNOWN_COMMANDS:
             return
 
         # Unknown command response
-        return await message.reply_text(
+        unrec = await message.reply_text(
             f"<blockquote><b>❓ <u>ᴜɴᴋɴᴏᴡɴ ᴄᴏᴍᴍᴀɴᴅ: /{cmd_word}</u></b></blockquote>\n\n"
             f"ᴛʜᴇ ᴄᴏᴍᴍᴀɴᴅ <code>/{cmd_word}</code> ɪs ɴᴏᴛ ʀᴇᴄᴏɢɴɪᴢᴇᴅ ʙʏ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ.\n\n"
             f"👉 ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ <code>/help</code> ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs!",
@@ -1043,6 +1045,8 @@ async def non_command_handler(client: Client, message: Message):
                 row(btn("📖 ᴠɪᴇᴡ ᴄᴏᴍᴍᴀɴᴅs", "help", "blue"), btn("🔙 ʜᴏᴍᴇ", "back", "red"))
             )
         )
+        asyncio.create_task(auto_delete(unrec, delay=15))
+        return
 
     # 5. Check if it's a channel link or message link -> resolve channel metadata!
     if raw_text.startswith("https://t.me/") or raw_text.startswith("http://t.me/") or raw_text.startswith("t.me/"):

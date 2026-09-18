@@ -146,6 +146,21 @@ def patch_pyrogram_font():
         return
     _PATCHED = True
 
+    # 0. Patch Pyrogram Str.__getitem__ to eliminate UnicodeDecodeError on UTF-16 surrogates
+    try:
+        from pyrogram.types.messages_and_media.message import Str
+        import pyrogram.parser.utils as parser_utils
+
+        def safe_str_getitem(self, item):
+            try:
+                return parser_utils.remove_surrogates(parser_utils.add_surrogates(self)[item])
+            except (UnicodeDecodeError, Exception):
+                return str(self)[item]
+
+        Str.__getitem__ = safe_str_getitem
+    except Exception:
+        pass
+
     # 1. Client.send_message
     orig_send_message = Client.send_message
 
