@@ -422,7 +422,7 @@ async def start_autosave_monitor(user_id: int, bot_client: Client):
                 user_configs=user_configs
             )
             
-            dump_target = await db.get_effective_dump_channel()
+            dump_target = await db.get_effective_dump_channel(user_id=user_id)
 
             if user_configs.get('forward_tag'):
                 await client.forward_messages(

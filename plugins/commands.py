@@ -133,10 +133,22 @@ async def start(client, message):
         _plain_name = (message.from_user.first_name or message.from_user.username or str(user.id))
         await db.touch_user(user.id, _plain_name)
 
+    # Guided first-run readiness check
+    custom_b = await db.get_custom_bot(user.id)
+    ubot = await db.get_userbot(user.id)
+    chans = await db.get_user_channels(user.id)
+
+    readiness = (
+        f"\n\n<blockquote><b>🚀 <u>ғᴏʀᴡᴀʀᴅ ʀᴇᴀᴅɪɴᴇss</u></b>\n"
+        f"• 🤖 <b>ʙᴏᴛ ᴛᴏᴋᴇɴ:</b> {('<code>' + custom_b['name'] + '</code> ✅') if custom_b else '<code>ɴᴏᴛ sᴇᴛ</code> ⚠️'}\n"
+        f"• 👤 <b>ᴜsᴇʀʙᴏᴛ:</b> {('<code>' + ubot['name'] + '</code> ✅') if ubot else '<code>ɴᴏᴛ sᴇᴛ</code> ⚠️'}\n"
+        f"• 🎯 <b>ᴛᴀʀɢᴇᴛ:</b> {f'<code>{len(chans)} ᴄʜᴀɴɴᴇʟ(s)</code> ✅' if chans else '<code>ɴᴏᴛ sᴇᴛ</code> ⚠️'}</blockquote>"
+    )
+
     reply_markup = get_main_buttons(user.id)
     extra_welcome = "\n\n🎁 <i>You joined via an invite link! Claim your welcome bonus in /referral!</i>" if (is_new and ref_id) else ""
     await message.reply_text(
-        text=Translation.START_TXT.format(message.from_user.first_name) + extra_welcome,
+        text=Translation.START_TXT.format(message.from_user.first_name) + extra_welcome + readiness,
         reply_markup=reply_markup,
         quote=True
     )

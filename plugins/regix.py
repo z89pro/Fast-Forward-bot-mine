@@ -170,9 +170,36 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     
     clean_caption = user_configs.get('clean_caption', False)
     replace_words = user_configs.get('replace_words', {})
-    dump_target = await db.get_effective_dump_channel()
+    dump_target = await db.get_effective_dump_channel(user_id=user)
     upload_type = user_configs.get('upload_type', 'media')
     transfer_mode = str(user_configs.get('transfer_mode', 'auto')).lower()
+
+    # ── Active Filter & Deduplication Configuration ──
+    seen_unique_ids = set()
+    seen_text_hashes = set()
+    skip_duplicates = bool(user_configs.get('duplicate', True))
+
+    cfg_filters = user_configs.get('filters') or {}
+    disabled_media_types = {k for k, v in cfg_filters.items() if v is False}
+
+    size_limit_bytes = int(user_configs.get('file_size', 0) or 0)
+    size_limit_mode = str(user_configs.get('size_limit', 'max')).lower()
+
+    raw_exts = user_configs.get('extension')
+    allowed_exts = None
+    if raw_exts:
+        if isinstance(raw_exts, list):
+            allowed_exts = {e.lstrip('.').lower() for e in raw_exts if e}
+        else:
+            allowed_exts = {e.strip().lstrip('.').lower() for e in str(raw_exts).split(',') if e.strip()}
+
+    raw_kw = user_configs.get('keywords')
+    required_keywords = None
+    if raw_kw:
+        if isinstance(raw_kw, list):
+            required_keywords = [k.strip().lower() for k in raw_kw if k.strip()]
+        else:
+            required_keywords = [k.strip().lower() for k in str(raw_kw).split(',') if k.strip()]
     # 'forward' forces the native batched forward; 'copy'/'upload' force the
     # per-message path; 'auto' keeps the existing forward_tag behaviour and
     # falls back to a download+re-upload whenever Telegram refuses the transfer.
@@ -294,15 +321,65 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                     filtered=sts.get('filtered') or 0
                 )
 
-            if message == "DUPLICATE":
-                sts.add('duplicate')
-                continue 
-            elif message == "FILTERED":
-                sts.add('filtered')
-                continue 
             if message.empty or message.service:
                 sts.add('deleted')
                 continue
+
+            # ── 1. Media Type Filter ──
+            m_type = None
+            if message.media:
+                m_type = getattr(message.media, 'value', str(message.media))
+            elif message.text:
+                m_type = 'text'
+            elif message.poll:
+                m_type = 'poll'
+
+            if m_type and m_type in disabled_media_types:
+                sts.add('filtered')
+                continue
+
+            # ── 2. Extract Media Metadata for Size/Extension/Dedupe ──
+            media_obj = getattr(message, message.media.value, None) if message.media else None
+            file_name = getattr(media_obj, 'file_name', '') if media_obj else ''
+            file_size = getattr(media_obj, 'file_size', 0) if media_obj else 0
+            file_unique_id = getattr(media_obj, 'file_unique_id', None) if media_obj else None
+
+            # ── 3. File Size Filter ──
+            if size_limit_bytes > 0 and file_size > 0:
+                if size_limit_mode == 'max' and file_size > size_limit_bytes:
+                    sts.add('filtered')
+                    continue
+                elif size_limit_mode == 'min' and file_size < size_limit_bytes:
+                    sts.add('filtered')
+                    continue
+
+            # ── 4. Extension Filter ──
+            if allowed_exts and file_name:
+                f_ext = file_name.rsplit('.', 1)[-1].lower() if '.' in file_name else ''
+                if f_ext not in allowed_exts:
+                    sts.add('filtered')
+                    continue
+
+            # ── 5. Keyword Filter ──
+            if required_keywords:
+                search_blob = f"{file_name} {message.caption or ''} {message.text or ''}".lower()
+                if not any(kw in search_blob for kw in required_keywords):
+                    sts.add('filtered')
+                    continue
+
+            # ── 6. In-Memory Deduplication ──
+            if skip_duplicates:
+                if file_unique_id:
+                    if file_unique_id in seen_unique_ids:
+                        sts.add('duplicate')
+                        continue
+                    seen_unique_ids.add(file_unique_id)
+                elif message.text:
+                    t_hash = hash(message.text.strip())
+                    if t_hash in seen_text_hashes:
+                        sts.add('duplicate')
+                        continue
+                    seen_text_hashes.add(t_hash)
 
             if use_native_forward:
                 MSG.append(message.id)
@@ -1148,6 +1225,15 @@ def clean_caption_advanced(text: str, user_configs: dict = None, lecture_index: 
 
     if not any(text.startswith(p) for p in ("[", "<b>[", "<b>Lecture", "<b>Part", "<b>Lec")):
       text = prefix + (text if text else (file_name or f"Lecture {lecture_index:02d}"))
+
+  # 8. Remove hashtags (#tag) if remove_tags enabled
+  if user_configs.get('remove_tags', False):
+    text = re.sub(r'#\w+', '', text).strip()
+
+  # 9. Watermark text
+  watermark = user_configs.get('watermark_text')
+  if watermark and text:
+    text = f"{text}\n\n{watermark}".strip()
 
   return text
 

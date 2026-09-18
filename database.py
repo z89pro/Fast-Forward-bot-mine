@@ -275,14 +275,26 @@ class Database:
             upsert=True
         ) 
 
-    async def get_effective_dump_channel(self):
+    async def get_effective_dump_channel(self, user_id=None):
         """
         Determines the active channel to dump any forwarded, autosaved, or copied media/content.
         Priority:
+          0. User-level dump channel from user configs (if enabled and set)
           1. MongoDB admin_config ('dump_settings') if enabled and channel set
           2. Config.DUMP_CHANNEL if configured
           3. Config.LOG_CHANNEL as permanent fallback so any content is safely dumped
         """
+        if user_id:
+            try:
+                user_cfg = await self.get_configs(user_id)
+                if user_cfg.get('dump_enabled') and user_cfg.get('dump_channel'):
+                    chan = user_cfg.get('dump_channel')
+                    try:
+                        return int(chan)
+                    except (ValueError, TypeError):
+                        return chan
+            except Exception:
+                pass
         try:
             doc = await self.db.admin_config.find_one({'_id': 'dump_settings'})
             if doc and doc.get('dump_enabled') and doc.get('dump_channel'):
