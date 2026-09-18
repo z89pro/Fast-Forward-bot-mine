@@ -12,9 +12,25 @@ class STS:
     def verify(self):
         return self.data.get(self.id)
     
-    def store(self, From, to, skip, limit):
-        self.data[self.id] = {"FROM": From, 'TO': to, 'total_files': 0, 'skip': skip, 'limit': limit,
-                      'fetched': skip, 'filtered': 0, 'deleted': 0, 'duplicate': 0, 'total': limit, 'start': 0}
+    def store(self, From, to, skip, limit, ranges=None):
+        total_count = sum((end - start + 1) for start, end in ranges) if ranges else limit
+        initial_fetched = 0 if ranges else skip
+        self.data[self.id] = {
+            "FROM": From,
+            'TO': to,
+            'total_files': 0,
+            'skip': skip,
+            'limit': limit,
+            'fetched': initial_fetched,
+            'filtered': 0,
+            'deleted': 0,
+            'duplicate': 0,
+            'total': total_count,
+            'start': 0,
+            'ranges': ranges,
+            'last_flood': 0,
+            'floodwaits': 0
+        }
         self.get(full=True)
         return STS(self.id)
         

@@ -170,7 +170,11 @@ class Database:
             'course_number_style': 'bracket',
             'course_sticky_button': None,
             'course_detect_missing': True,
-            'course_export_txt': True
+            'course_export_txt': True,
+            'course_telegraph_export': True,
+            'course_brand_header': None,
+            'course_brand_footer': None,
+            'adaptive_flood_enabled': True
         }
         if str(id) in ["0", "01", "default", "None"]:
             return dict(default)

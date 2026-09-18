@@ -28,41 +28,47 @@ async def run(bot, message):
     if not channels:
        return await message.reply_text("Please set a target channel in /settings before forwarding")
     
-    # Direct range forwarding: /fwd <start_link> <end_link>
-    link_regex = re.compile(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)/(\d+)$")
-    if len(message.command) >= 3:
-       start_match = link_regex.match(message.command[1].replace("?single", ""))
-       end_match = link_regex.match(message.command[2].replace("?single", ""))
-       if start_match and end_match:
-          c1 = start_match.group(4)
-          c2 = end_match.group(4)
-          if c1 != c2:
-             return await message.reply("**Both links must be from the same channel!**")
-          m1 = int(start_match.group(5))
-          m2 = int(end_match.group(5))
-          chat_id = int(("-100" + c1)) if c1.isnumeric() else c1
-          skip_count = max(0, min(m1, m2) - 1)
-          last_msg_id = max(m1, m2)
-          toid = channels[0]['chat_id']
-          to_title = channels[0]['title']
-          try:
-              title = (await bot.get_chat(chat_id)).title
-          except Exception:
-              title = "Source"
-          forward_id = f"{user_id}-{message.id}"
-          reply_markup = markup(
-              row(
-                  btn('✅ ʏᴇs, sᴛᴀʀᴛ', f"start_public_{forward_id}", "green"),
-                  btn('❌ ɴᴏ, ᴄᴀɴᴄᴇʟ', "close_btn", "red")
-              )
-          )
-          await message.reply_text(
-              text=f"**⚡ ᴅɪʀᴇᴄᴛ ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ**\n\n" + Translation.DOUBLE_CHECK.format(botname=_bot['name'], botuname=_bot['username'], from_chat=title, to_chat=to_title, skip=skip_count),
-              disable_web_page_preview=True,
-              reply_markup=reply_markup
-          )
-          STS(forward_id).store(chat_id, toid, skip_count, int(last_msg_id))
-          return
+    from plugins.range_parser import parse_multi_ranges, format_ranges_summary, calculate_total_messages
+
+    # Direct multi-range or link forwarding: /fwd <link/ranges...>
+    raw_args = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
+    if raw_args:
+        try:
+            parsed_chat, parsed_ranges = parse_multi_ranges(raw_args)
+            if parsed_chat and parsed_ranges:
+                toid = channels[0]['chat_id']
+                to_title = channels[0]['title']
+                try:
+                    title = (await bot.get_chat(parsed_chat)).title
+                except Exception:
+                    title = "Source"
+                
+                total_msgs = calculate_total_messages(parsed_ranges)
+                summary_str = format_ranges_summary(parsed_ranges)
+                forward_id = f"{user_id}-{message.id}"
+                reply_markup = markup(
+                    row(
+                        btn('✅ ʏᴇs, sᴛᴀʀᴛ', f"start_public_{forward_id}", "green"),
+                        btn('❌ ɴᴏ, ᴄᴀɴᴄᴇʟ', "close_btn", "red")
+                    )
+                )
+                await message.reply_text(
+                    text=f"⚡ <b><u>ᴍᴜʟᴛɪ-ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ</u></b>\n\n"
+                         f"🤖 <b>ʙᴏᴛ:</b> <code>{_bot['name']}</code> (@{_bot['username']})\n"
+                         f"📡 <b>ғʀᴏᴍ:</b> <code>{title}</code>\n"
+                         f"🎯 <b>ᴛᴏ:</b> <code>{to_title}</code>\n"
+                         f"📑 <b>ʀᴀɴɢᴇs:</b> <code>{summary_str}</code>\n"
+                         f"📦 <b>ᴛᴏᴛᴀʟ ᴍᴇssᴀɢᴇs:</b> <code>{total_msgs}</code>\n\n"
+                         f"<i>ᴅᴏ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ ᴛʜᴇsᴇ ʀᴀɴɢᴇs?</i>",
+                    disable_web_page_preview=True,
+                    reply_markup=reply_markup
+                )
+                first_start = parsed_ranges[0][0]
+                last_end = parsed_ranges[-1][1]
+                STS(forward_id).store(parsed_chat, toid, skip=first_start, limit=last_end, ranges=parsed_ranges)
+                return
+        except Exception as parse_err:
+            return await message.reply_text(f"⚠️ <b>ᴇʀʀᴏʀ ɪɴ ʀᴀɴɢᴇ ᴘᴀʀsɪɴɢ:</b> {parse_err}")
 
     if len(channels) > 1:
        for channel in channels:
@@ -83,14 +89,35 @@ async def run(bot, message):
     if fromid.text and fromid.text.startswith('/'):
         await message.reply(Translation.CANCEL)
         return 
+
+    link_regex = re.compile(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)/(\d+)$")
+    detected_ranges = None
+
     if fromid.text and not fromid.forward_date:
-        match = link_regex.match(fromid.text.replace("?single", ""))
-        if not match:
-            return await message.reply('Invalid link')
-        chat_id = match.group(4)
-        last_msg_id = int(match.group(5))
-        if chat_id.isnumeric():
-            chat_id = int(("-100" + chat_id))
+        # Check if user sent range links or multi-ranges in the prompt
+        try:
+            p_chat, p_ranges = parse_multi_ranges(fromid.text)
+            if p_chat and p_ranges and (len(p_ranges) > 1 or p_ranges[0][0] != p_ranges[0][1]):
+                chat_id = p_chat
+                detected_ranges = p_ranges
+                last_msg_id = p_ranges[-1][1]
+                skip_count = p_ranges[0][0]
+            else:
+                match = link_regex.match(fromid.text.replace("?single", "").strip())
+                if not match:
+                    return await message.reply('Invalid link')
+                chat_id = match.group(4)
+                last_msg_id = int(match.group(5))
+                if chat_id.isnumeric():
+                    chat_id = int(("-100" + chat_id))
+        except Exception:
+            match = link_regex.match(fromid.text.replace("?single", "").strip())
+            if not match:
+                return await message.reply('Invalid link')
+            chat_id = match.group(4)
+            last_msg_id = int(match.group(5))
+            if chat_id.isnumeric():
+                chat_id = int(("-100" + chat_id))
     elif fromid.forward_from_chat and fromid.forward_from_chat.type in [enums.ChatType.CHANNEL, enums.ChatType.SUPERGROUP]:
         last_msg_id = fromid.forward_from_message_id
         chat_id = fromid.forward_from_chat.username or fromid.forward_from_chat.id
@@ -107,6 +134,31 @@ async def run(bot, message):
         return await message.reply('Invalid Link specified.')
     except Exception as e:
         return await message.reply(f'Errors - {e}')
+
+    if detected_ranges:
+        total_msgs = calculate_total_messages(detected_ranges)
+        summary_str = format_ranges_summary(detected_ranges)
+        forward_id = f"{user_id}-{fromid.id}"
+        reply_markup = markup(
+            row(
+                btn('✅ ʏᴇs, sᴛᴀʀᴛ', f"start_public_{forward_id}", "green"),
+                btn('❌ ɴᴏ, ᴄᴀɴᴄᴇʟ', "close_btn", "red")
+            )
+        )
+        await message.reply_text(
+            text=f"⚡ <b><u>ᴍᴜʟᴛɪ-ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ</u></b>\n\n"
+                 f"🤖 <b>ʙᴏᴛ:</b> <code>{_bot['name']}</code> (@{_bot['username']})\n"
+                 f"📡 <b>ғʀᴏᴍ:</b> <code>{title}</code>\n"
+                 f"🎯 <b>ᴛᴏ:</b> <code>{to_title}</code>\n"
+                 f"📑 <b>ʀᴀɴɢᴇs:</b> <code>{summary_str}</code>\n"
+                 f"📦 <b>ᴛᴏᴛᴀʟ ᴍᴇssᴀɢᴇs:</b> <code>{total_msgs}</code>\n\n"
+                 f"<i>ᴅᴏ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ ᴛʜᴇsᴇ ʀᴀɴɢᴇs?</i>",
+            disable_web_page_preview=True,
+            reply_markup=reply_markup
+        )
+        STS(forward_id).store(chat_id, toid, skip=skip_count, limit=last_msg_id, ranges=detected_ranges)
+        return
+
     skipno = await bot.ask(message.chat.id, Translation.SKIP_MSG)
     if not skipno.text or skipno.text.startswith('/'):
         await message.reply(Translation.CANCEL)

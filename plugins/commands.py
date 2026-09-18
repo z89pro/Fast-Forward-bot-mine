@@ -477,6 +477,82 @@ async def setcoursebutton_cmd(client: Client, message: Message):
     else:
         await message.reply_text("❌ Invalid format! Please use: <code>Text | URL</code>", quote=True)
 
+@Client.on_message(filters.command(['setbanner', 'setheader']))
+async def setbanner_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if len(message.command) < 2:
+        return await message.reply_text(
+            "🎨 <b><u>sᴇᴛ ʜᴇᴀᴅᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ</u></b>\n\n"
+            "<b>ᴜsᴀɢᴇ:</b> <code>/setbanner &lt;banner text&gt;</code>\n"
+            "<b>ᴇxᴀᴍᴘʟᴇ:</b> <code>/setbanner 🎓 <b>Skinet Academy</b> | Premium Series</code>\n\n"
+            "<i>ᴛʜɪs ʙᴀɴɴᴇʀ ɪs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴘʀᴇᴘᴇɴᴅᴇᴅ ᴛᴏ ᴇᴠᴇʀʏ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ & ᴡᴇʙ sʏʟʟᴀʙᴜs!</i>",
+            quote=True
+        )
+    banner_text = message.text.split(None, 1)[1].strip()
+    configs = await db.get_configs(user_id)
+    configs['course_brand_header'] = banner_text
+    await db.update_configs(user_id, configs)
+    await message.reply_text(
+        f"✅ <b><u>ʜᴇᴀᴅᴇʀ ʙᴀɴɴᴇʀ sᴀᴠᴇᴅ:</u></b>\n\n"
+        f"<blockquote>{banner_text}</blockquote>\n\n"
+        f"<i>ᴛʜɪs ᴡɪʟʟ ʙᴇ ᴘʀᴇᴘᴇɴᴅᴇᴅ ᴛᴏ ᴀʟʟ ғᴏʀᴡᴀʀᴅs ᴀɴᴅ ᴛᴇʟᴇɢʀᴀᴘʜ ᴘᴀɢᴇs.</i>",
+        quote=True
+    )
+
+@Client.on_message(filters.command(['delbanner', 'clearbanner', 'delheader']))
+async def delbanner_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    configs = await db.get_configs(user_id)
+    configs['course_brand_header'] = None
+    await db.update_configs(user_id, configs)
+    await message.reply_text("🗑️ <b>ʜᴇᴀᴅᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ ᴄʟᴇᴀʀᴇᴅ!</b>", quote=True)
+
+@Client.on_message(filters.command(['setfooter', 'setbrandfooter']))
+async def setfooter_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if len(message.command) < 2:
+        return await message.reply_text(
+            "🎨 <b><u>sᴇᴛ ғᴏᴏᴛᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ</u></b>\n\n"
+            "<b>ᴜsᴀɢᴇ:</b> <code>/setfooter &lt;footer text&gt;</code>\n"
+            "<b>ᴇxᴀᴍᴘʟᴇ:</b> <code>/setfooter 📢 <b>Join:</b> @SkinetCourses | 💬 <b>Support:</b> @SkinetHelp</code>\n\n"
+            "<i>ᴛʜɪs ʙᴀɴɴᴇʀ ɪs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴀᴘᴘᴇɴᴅᴇᴅ ᴛᴏ ᴇᴠᴇʀʏ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ & ᴡᴇʙ sʏʟʟᴀʙᴜs!</i>",
+            quote=True
+        )
+    footer_text = message.text.split(None, 1)[1].strip()
+    configs = await db.get_configs(user_id)
+    configs['course_brand_footer'] = footer_text
+    await db.update_configs(user_id, configs)
+    await message.reply_text(
+        f"✅ <b><u>ғᴏᴏᴛᴇʀ ʙᴀɴɴᴇʀ sᴀᴠᴇᴅ:</u></b>\n\n"
+        f"<blockquote>{footer_text}</blockquote>\n\n"
+        f"<i>ᴛʜɪs ᴡɪʟʟ ʙᴇ ᴀᴘᴘᴇɴᴅᴇᴅ ᴛᴏ ᴀʟʟ ғᴏʀᴡᴀʀᴅs ᴀɴᴅ ᴛᴇʟᴇɢʀᴀᴘʜ ᴘᴀɢᴇs.</i>",
+        quote=True
+    )
+
+@Client.on_message(filters.command(['delfooter', 'clearfooter']))
+async def delfooter_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    configs = await db.get_configs(user_id)
+    configs['course_brand_footer'] = None
+    await db.update_configs(user_id, configs)
+    await message.reply_text("🗑️ <b>ғᴏᴏᴛᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ ᴄʟᴇᴀʀᴇᴅ!</b>", quote=True)
+
+@Client.on_message(filters.command(['viewbranding', 'branding']))
+async def viewbranding_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    configs = await db.get_configs(user_id)
+    hdr = configs.get('course_brand_header') or "<i>Not configured</i>"
+    ftr = configs.get('course_brand_footer') or "<i>Not configured</i>"
+    btn_raw = configs.get('course_sticky_button') or "<i>Not configured</i>"
+
+    await message.reply_text(
+        f"🏷️ <b><u>ᴄᴜʀʀᴇɴᴛ ʙʀᴀɴᴅɪɴɢ sᴜɪᴛᴇ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ</u></b>\n\n"
+        f"📌 <b>ʜᴇᴀᴅᴇʀ ʙᴀɴɴᴇʀ:</b>\n<blockquote>{hdr}</blockquote>\n\n"
+        f"📌 <b>ғᴏᴏᴛᴇʀ ʙᴀɴɴᴇʀ:</b>\n<blockquote>{ftr}</blockquote>\n\n"
+        f"🔘 <b>sᴛɪᴄᴋʏ ʙᴜᴛᴛᴏɴ:</b>\n<blockquote><code>{btn_raw}</code></blockquote>\n\n"
+        f"✏️ <i>ᴜsᴇ <code>/setbanner</code>, <code>/setfooter</code>, <code>/setcoursebutton</code> ᴛᴏ ᴍᴏᴅɪғʏ.</i>",
+        quote=True
+    )
 
 #===================Non-Command & Unknown Message Handler===================#
 
@@ -490,7 +566,9 @@ KNOWN_COMMANDS = {
     "modifier", "ftm", "courseseller", "seller", "course", "courses", "setlecstart", "lecstart",
     "setcoursebutton", "coursebutton", "exportindex", "unequify", "userstats", "track",
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
-    "deladmin", "admins", "cancel", "yes", "no"
+    "deladmin", "admins", "cancel", "yes", "no", "setbanner", "setheader", "delbanner",
+    "clearbanner", "delheader", "setfooter", "setbrandfooter", "delfooter", "clearfooter",
+    "viewbranding", "branding"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)

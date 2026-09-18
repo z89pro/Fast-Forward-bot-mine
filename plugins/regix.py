@@ -99,6 +99,9 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     base_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
     jitter_enabled = bool(speed_cfg.get('jitter', True))
     batch_size = int(speed_cfg.get('batch_size', 100 if base_delay <= 1.0 else 20))
+    adaptive_enabled = bool(user_configs.get('adaptive_flood_enabled', True))
+    adaptive_delay = base_delay
+    success_streak = 0
     course_items = []
 
     # ── Save active task in MongoDB checkpoint store ──
@@ -152,12 +155,20 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
         start_offset = int(sts.get('skip')) if sts.get('skip') else 0
         limit_target = int(sts.get('limit'))
 
-        async for message in client.iter_messages(
-            client,
-            chat_id=sts.get('FROM'), 
-            limit=limit_target, 
-            offset=start_offset
-        ):
+        async def iter_all_ranges():
+            ranges_to_fetch = sts.get('ranges') or [(start_offset, limit_target)]
+            for r_start, r_end in ranges_to_fetch:
+                if await is_cancelled(client, user, m, sts, task_id=task_id):
+                    return
+                async for msg in client.iter_messages(
+                    client,
+                    chat_id=sts.get('FROM'),
+                    limit=r_end,
+                    offset=r_start
+                ):
+                    yield msg
+
+        async for message in iter_all_ranges():
             if await is_cancelled(client, user, m, sts, task_id=task_id):
                 return
             while temp.PAUSE.get(user) is True:
@@ -201,7 +212,8 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 if (notcompleted >= batch_size or completed <= batch_size): 
                     await forward(client, MSG, m, sts, protect, dump_target=dump_target)
                     sts.add('total_files', notcompleted)
-                    b_sleep = human_delay(base_delay * 2) if jitter_enabled else (base_delay * 2)
+                    b_del = (adaptive_delay if adaptive_enabled else base_delay) * 2
+                    b_sleep = human_delay(b_del) if jitter_enabled else b_del
                     await asyncio.sleep(max(1.0, b_sleep))
                     MSG = []
                 lec_start = int(user_configs.get('course_start_offset', 1) or 1)
@@ -218,7 +230,23 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                     fname = getattr(media_obj, 'file_name', '') if media_obj else ''
                     c_title = fname or ((message.caption or message.text or "")[:50].strip() if (message.caption or message.text) else f"Lecture {lec_idx:02d}")
                     course_items.append({'num': lec_idx, 'title': c_title, 'msg_id': sent_id})
-                sleep_time = human_delay(base_delay) if jitter_enabled else base_delay
+
+                # ── Adaptive Anti-Flood Engine ──
+                if adaptive_enabled and hasattr(sts, 'data') and sts.id in sts.data:
+                    last_fl = sts.data[sts.id].pop('last_flood', 0)
+                    if last_fl > 0:
+                        adaptive_delay = min(15.0, max(adaptive_delay + 1.0, adaptive_delay * 1.5))
+                        success_streak = 0
+                        logger.info(f"Adaptive Anti-Flood: Backed off delay to {adaptive_delay:.2f}s (Telegram FloodWait {last_fl}s)")
+                    else:
+                        success_streak += 1
+                        if success_streak >= 25 and adaptive_delay > base_delay:
+                            adaptive_delay = max(base_delay, adaptive_delay - 0.25)
+                            success_streak = 0
+                            logger.info(f"Adaptive Anti-Flood: Smoothly recovered delay to {adaptive_delay:.2f}s")
+
+                eff_del = adaptive_delay if adaptive_enabled else base_delay
+                sleep_time = human_delay(eff_del) if jitter_enabled else eff_del
                 await asyncio.sleep(sleep_time)
 
     except Exception as e:
@@ -422,6 +450,9 @@ async def copy(bot, msg, m, sts, dump_target=None):
               pass
      return getattr(sent, 'id', None)
    except FloodWait as e:
+     sts.add('floodwaits', 1)
+     if hasattr(sts, 'data') and sts.id in sts.data:
+         sts.data[sts.id]['last_flood'] = e.value
      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', e.value, sts)
      await asyncio.sleep(e.value + 1)
      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
@@ -506,7 +537,11 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
 
    sticky_raw = user_configs.get('course_sticky_button')
    sticky_btn = build_universal_button(sticky_raw) if sticky_raw else None
-   idx_markup = InlineKeyboardMarkup([[sticky_btn]]) if sticky_btn else None
+
+   # Pre-populate clickable direct message links for every lecture item
+   for it in course_items:
+      if it.get('msg_id') and not it.get('link'):
+         it['link'] = f"https://t.me/{chan_ref}/{it['msg_id']}" if is_public else f"https://t.me/c/{clean_chat}/{it['msg_id']}"
 
    missing_lecs = []
    if user_configs.get('course_detect_missing', True):
@@ -521,12 +556,40 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
    else:
       missing_card = "🎉 <b>ᴄᴏᴜʀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇɴᴇss:</b> <code>100% (No gaps detected)</code>\n"
 
+   # Instant Telegraph Syllabus Webpage Generator
+   telegraph_url = None
+   if user_configs.get('course_telegraph_export', True) and course_items:
+      try:
+         from plugins.telegraph_helper import create_telegraph_syllabus
+         telegraph_url = await create_telegraph_syllabus(
+            title=from_title,
+            from_title=from_title,
+            course_items=course_items,
+            missing_lectures=missing_lecs,
+            header_banner=user_configs.get('course_brand_header'),
+            footer_banner=user_configs.get('course_brand_footer')
+         )
+      except Exception as tele_err:
+         logger.warning(f"Failed to generate Telegraph syllabus: {tele_err}")
+
+   telegraph_card = ""
+   if telegraph_url:
+      telegraph_card = f"🌐 <b>ᴡᴇʙ sʏʟʟᴀʙᴜs (ᴛᴇʟᴇɢʀᴀᴘʜ):</b> <a href='{telegraph_url}'>Click to View Online</a>\n"
+
+   btn_rows = []
+   if telegraph_url:
+      btn_rows.append([InlineKeyboardButton("🌐 ᴠɪᴇᴡ ᴡᴇʙ sʏʟʟᴀʙᴜs (ᴛᴇʟᴇɢʀᴀᴘʜ)", url=telegraph_url)])
+   if sticky_btn:
+      btn_rows.append([sticky_btn])
+   idx_markup = InlineKeyboardMarkup(btn_rows) if btn_rows else None
+
    header = (
       "📚 <b><u>ᴄᴏᴜʀsᴇ ʟᴇᴄᴛᴜʀᴇs ɪɴᴅᴇx / sʏʟʟᴀʙᴜs</u></b>\n"
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
       f"🎯 <b>sᴏᴜʀᴄᴇ:</b> <code>{from_title}</code>\n"
       f"📦 <b>ᴛᴏᴛᴀʟ ʟᴇᴄᴛᴜʀᴇs:</b> <code>{len(course_items)}</code>\n"
       f"{missing_card}"
+      f"{telegraph_card}"
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
    )
 
@@ -540,12 +603,8 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
       for item in chunk:
          num_str = f"{item['num']:02d}"
          title = str(item['title']).replace("<", "&lt;").replace(">", "&gt;")
-         if item.get('msg_id'):
-            if is_public:
-               link = f"https://t.me/{chan_ref}/{item['msg_id']}"
-            else:
-               link = f"https://t.me/c/{clean_chat}/{item['msg_id']}"
-            lines.append(f"<b>[{num_str}]</b> <a href='{link}'>{title}</a>")
+         if item.get('link'):
+            lines.append(f"<b>[{num_str}]</b> <a href='{item['link']}'>{title}</a>")
          else:
             lines.append(f"<b>[{num_str}]</b> {title}")
 
@@ -576,6 +635,7 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
             "📚 COURSE LECTURES INDEX & SYLLABUS\n"
             f"🎯 Source: {from_title}\n"
             f"📦 Total Forwarded Lectures: {len(course_items)}\n"
+            f"🌐 Web Syllabus (Telegraph): {telegraph_url or 'N/A'}\n"
             f"📅 Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             "⚡ Generated by Skinet Verse (Course Seller Mode)\n"
             "====================================================\n\n"
@@ -583,10 +643,9 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
          for it in course_items:
             num_str = f"{it['num']:02d}"
             title = it['title']
-            msg_id = it.get('msg_id')
-            if msg_id:
-               link = f"https://t.me/{chan_ref}/{msg_id}" if is_public else f"https://t.me/c/{clean_chat}/{msg_id}"
-               txt_content += f"[{num_str}] {title}\n     Link: {link}\n\n"
+            msg_link = it.get('link')
+            if msg_link:
+               txt_content += f"[{num_str}] {title}\n     Link: {msg_link}\n\n"
             else:
                txt_content += f"[{num_str}] {title}\n\n"
 
@@ -601,13 +660,15 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
          with open(doc_file, "w", encoding="utf-8") as f_out:
             f_out.write(txt_content)
 
+         doc_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🌐 ᴠɪᴇᴡ ᴡᴇʙ sʏʟʟᴀʙᴜs", url=telegraph_url)]]) if telegraph_url else None
          await client.send_document(
             chat_id=user,
             document=doc_file,
             caption=f"📄 <b><u>ᴄᴏᴜʀsᴇ sʏʟʟᴀʙᴜs ᴅᴏᴄᴜᴍᴇɴᴛ</u></b>\n\n"
                     f"📦 <b>ᴛᴏᴛᴀʟ ʟᴇᴄᴛᴜʀᴇs:</b> <code>{len(course_items)}</code>\n"
                     f"🎯 <b>sᴏᴜʀᴄᴇ:</b> <code>{from_title}</code>\n\n"
-                    f"⚡ <i>ʏᴏᴜ ᴄᴀɴ sʜᴀʀᴇ ᴛʜɪs ᴄʟᴇᴀɴ ɪɴᴅᴇx ғɪʟᴇ ᴡɪᴛʜ ʏᴏᴜʀ sᴛᴜᴅᴇɴᴛs!</i>"
+                    f"⚡ <i>ʏᴏᴜ ᴄᴀɴ sʜᴀʀᴇ ᴛʜɪs ᴄʟᴇᴀɴ ɪɴᴅᴇx ғɪʟᴇ ᴡɪᴛʜ ʏᴏᴜʀ sᴛᴜᴅᴇɴᴛs!</i>",
+            reply_markup=doc_btn
          )
          if os.path.exists(doc_file):
             os.remove(doc_file)
@@ -631,10 +692,13 @@ async def forward(bot, msg, m, sts, protect, dump_target=None):
         except Exception:
            pass
    except FloodWait as e:
-     await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', e.value, sts)
-     await asyncio.sleep(e.value + 1)
-     await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
-     await forward(bot, msg, m, sts, protect, dump_target=dump_target)
+      sts.add('floodwaits', 1)
+      if hasattr(sts, 'data') and sts.id in sts.data:
+          sts.data[sts.id]['last_flood'] = e.value
+      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', e.value, sts)
+      await asyncio.sleep(e.value + 1)
+      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
+      await forward(bot, msg, m, sts, protect, dump_target=dump_target)
 
 PROGRESS = """
 📈 ᴘᴇʀᴄᴇɴᴛᴀɢᴇ : {0} %
@@ -836,6 +900,54 @@ def apply_word_replacements(text: str, replace_words: dict) -> str:
     text = text.replace(old, new)
   return text
 
+def build_media_caption(header: str = None, body: str = None, footer: str = None, max_len: int = 1024) -> str:
+    """
+    Safely builds a caption within Telegram's hard limits (1024 for media, 4096 for text).
+    Preserves branding header and footer banners intact, cleanly truncating the body
+    with an ellipsis if total length exceeds max_len.
+    """
+    header = (header or "").strip()
+    body = (body or "").strip()
+    footer = (footer or "").strip()
+
+    if not header and not footer:
+        if len(body) > max_len:
+            return body[:max_len - 3] + "..."
+        return body
+
+    sep = "\n\n"
+    total_len = len(header) + len(body) + len(footer)
+    if header and body:
+        total_len += len(sep)
+    if (header or body) and footer:
+        total_len += len(sep)
+
+    if total_len <= max_len:
+        parts = [p for p in [header, body, footer] if p]
+        return sep.join(parts)
+
+    reserved = len(header) + len(footer)
+    if header and footer:
+        reserved += len(sep)
+    if body and (header or footer):
+        reserved += len(sep)
+
+    if reserved >= max_len:
+        half = (max_len - 4) // 2
+        new_hdr = (header[:half] + "...") if len(header) > half else header
+        new_ftr = (footer[:half] + "...") if len(footer) > half else footer
+        return f"{new_hdr}\n\n{new_ftr}" if new_hdr and new_ftr else (new_hdr or new_ftr)
+
+    avail_body = max_len - reserved
+    if len(body) > avail_body:
+        if avail_body > 3:
+            body = body[:avail_body - 3] + "..."
+        else:
+            body = ""
+
+    parts = [p for p in [header, body, footer] if p]
+    return sep.join(parts)
+
 def custom_caption(msg, caption, clean_caption=False, replace_words=None, user_configs=None, lecture_index=None):
   user_configs = dict(user_configs) if user_configs else {}
   if clean_caption:
@@ -860,6 +972,7 @@ def custom_caption(msg, caption, clean_caption=False, replace_words=None, user_c
 
   cleaned = clean_caption_advanced(fcaption, user_configs, lecture_index=lecture_index, file_name=file_name)
 
+  final_text = cleaned
   if caption:
     try:
       res = caption.format(
@@ -867,10 +980,18 @@ def custom_caption(msg, caption, clean_caption=False, replace_words=None, user_c
         size=get_size(file_size),
         caption=cleaned or ""
       )
-      return res.strip() if res.strip() else None
+      final_text = res.strip() if res.strip() else None
     except Exception:
-      return cleaned
-  return cleaned if cleaned else None
+      final_text = cleaned
+
+  header_banner = user_configs.get('course_brand_header')
+  footer_banner = user_configs.get('course_brand_footer')
+  max_len = 1024 if getattr(msg, 'media', None) else 4096
+
+  if header_banner or footer_banner or (final_text and len(final_text) > max_len):
+    final_text = build_media_caption(header=header_banner, body=final_text or "", footer=footer_banner, max_len=max_len)
+
+  return final_text.strip() if final_text and final_text.strip() else None
 
 def get_size(size):
   units = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB"]

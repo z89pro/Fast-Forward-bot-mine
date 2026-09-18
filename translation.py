@@ -24,7 +24,13 @@ An enterprise-grade Telegram channel cloning, media migration, and course distri
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏣ <code>/start</code> — Start bot & view main card
 ⏣ <code>/forward</code> — Interactive channel forward wizard
-⏣ <code>/fwd &lt;link1&gt; &lt;link2&gt;</code> — Instant direct range forward
+⏣ <code>/fwd &lt;links/ranges&gt;</code> — Multi-range batch forward (e.g. 10-20 30-40)
+⏣ <code>/courseseller</code> — Master Course Seller Suite & settings
+⏣ <code>/setbanner</code> / <code>/delbanner</code> — Dynamic branding header banner
+⏣ <code>/setfooter</code> / <code>/delfooter</code> — Dynamic branding footer banner
+⏣ <code>/viewbranding</code> — Preview current branding suite
+⏣ <code>/setlecstart</code> — Set starting lecture number
+⏣ <code>/setcoursebutton</code> — Set sticky interactive button
 ⏣ <code>/autosave</code> — Real-time 24/7 channel monitoring
 ⏣ <code>/tutorial</code> — 12-Module Master Knowledge Hub
 ⏣ <code>/skinet</code> — Skinet Text & Media Modifier Guide
@@ -44,10 +50,12 @@ An enterprise-grade Telegram channel cloning, media migration, and course distri
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 <b>✨ Key Highlights:</b>
-• 🎓 <b>Course Seller Mode:</b> Auto lecture numbering & syllabus TOC
+• 🎓 <b>Course Seller Suite:</b> Auto numbering, gap alerts & Telegraph syllabus
+• 🛡️ <b>Adaptive Anti-Flood:</b> Dynamic jitter & FloodWait auto-recovery
+• 🏷️ <b>Branding Banners:</b> 1024-char safe headers & footers for media
+• ⚡ <b>Multi-Range Forwarding:</b> Forward multiple ranges in one go
 • 🛠 <b>Skinet Modifier:</b> Competitor username & link replacement
-• 🚀 <b>Smart AutoSave:</b> Real-time channel listener & auto-post
-• ⚡️ <b>Custom Speed:</b> Extreme (0.5s) to Safe (5s) modes"""
+• 🚀 <b>Smart AutoSave:</b> Real-time channel listener & auto-post"""
 
   HOW_USE_TXT = """<blockquote><b>📖 <u>ɢᴇᴛᴛɪɴɢ sᴛᴀʀᴛᴇᴅ — ǫᴜɪᴄᴋ sᴇᴛᴜᴘ ɢᴜɪᴅᴇ</u></b></blockquote>
 

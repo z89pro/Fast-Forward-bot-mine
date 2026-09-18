@@ -741,6 +741,37 @@ async def settings_query(bot, query):
      await query.answer(f"Auto TXT Export: {'ON' if not curr else 'OFF'}")
      await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
 
+  elif type == "cs_toggle_tele":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('course_telegraph_export', True))
+     configs['course_telegraph_export'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Telegraph Syllabus: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_flood":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('adaptive_flood_enabled', True))
+     configs['adaptive_flood_enabled'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Adaptive Anti-Flood: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_view_branding":
+     configs = await get_configs(user_id)
+     hdr = configs.get('course_brand_header') or "<i>Not configured</i>"
+     ftr = configs.get('course_brand_footer') or "<i>Not configured</i>"
+     btn_raw = configs.get('course_sticky_button') or "<i>Not configured</i>"
+     await query.message.reply_text(
+        f"🏷️ <b><u>ᴄᴜʀʀᴇɴᴛ ʙʀᴀɴᴅɪɴɢ sᴜɪᴛᴇ</u></b>\n\n"
+        f"📌 <b>ʜᴇᴀᴅᴇʀ ʙᴀɴɴᴇʀ:</b>\n<blockquote>{hdr}</blockquote>\n\n"
+        f"📌 <b>ғᴏᴏᴛᴇʀ ʙᴀɴɴᴇʀ:</b>\n<blockquote>{ftr}</blockquote>\n\n"
+        f"🔘 <b>sᴛɪᴄᴋʏ ʙᴜᴛᴛᴏɴ:</b>\n<blockquote><code>{btn_raw}</code></blockquote>\n\n"
+        f"✏️ <i>ᴜsᴇ <code>/setbanner</code>, <code>/setfooter</code>, <code>/setcoursebutton</code> ᴛᴏ ᴍᴏᴅɪғʏ.</i>",
+        quote=True
+     )
+     await query.answer()
+
   elif type == "cs_set_offset":
      try:
         ask = await query.message.chat.ask(
@@ -919,12 +950,14 @@ def course_seller_text(cfg):
         f"🎯 <b>Start Index Offset:</b> <code>{offset_val}</code>\n"
         f"🔍 <b>Missing Lecture Gap Check:</b> <code>{gap_status}</code>\n"
         f"📄 <b>Auto Syllabus TXT Export:</b> <code>{export_status}</code>\n"
+        f"🌐 <b>Telegraph Web Syllabus:</b> <code>{'Enabled' if cfg.get('course_telegraph_export', True) else 'Disabled'}</code>\n"
+        f"🛡️ <b>Adaptive Anti-Flood:</b> <code>{'Enabled' if cfg.get('adaptive_flood_enabled', True) else 'Disabled'}</code>\n"
         f"🔘 <b>Sticky Course Button:</b> <code>{sticky_btn}</code>\n"
         f"👤 <b>Competitor Username Remover:</b> <code>{user_rem}</code>\n"
         f"🔗 <b>Link Remover & Replacer:</b> <code>{link_rem}</code>\n"
         f"🔍 <b>Hidden Link Sanitizer:</b> <code>{hid_rem}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>Commands: /setlecstart &lt;num&gt; | /setcoursebutton &lt;text | url&gt;</i>"
+        "💡 <i>Commands: /setbanner | /setfooter | /viewbranding | /setlecstart</i>"
     )
 
 def course_seller_buttons(cfg):
@@ -942,6 +975,10 @@ def course_seller_buttons(cfg):
     offset_val = int(cfg.get('course_start_offset', 1) or 1)
     gap_mark = "✅" if cfg.get('course_detect_missing', True) else "❌"
     exp_mark = "✅" if cfg.get('course_export_txt', True) else "❌"
+    tele_mark = "✅" if cfg.get('course_telegraph_export', True) else "❌"
+    flood_mark = "✅" if cfg.get('adaptive_flood_enabled', True) else "❌"
+    hdr_has = "✅" if cfg.get('course_brand_header') else "❌"
+    ftr_has = "✅" if cfg.get('course_brand_footer') else "❌"
     has_btn = "✏️ ᴇᴅɪᴛ" if cfg.get('course_sticky_button') else "➕ sᴇᴛ"
     user_mark = "✅" if cfg.get('username_remover') else "❌"
     link_mark = "✅" if cfg.get('link_remover') else "❌"
@@ -962,13 +999,17 @@ def course_seller_buttons(cfg):
             InlineKeyboardButton(f"📄 ᴛxᴛ ᴇxᴘᴏʀᴛ {exp_mark}", callback_data="settings#cs_toggle_export")
         ],
         [
-            InlineKeyboardButton(f"🔘 sᴛɪᴄᴋʏ ʙᴜᴛᴛᴏɴ ({has_btn})", callback_data="settings#cs_set_btn"),
-            InlineKeyboardButton("🗑 ᴄʟᴇᴀʀ ʙᴛɴ", callback_data="settings#cs_clear_btn")
+            InlineKeyboardButton(f"🌐 ᴛᴇʟᴇɢʀᴀᴘʜ {tele_mark}", callback_data="settings#cs_toggle_tele"),
+            InlineKeyboardButton(f"🛡️ ᴀɴᴛɪ-ғʟᴏᴏᴅ {flood_mark}", callback_data="settings#cs_toggle_flood")
         ],
         [
-            InlineKeyboardButton(f"👤 ᴜsᴇʀɴᴀᴍᴇ {user_mark}", callback_data="settings#cs_toggle_user"),
-            InlineKeyboardButton(f"🔗 ʟɪɴᴋs {link_mark}", callback_data="settings#cs_toggle_link"),
-            InlineKeyboardButton(f"🔍 ʜɪᴅᴅᴇɴ {hid_mark}", callback_data="settings#cs_toggle_hidden")
+            InlineKeyboardButton(f"🏷️ ʙʀᴀɴᴅɪɴɢ (ʜ:{hdr_has} ғ:{ftr_has})", callback_data="settings#cs_view_branding"),
+            InlineKeyboardButton(f"🔘 sᴛɪᴄᴋʏ ʙᴜᴛᴛᴏɴ ({has_btn})", callback_data="settings#cs_set_btn")
+        ],
+        [
+            InlineKeyboardButton("🗑 ᴄʟᴇᴀʀ ʙᴛɴ", callback_data="settings#cs_clear_btn"),
+            InlineKeyboardButton(f"👤 ᴜsᴇʀ {user_mark}", callback_data="settings#cs_toggle_user"),
+            InlineKeyboardButton(f"🔗 ʟɪɴᴋ {link_mark}", callback_data="settings#cs_toggle_link")
         ],
         [
             InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm"),
