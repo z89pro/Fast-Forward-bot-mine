@@ -20,22 +20,7 @@ TRANSFER_MODES = {
 TRANSFER_MODE_ORDER = ['auto', 'forward', 'copy', 'upload']
 
 
-@Client.on_message(filters.command('addbot') & filters.private)
-async def addbot(client, message):
-   """`/addbot` is advertised in the Telegram menu, so it needs a real handler.
-
-   Shares the settings#addbot flow — CLIENT.add_bot only reads `from_user.id`.
-   """
-   if not message.from_user:
-      return
-   if await CLIENT.add_bot(client, message) is True:
-      await message.reply_text(
-         "<b>ʙᴏᴛ ᴛᴏᴋᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ ᴛᴏ ᴅʙ ✅</b>",
-         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton('⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs', callback_data="settings#bots")]]))
-
-
-@Client.on_message(filters.command('settings'))
+@Client.on_message(filters.command('settings') & filters.private)
 async def settings(client, message):
    text = (
       "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴄᴏɴᴛʀᴏʟ ᴘᴀɴᴇʟ & sᴇᴛᴛɪɴɢs</u></b></blockquote>\n\n"
@@ -118,10 +103,19 @@ async def settings_query(bot, query):
        
   elif type=="bots":
      buttons = []
-     _bot = await db.get_bot(user_id)
-     if _bot is not None:
-        buttons.append([InlineKeyboardButton(_bot['name'],
-                         callback_data=f"settings#editbot")])
+     _custom_bot = await db.get_custom_bot(user_id)
+     _userbot = await db.get_userbot(user_id)
+     status_lines = []
+     if _custom_bot:
+        buttons.append([InlineKeyboardButton(f"🤖 {_custom_bot['name']}",
+                         callback_data=f"settings#editbot_token")])
+        status_lines.append(f"🤖 <b>ʙᴏᴛ:</b> <code>{_custom_bot['name']}</code> (@{_custom_bot.get('username', '?')})")
+     if _userbot:
+        buttons.append([InlineKeyboardButton(f"👤 {_userbot['name']}",
+                         callback_data=f"settings#editbot_session")])
+        status_lines.append(f"👤 <b>ᴜsᴇʀʙᴏᴛ:</b> <code>{_userbot['name']}</code> (@{_userbot.get('username', '?')})")
+     if not status_lines:
+        status_lines.append("<i>ɴᴏ ʙᴏᴛs ᴄᴏɴɴᴇᴄᴛᴇᴅ ʏᴇᴛ. ᴀᴅᴅ ᴏɴᴇ ʙᴇʟᴏᴡ!</i>")
      # Always offered: a connected userbot must not hide the option to add a bot token.
      buttons.append([InlineKeyboardButton('✚ ᴀᴅᴅ ʙᴏᴛ ✚',
                       callback_data="settings#addbot")])
@@ -133,9 +127,11 @@ async def settings_query(bot, query):
                       callback_data="settings#main")])
      await query.message.edit_text(
        "<blockquote><b>🤖 <u>ᴍʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ʙᴏᴛs & ᴜsᴇʀʙᴏᴛs</u></b></blockquote>\n\n"
-       "Manage your forwarding bots, user accounts, and Pyrogram sessions.\n\n"
+       + "\n".join(status_lines) + "\n\n"
        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-       "👇 <i>Select a bot below to edit or add a new one:</i>",
+       "<i>ʙᴏᴛ ᴛᴏᴋᴇɴ = ᴘᴜʙʟɪᴄ ᴄʜᴀɴɴᴇʟs | ᴜsᴇʀʙᴏᴛ = ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟs\n"
+       "ʏᴏᴜ ᴄᴀɴ ᴀᴅᴅ ʙᴏᴛʜ! ᴛʜᴇ ʙᴏᴛ ᴀᴜᴛᴏ-sᴡɪᴛᴄʜᴇs ᴛᴏ ᴜsᴇʀʙᴏᴛ ғᴏʀ ᴘʀɪᴠᴀᴛᴇ sᴏᴜʀᴄᴇs.</i>\n\n"
+       "👇 <i>sᴇʟᴇᴄᴛ ᴀ ʙᴏᴛ ᴛᴏ ᴇᴅɪᴛ ᴏʀ ᴀᴅᴅ ᴀ ɴᴇᴡ ᴏɴᴇ:</i>",
        reply_markup=InlineKeyboardMarkup(buttons))
   
   elif type=="addbot":
@@ -224,18 +220,32 @@ async def settings_query(bot, query):
           await text.edit_text('ᴘʀᴏᴄᴇss ʜᴀs ʙᴇᴇɴ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴄᴀɴᴄᴇʟʟᴇᴅ.', reply_markup=InlineKeyboardMarkup(buttons))
 
   
-  elif type=="editbot": 
-     bot = await db.get_bot(user_id)
-     TEXT = Translation.BOT_DETAILS if bot['is_bot'] else Translation.USER_DETAILS
-     buttons = [[InlineKeyboardButton('❌ ʀᴇᴍᴏᴠᴇ ❌', callback_data=f"settings#removebot")
+  elif type in ("editbot", "editbot_token", "editbot_session"):
+     # Determine which bot to show based on callback type
+     if type == "editbot_session":
+        bot_doc = await db.get_userbot(user_id)
+     elif type == "editbot_token":
+        bot_doc = await db.get_custom_bot(user_id)
+     else:
+        bot_doc = await db.get_bot(user_id)
+     if not bot_doc:
+        return await query.answer("ɴᴏ ʙᴏᴛ ғᴏᴜɴᴅ.", show_alert=True)
+     TEXT = Translation.BOT_DETAILS if bot_doc.get('is_bot') else Translation.USER_DETAILS
+     remove_cb = "settings#removebot_session" if not bot_doc.get('is_bot') else "settings#removebot_token"
+     buttons = [[InlineKeyboardButton('❌ ʀᴇᴍᴏᴠᴇ ❌', callback_data=remove_cb)
                ],
                [InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data="settings#bots")]]
      await query.message.edit_text(
-        TEXT.format(bot['name'], bot['id'], bot['username']),
+        TEXT.format(bot_doc['name'], bot_doc['id'], bot_doc['username']),
         reply_markup=InlineKeyboardMarkup(buttons))
                                              
-  elif type=="removebot":
-     await db.remove_bot(user_id)
+  elif type in ("removebot", "removebot_token", "removebot_session"):
+     if type == "removebot_session":
+        await db.remove_bot(user_id, is_bot=False)
+     elif type == "removebot_token":
+        await db.remove_bot(user_id, is_bot=True)
+     else:
+        await db.remove_bot(user_id)
      await query.message.edit_text(
         "<b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴜᴘᴅᴀᴛᴇᴅ ✅</b>",
         reply_markup=InlineKeyboardMarkup(buttons))

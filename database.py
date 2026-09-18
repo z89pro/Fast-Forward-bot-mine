@@ -306,15 +306,40 @@ class Database:
         return None 
        
     async def add_bot(self, datas):
-       await self.bot.delete_many({'user_id': int(datas['user_id'])})
+       is_bot = bool(datas.get('is_bot', True))
+       await self.bot.delete_many({'user_id': int(datas['user_id']), 'is_bot': is_bot})
        await self.bot.insert_one(datas)
 
-    async def remove_bot(self, user_id):
-       await self.bot.delete_many({'user_id': int(user_id)})
+    async def remove_bot(self, user_id, is_bot=None):
+       query = {'user_id': int(user_id)}
+       if is_bot is not None:
+           query['is_bot'] = bool(is_bot)
+       await self.bot.delete_many(query)
       
-    async def get_bot(self, user_id: int):
-       bot = await self.bot.find_one({'user_id': int(user_id)})
-       return bot if bot else None
+    async def get_userbot(self, user_id: int):
+       """Fetch the user's UserBot session (is_bot: False)."""
+       return await self.bot.find_one({'user_id': int(user_id), 'is_bot': False})
+
+    async def get_custom_bot(self, user_id: int):
+       """Fetch the user's Bot Token (is_bot: True)."""
+       return await self.bot.find_one({'user_id': int(user_id), 'is_bot': True})
+
+    async def get_bot(self, user_id: int, prefer_userbot: bool = False):
+       """Fetch active bot. If prefer_userbot=True, prefers userbot."""
+       if prefer_userbot:
+           ubot = await self.get_userbot(user_id)
+           if ubot:
+               return ubot
+           return await self.get_custom_bot(user_id)
+       cbot = await self.get_custom_bot(user_id)
+       if cbot:
+           return cbot
+       return await self.get_userbot(user_id)
+
+    async def get_user_bots(self, user_id: int):
+       """Fetch all connected bots (both bot token and userbot)."""
+       cursor = self.bot.find({'user_id': int(user_id)})
+       return [b async for b in cursor]
                                           
     async def is_bot_exist(self, user_id):
        bot = await self.bot.find_one({'user_id': int(user_id)})
@@ -730,7 +755,7 @@ db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 
 # ── Backwards Compatibility Module-Level Helpers ─────────────
 async def get_session(user_id: int):
-    b = await db.get_bot(user_id)
+    b = await db.get_userbot(user_id) or await db.get_bot(user_id, prefer_userbot=True)
     return b.get("session") if (b and not b.get("is_bot")) else None
 
 async def save_session(user_id: int, session_string: str):

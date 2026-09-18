@@ -31,7 +31,6 @@ TEXT = Translation.TEXT
 @Client.on_callback_query(filters.regex(r'^start_public'))
 async def pub_(bot, message):
     user = message.from_user.id
-    temp.CANCEL[user] = False
     from plugins.verify import is_user_verified, send_verify_prompt
     if not await is_user_verified(user):
         await message.answer("⚠️ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʀᴇǫᴜɪʀᴇᴅ! ᴘʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ.", show_alert=True)
@@ -44,6 +43,10 @@ async def pub_(bot, message):
     # pass both checks and run two forwards over the same range. pub_ awaits the
     # whole task, so clearing it in the finally below is enough.
     temp.lock[user] = True
+    # Cleared only after the lock is held. Doing it at the top meant a second
+    # tap on a stale button wiped a *running* task's cancel flag, so /stop did
+    # nothing.
+    temp.CANCEL[user] = False
     try:
         sts = STS(frwd_id)
         if not sts.verify():
@@ -63,16 +66,78 @@ async def pub_(bot, message):
         except Exception as e:  
           return await m.edit(e)
         await msg_edit(m, "<b>ᴘʀᴏᴄᴇssɪɴɢ..</b>")
-        try: 
-           await client.get_messages(sts.get("FROM"), sts.get("limit"))
-        except:
-           await msg_edit(m, f"**sᴏᴜʀᴄᴇ ᴄʜᴀᴛ ᴍᴀʏ ʙᴇ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ / ɢʀᴏᴜᴘ. ᴜsᴇ ᴜsᴇʀ ʙᴏᴛ (ᴜsᴇʀ ᴍᴜsᴛ ʙᴇ ᴍᴇᴍʙᴇʀ ᴏᴠᴇʀ ᴛʜᴇʀᴇ) ᴏʀ ɪғ ᴍᴀᴋᴇ ʏᴏᴜʀ ʙᴏᴛ [Bot](t.me/{_bot['username']}) ᴀɴ ᴀᴅᴍɪɴ ᴏᴠᴇʀ ᴛʜᴇʀᴇ**", retry_btn(frwd_id), True)
+        who = "ᴜsᴇʀʙᴏᴛ" if not _bot.get('is_bot') else "ʙᴏᴛ"
+
+        # ── Source chat probe with automatic userbot fallback ──
+        source_ok = False
+        try:
+           # limit=1 asks "can I read this chat at all". The old call passed the
+           # last message id positionally as message_ids, so a deleted id made
+           # the probe return nothing while looking like a success.
+           await client.get_messages(sts.get("FROM"), limit=1)
+           source_ok = True
+        except FloodWait as e:
+           await msg_edit(m, f"⏳ **ᴛᴇʟᴇɢʀᴀᴍ ʀᴀᴛᴇ ʟɪᴍɪᴛ — ᴡᴀɪᴛ <code>{e.value}s</code>, ᴛʜᴇɴ ᴛᴀᴘ ʀᴇᴛʀʏ.**", retry_btn(frwd_id), True)
            return await stop(client, user)
+        except Exception as src_err:
+           # Primary worker can't read source — try userbot fallback
+           if _bot.get('is_bot'):
+               _userbot = await db.get_userbot(user)
+               if _userbot:
+                   await msg_edit(m, "<b>🔄 ʙᴏᴛ ᴄᴀɴ'ᴛ ᴀᴄᴄᴇss sᴏᴜʀᴄᴇ — sᴡɪᴛᴄʜɪɴɢ ᴛᴏ ᴜsᴇʀʙᴏᴛ...</b>")
+                   try:
+                       await stop(client, user)
+                   except Exception:
+                       pass
+                   try:
+                       client = await start_clone_bot(CLIENT.client(_userbot))
+                       await client.get_messages(sts.get("FROM"), limit=1)
+                       _bot = _userbot
+                       who = "ᴜsᴇʀʙᴏᴛ"
+                       source_ok = True
+                       logger.info(f"User {user}: auto-switched to userbot for private source {sts.get('FROM')}")
+                   except FloodWait as e:
+                       await msg_edit(m, f"⏳ **ᴛᴇʟᴇɢʀᴀᴍ ʀᴀᴛᴇ ʟɪᴍɪᴛ — ᴡᴀɪᴛ <code>{e.value}s</code>, ᴛʜᴇɴ ᴛᴀᴘ ʀᴇᴛʀʏ.**", retry_btn(frwd_id), True)
+                       return await stop(client, user)
+                   except Exception as ub_err:
+                       await msg_edit(m,
+                          f"**❌ ᴜsᴇʀʙᴏᴛ ᴀʟsᴏ ᴄᴀɴ'ᴛ ʀᴇᴀᴅ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ.**\n\n"
+                          f"<b>ʙᴏᴛ ᴇʀʀᴏʀ:</b> <code>{type(src_err).__name__}: {src_err}</code>\n"
+                          f"<b>ᴜsᴇʀʙᴏᴛ ᴇʀʀᴏʀ:</b> <code>{type(ub_err).__name__}: {ub_err}</code>\n\n"
+                          f"<i>ᴍᴀᴋᴇ sᴜʀᴇ ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ ᴀᴄᴄᴏᴜɴᴛ ʜᴀs ᴊᴏɪɴᴇᴅ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ.</i>**",
+                          retry_btn(frwd_id), True)
+                       return await stop(client, user)
+
+           if not source_ok:
+               # No userbot available or this IS the userbot and it failed
+               add_ub_btn = InlineKeyboardMarkup([
+                   [InlineKeyboardButton("➕ ᴀᴅᴅ ᴜsᴇʀʙᴏᴛ", callback_data="settings#adduserbot")],
+                   [InlineKeyboardButton("🔑 ʟᴏɢɪɴ ᴠɪᴀ ᴏᴛᴘ", callback_data="settings#addlogin")],
+                   [InlineKeyboardButton("♻️ ʀᴇᴛʀʏ", callback_data=f"start_public_{frwd_id}")]
+               ])
+               await msg_edit(m,
+                  f"**❌ ᴄᴀɴ'ᴛ ʀᴇᴀᴅ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ.**\n\n"
+                  f"<b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>{who}</code> (@{_bot.get('username', '?')})\n"
+                  f"<b>ᴇʀʀᴏʀ:</b> <code>{type(src_err).__name__}: {src_err}</code>\n\n"
+                  f"<i>ɪғ ɪᴛ ɪs ᴀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ, ᴀᴅᴅ ᴀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ (ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴀᴄᴄᴏᴜɴᴛ "
+                  f"ᴛʜᴀᴛ ʜᴀs ᴊᴏɪɴᴇᴅ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ.</i>**",
+                  add_ub_btn, True)
+               return await stop(client, user)
+
+        # ── Target chat probe ──
         try:
            k = await client.send_message(i.TO, "Testing")
            await k.delete()
-        except:
-           await msg_edit(m, f"**ᴘʟᴇᴀsᴇ [ᴜsᴇʀʙᴏᴛ / ʙᴏᴛ](t.me/{_bot['username']}) ᴀᴅᴍɪɴ ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ғᴜʟʟ ᴘᴇʀᴍɪssɪᴏɴ.**", retry_btn(frwd_id), True)
+        except FloodWait as e:
+           await msg_edit(m, f"⏳ **ᴛᴇʟᴇɢʀᴀᴍ ʀᴀᴛᴇ ʟɪᴍɪᴛ — ᴡᴀɪᴛ <code>{e.value}s</code>, ᴛʜᴇɴ ᴛᴀᴘ ʀᴇᴛʀʏ.**", retry_btn(frwd_id), True)
+           return await stop(client, user)
+        except Exception as e:
+           await msg_edit(m,
+              f"**❌ ᴄᴀɴ'ᴛ ᴘᴏsᴛ ɪɴ ᴛʜᴇ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ.**\n\n"
+              f"<b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>{who}</code> (@{_bot.get('username', '?')})\n"
+              f"<b>ᴇʀʀᴏʀ:</b> <code>{type(e).__name__}: {e}</code>\n\n"
+              f"<i>ᴍᴀᴋᴇ ᴛʜᴀᴛ ᴡᴏʀᴋᴇʀ ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ᴘᴏsᴛ ᴘᴇʀᴍɪssɪᴏɴs.</i>**",
+              retry_btn(frwd_id), True)
            return await stop(client, user)
         task_id = f"fwd_{user}_{frwd_id}"
         user_configs = await db.get_configs(user)
@@ -92,6 +157,7 @@ async def pub_(bot, message):
         )
     finally:
         temp.lock[user] = False
+
 
 async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, forward_tag, protect, button, user_configs, is_resumed=False):
     i = sts.get(full=True)
@@ -141,6 +207,10 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
         "forward_tag": forward_tag,
         "protect": protect,
         "caption": caption,
+        # Persisted so resume can rebuild the exact spans. Without this the
+        # worker fell back to one contiguous (offset, limit) range and
+        # forwarded everything *between* the ranges the user picked.
+        "ranges": sts.get("ranges"),
         "status": "running"
     }
     await db.save_active_task(task_id, task_doc)
@@ -343,7 +413,10 @@ async def _resume_single_task(bot_app, task_data):
     if not user_id or not task_id:
         return
 
-    _bot = await db.get_bot(user_id)
+    _bot = await db.get_bot(user_id, prefer_userbot=False)
+    if not _bot:
+        # No bot token — try userbot
+        _bot = await db.get_userbot(user_id)
     if not _bot:
         logger.warning(f"Cannot resume task {task_id}: no bot found for user {user_id}")
         await db.delete_active_task(task_id)
@@ -359,6 +432,21 @@ async def _resume_single_task(bot_app, task_data):
 
     try:
         client = await start_clone_bot(CLIENT.client(_bot))
+        # Probe source access — if bot can't read, try userbot
+        from_chat = task_data.get('from_chat')
+        try:
+            await client.get_messages(from_chat, limit=1)
+        except Exception:
+            if _bot.get('is_bot'):
+                _userbot = await db.get_userbot(user_id)
+                if _userbot:
+                    try:
+                        await client.stop()
+                    except Exception:
+                        pass
+                    client = await start_clone_bot(CLIENT.client(_userbot))
+                    _bot = _userbot
+                    logger.info(f"Auto-resume {task_id}: switched to userbot for source access")
     except Exception as e:
         logger.warning(f"Failed to start bot client for resumed task {task_id}: {e}")
         await db.delete_active_task(task_id)
@@ -386,7 +474,32 @@ async def _resume_single_task(bot_app, task_data):
     button = parse_buttons(user_configs.get('button') or '')
 
     sts = STS(task_id)
-    sts.store(from_chat, to_chat, current_offset, limit)
+    # Rebuild the original spans. Falling back to a single (current_offset,
+    # limit) range made a resumed multi-range job forward every message
+    # *between* the ranges the user selected.
+    ranges = task_data.get('ranges')
+    if ranges:
+        try:
+            ranges = [[int(a), int(b)] for a, b in ranges]
+        except (TypeError, ValueError):
+            ranges = None
+    if ranges:
+        # Drop the part of the first range already done, then any span that
+        # trimming emptied.
+        resume_at = int(current_offset or 0)
+        if resume_at > ranges[0][0]:
+            ranges[0][0] = resume_at
+        ranges = [r for r in ranges if r[1] >= r[0]]
+        if not ranges:
+            await db.delete_active_task(task_id)
+            try:
+                await client.stop()
+            except Exception:
+                pass
+            return
+        sts.store(from_chat, to_chat, ranges[0][0], ranges[-1][1], ranges=ranges)
+    else:
+        sts.store(from_chat, to_chat, current_offset, limit)
     sts.data[task_id]['fetched'] = task_data.get('fetched', current_offset)
     sts.data[task_id]['total_files'] = task_data.get('total_files', 0)
     sts.data[task_id]['duplicate'] = task_data.get('duplicate', 0)
