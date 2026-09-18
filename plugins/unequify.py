@@ -27,24 +27,14 @@ async def unequify(client, message):
    if not _bot or _bot['is_bot']:
       return await message.reply("<b>Need userbot to do this process. Please add a userbot using /settings</b>")
    target = await client.ask(user_id, text="**Forward the last message from target chat or send last message link.**\n/cancel - `cancel this process`")
-   if not target.text and not target.forward_from_chat:
-      return await message.reply_text("**invalid input!**")
    if target.text and target.text.startswith("/"):
       return await message.reply("**process cancelled !**")
-   elif target.text:
-      regex = re.compile(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)/(\d+)$")
-      match = regex.match(target.text.replace("?single", ""))
-      if not match:
-         return await message.reply('**Invalid link**')
-      chat_id = match.group(4)
-      last_msg_id = int(match.group(5))
-      if chat_id.isnumeric():
-         chat_id = int(("-100" + chat_id))
-   elif target.forward_from_chat:
-      last_msg_id = target.forward_from_message_id
-      chat_id = target.forward_from_chat.username or target.forward_from_chat.id
-   else:
-      return await message.reply_text("**invalid !**")
+   from plugins.forward_parser import resolve_channel_input
+   res = await resolve_channel_input(target, client)
+   if not res.get("chat_id") or not res.get("last_msg_id"):
+      return await message.reply_text(f"❌ **invalid input!** {res.get('error', 'Please forward the last message from target chat or send its message link.')}")
+   chat_id = res["chat_id"]
+   last_msg_id = res["last_msg_id"]
    confirm = await client.ask(user_id, text="**send /yes to start the process and /no to cancel this process**")
    if not confirm.text or confirm.text.lower() in ['/no', 'no', '/cancel']:
       return await confirm.reply("**process cancelled !**")

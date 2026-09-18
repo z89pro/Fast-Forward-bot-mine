@@ -236,10 +236,12 @@ class Database:
             return doc.get('dump_channel'), doc.get('dump_enabled', False)
         return (Config.DUMP_CHANNEL if Config.DUMP_CHANNEL else None), bool(Config.DUMP_CHANNEL)
 
-    async def update_admin_dump(self, dump_channel, dump_enabled=True):
+    async def update_admin_dump(self, dump_channel, dump_enabled=True, enabled=None, **kwargs):
+        if enabled is not None:
+            dump_enabled = enabled
         await self.db.admin_config.update_one(
             {'_id': 'dump_settings'},
-            {'$set': {'dump_channel': dump_channel, 'dump_enabled': dump_enabled}},
+            {'$set': {'dump_channel': dump_channel, 'dump_enabled': bool(dump_enabled)}},
             upsert=True
         ) 
 

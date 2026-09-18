@@ -174,30 +174,35 @@ async def settings_query(bot, query):
        reply_markup=InlineKeyboardMarkup(buttons))
    
   elif type=="addchannel":  
-     await query.message.delete()
-     try:
-         text = await bot.send_message(user_id, "<b>sᴇᴛ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ\n\nғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ.\n/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ ᴛʜɪs ᴘʀᴏᴄᴇss</b>")
-         chat_ids = await bot.listen(chat_id=user_id, timeout=300)
-         if chat_ids.text=="/cancel":
-            await chat_ids.delete()
-            return await text.edit_text(
-                  "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ</b>",
-                  reply_markup=InlineKeyboardMarkup(buttons))
-         elif not chat_ids.forward_date:
-            await chat_ids.delete()
-            return await text.edit_text("**ᴛʜɪs ɪs ɴᴏᴛ ᴀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ**")
-         else:
-            chat_id = chat_ids.forward_from_chat.id
-            title = chat_ids.forward_from_chat.title
-            username = chat_ids.forward_from_chat.username
-            username = "@" + username if username else "private"
-         chat = await db.add_channel(user_id, chat_id, title, username)
-         await chat_ids.delete()
-         await text.edit_text(
-            "<b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴜᴘᴅᴀᴛᴇᴅ ✅</b>" if chat else "<b>ᴛʜɪs ᴄʜᴀɴɴᴇʟ ɪs ᴀʟʀᴇᴀᴅʏ ᴀᴅᴅᴇᴅ</b>",
-            reply_markup=InlineKeyboardMarkup(buttons))
-     except asyncio.exceptions.TimeoutError:
-         await text.edit_text('ᴘʀᴏᴄᴇss ʜᴀs ʙᴇᴇɴ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴄᴀɴᴄᴇʟʟᴇᴅ.', reply_markup=InlineKeyboardMarkup(buttons))
+      await query.message.delete()
+      try:
+          text = await bot.send_message(user_id, "<b>sᴇᴛ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ\n\nғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ / ʟɪɴᴋ.\n/cancel - ᴛᴏ ᴄᴀɴᴄᴇʟ ᴛʜɪs ᴘʀᴏᴄᴇss</b>")
+          chat_ids = await bot.listen(chat_id=user_id, timeout=300)
+          if chat_ids.text=="/cancel":
+             await chat_ids.delete()
+             return await text.edit_text(
+                   "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ</b>",
+                   reply_markup=InlineKeyboardMarkup(buttons))
+          from plugins.forward_parser import resolve_channel_input
+          res = await resolve_channel_input(chat_ids, bot)
+          if not res.get("chat_id"):
+             await chat_ids.delete()
+             return await text.edit_text(f"❌ <b>ɪɴᴠᴀʟɪᴅ ᴄʜᴀɴɴᴇʟ:</b> {res.get('error', 'Could not resolve channel')}", reply_markup=InlineKeyboardMarkup(buttons))
+          chat_id = res["chat_id"]
+          title = res.get("chat_title") or str(chat_id)
+          username = res.get("chat_username") or "private"
+          if username and not username.startswith("@") and username != "private":
+              username = "@" + username
+          chat = await db.add_channel(user_id, chat_id, title, username)
+          try:
+              await chat_ids.delete()
+          except Exception:
+              pass
+          await text.edit_text(
+             "<b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴜᴘᴅᴀᴛᴇᴅ ✅</b>" if chat else "<b>ᴛʜɪs ᴄʜᴀɴɴᴇʟ ɪs ᴀʟʀᴇᴀᴅʏ ᴀᴅᴅᴇᴅ</b>",
+             reply_markup=InlineKeyboardMarkup(buttons))
+      except asyncio.exceptions.TimeoutError:
+          await text.edit_text('ᴘʀᴏᴄᴇss ʜᴀs ʙᴇᴇɴ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴄᴀɴᴄᴇʟʟᴇᴅ.', reply_markup=InlineKeyboardMarkup(buttons))
 
   
   elif type=="editbot": 
@@ -488,25 +493,47 @@ async def settings_query(bot, query):
      )
 
   elif type=="setdump":
-     if user_id not in Config.BOT_OWNER_ID:
-        return await query.answer("⚠️ Dump Channel settings are restricted to Bot Admins only!", show_alert=True)
-     await query.message.delete()
-     try:
-         txt = await bot.send_message(user_id, "<b>Please send your Dump Channel ID or username</b>\n(Example: <code>-1001234567890</code> or <code>@my_dump_channel</code>)\n/cancel - <code>cancel</code>")
-         ask = await bot.listen(chat_id=user_id, timeout=300)
-         if not ask or not ask.text or ask.text == '/cancel':
-             return await txt.edit_text("<b>Process cancelled !</b>", reply_markup=InlineKeyboardMarkup(buttons))
-         raw = ask.text.strip()
-         if raw.lstrip('-').isdigit():
-             c_id = int(raw)
-         elif raw.startswith('@'):
-             c_id = raw
-         else:
-             c_id = raw
-         await db.update_admin_dump(c_id, True)
-         await txt.edit_text(f"<b>✅ Global Dump Channel set to:</b> <code>{c_id}</code>\nMedia Dump is now <b>Enabled</b> for all forwardings!", reply_markup=InlineKeyboardMarkup(buttons))
-     except Exception as e:
-         await bot.send_message(user_id, f"Process cancelled: {e}", reply_markup=InlineKeyboardMarkup(buttons))
+      if user_id not in Config.BOT_OWNER_ID:
+         return await query.answer("⚠️ Dump Channel settings are restricted to Bot Admins only!", show_alert=True)
+      await query.message.delete()
+      try:
+          txt = await bot.send_message(
+              user_id,
+              "<blockquote><b>📦 <u>sᴇᴛ ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ</u></b></blockquote>\n\n"
+              "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ɪᴛs ɪᴅ / ʟɪɴᴋ.\n\n"
+              "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
+              "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
+              "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n\n"
+              "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴍᴀᴋᴇ sᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ!</i>\n\n"
+              "/cancel — <code>ᴄᴀɴᴄᴇʟ ᴘʀᴏᴄᴇss</code>"
+          )
+          ask = await bot.listen(chat_id=user_id, timeout=300)
+          if not ask or (ask.text and ask.text == '/cancel'):
+              return await txt.edit_text("<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ !</b>", reply_markup=InlineKeyboardMarkup(buttons))
+          from plugins.forward_parser import resolve_channel_input
+          res = await resolve_channel_input(ask, bot, verify_access=True)
+          if not res.get("chat_id"):
+              err_msg = res.get("error") or "Could not parse channel from input."
+              return await txt.edit_text(f"❌ <b>ᴇʀʀᴏʀ:</b>\n\n{err_msg}", reply_markup=InlineKeyboardMarkup(buttons))
+          c_id = res["chat_id"]
+          c_title = res.get("chat_title") or str(c_id)
+          Config.DUMP_CHANNEL = c_id
+          await db.update_system_config("DUMP_CHANNEL", c_id)
+          await db.update_admin_dump(c_id, True)
+          try:
+              await ask.delete()
+          except Exception:
+              pass
+          await txt.edit_text(
+              f"<blockquote><b>✅ <u>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ sᴇᴛ</u></b></blockquote>\n\n"
+              f"📢 <b>ᴄʜᴀɴɴᴇʟ:</b> <code>{c_title}</code>\n"
+              f"🆔 <b>ɪᴅ:</b> <code>{c_id}</code>\n"
+              f"📦 <b>sᴛᴀᴛᴜs:</b> <code>✅ ᴏɴ (ᴀᴄᴛɪᴠᴇ)</code>\n\n"
+              f"<i>ᴀʟʟ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇᴅɪᴀ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴍɪʀʀᴏʀᴇᴅ ᴛᴏ ᴛʜɪs ᴄʜᴀɴɴᴇʟ!</i>",
+              reply_markup=InlineKeyboardMarkup(buttons)
+          )
+      except Exception as e:
+          await bot.send_message(user_id, f"Process error: {e}", reply_markup=InlineKeyboardMarkup(buttons))
 
   elif type=="deletedump":
      if user_id not in Config.BOT_OWNER_ID:

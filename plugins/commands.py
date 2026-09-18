@@ -694,11 +694,182 @@ async def cmd_tab_callback(client: Client, query: CallbackQuery):
         pass
     await query.answer()
 
-#===================Non-Command & Unknown Message Handler===================#
+#===================Channel ID & Dump Channel Commands===================#
+
+@Client.on_message(filters.command(['id']) & filters.private)
+async def id_command(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    from plugins.forward_parser import extract_forward_info, format_forward_card, resolve_channel_input
+
+    # 1. Replied to a message? Inspect replied message
+    if message.reply_to_message:
+        rep = message.reply_to_message
+        fwd_info = extract_forward_info(rep)
+        if fwd_info.get("is_forward"):
+            text, kb = format_forward_card(fwd_info, user_id=user_id)
+            return await message.reply_text(text, reply_markup=kb, disable_web_page_preview=True, quote=True)
+        else:
+            rep_user = rep.from_user
+            r_uid = rep_user.id if rep_user else "Unknown"
+            r_uname = f"@{rep_user.username}" if (rep_user and rep_user.username) else "None"
+            r_name = rep_user.first_name if rep_user else "User"
+            r_mid = rep.id
+            text = (
+                f"<blockquote><b>🆔 <u>ᴍᴇssᴀɢᴇ & ᴜsᴇʀ ɪᴅs</u></b></blockquote>\n\n"
+                f"👤 <b>ᴜsᴇʀ:</b> <code>{r_name}</code>\n"
+                f"🆔 <b>ᴜsᴇʀ ɪᴅ:</b> <code>{r_uid}</code>  <i>(ᴛᴀᴘ ᴛᴏ ᴄᴏᴘʏ)</i>\n"
+                f"👤 <b>ᴜsᴇʀɴᴀᴍᴇ:</b> {r_uname}\n"
+                f"🔢 <b>ᴍᴇssᴀɢᴇ ɪᴅ:</b> <code>{r_mid}</code>\n"
+                f"💬 <b>ᴄʜᴀᴛ ɪᴅ:</b> <code>{message.chat.id}</code>"
+            )
+            kb = markup(
+                row(btn("📋 ᴄᴏᴘʏ ᴜsᴇʀ ɪᴅ", f"fwd_copy_{r_uid}", "blue")),
+                row(btn("❌ ᴄʟᴏsᴇ", "close_btn", "red"))
+            )
+            return await message.reply_text(text, reply_markup=kb, quote=True)
+
+    # 2. Argument passed? e.g. /id -1001234567890 or /id @mychannel
+    if len(message.command) > 1:
+        arg = message.text.split(None, 1)[1].strip()
+        res = await resolve_channel_input(arg, client)
+        if res.get("chat_id"):
+            fwd_info = {
+                "is_forward": True,
+                "chat_id": res["chat_id"],
+                "chat_title": res.get("chat_title") or "Channel",
+                "chat_username": res.get("chat_username"),
+                "chat_type": res.get("chat_type") or "channel",
+                "message_id": res.get("last_msg_id"),
+                "forward_date": None,
+                "forward_date_str": "",
+                "sender_id": None,
+                "sender_name": None,
+                "link": res.get("link"),
+            }
+            text, kb = format_forward_card(fwd_info, user_id=user_id)
+            return await message.reply_text(text, reply_markup=kb, disable_web_page_preview=True, quote=True)
+        else:
+            return await message.reply_text(f"❌ <b>ᴇʀʀᴏʀ:</b> {res.get('error', 'Could not resolve channel ID')}", quote=True)
+
+    # 3. Standalone /id
+    u_name = message.from_user.first_name if message.from_user else "You"
+    u_user = f"@{message.from_user.username}" if (message.from_user and message.from_user.username) else "None"
+    text = (
+        f"<blockquote><b>🆔 <u>ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ɪᴅᴇɴᴛɪғɪᴇʀs</u></b></blockquote>\n\n"
+        f"👤 <b>ɴᴀᴍᴇ:</b> <code>{u_name}</code>\n"
+        f"🆔 <b>ʏᴏᴜʀ ᴜsᴇʀ ɪᴅ:</b> <code>{user_id}</code>  <i>(ᴛᴀᴘ ᴛᴏ ᴄᴏᴘʏ)</i>\n"
+        f"👤 <b>ʏᴏᴜʀ ᴜsᴇʀɴᴀᴍᴇ:</b> {u_user}\n"
+        f"💬 <b>ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ:</b> <code>{message.chat.id}</code>\n\n"
+        f"💡 <i>ᴛɪᴘ: ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴀ ᴄʜᴀɴɴᴇʟ ʜᴇʀᴇ ᴛᴏ ɪɴsᴛᴀɴᴛʟʏ ᴇxᴛʀᴀᴄᴛ ɪᴛs ᴄʜᴀɴɴᴇʟ ɪᴅ!</i>"
+    )
+    kb = markup(
+        row(btn("📋 ᴄᴏᴘʏ ᴍʏ ɪᴅ", f"fwd_copy_{user_id}", "blue")),
+        row(btn("❌ ᴄʟᴏsᴇ", "close_btn", "red"))
+    )
+    await message.reply_text(text, reply_markup=kb, quote=True)
+
+
+@Client.on_message(filters.command(['setdump', 'dump']) & filters.private)
+async def setdump_command(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if user_id not in Config.BOT_OWNER_ID:
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.", quote=True)
+
+    from plugins.forward_parser import resolve_channel_input
+
+    # 1. Reply to forwarded message
+    if message.reply_to_message:
+        res = await resolve_channel_input(message.reply_to_message, client, verify_access=True)
+        if res.get("chat_id"):
+            c_id = res["chat_id"]
+            c_title = res.get("chat_title") or str(c_id)
+            Config.DUMP_CHANNEL = c_id
+            await db.update_system_config("DUMP_CHANNEL", c_id)
+            await db.update_admin_dump(c_id, True)
+            return await message.reply_text(
+                f"<blockquote><b>✅ <u>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ sᴇᴛ</u></b></blockquote>\n\n"
+                f"📢 <b>ᴄʜᴀɴɴᴇʟ:</b> <code>{c_title}</code>\n"
+                f"🆔 <b>ɪᴅ:</b> <code>{c_id}</code>\n"
+                f"📦 <b>sᴛᴀᴛᴜs:</b> <code>✅ ᴏɴ (ᴀᴄᴛɪᴠᴇ)</code>",
+                quote=True
+            )
+
+    # 2. Command argument
+    if len(message.command) > 1:
+        arg = message.text.split(None, 1)[1].strip()
+        if arg == "0":
+            Config.DUMP_CHANNEL = 0
+            await db.update_system_config("DUMP_CHANNEL", 0)
+            await db.update_admin_dump(0, False)
+            return await message.reply_text("✅ <b>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ᴅɪsᴀʙʟᴇᴅ!</b>", quote=True)
+
+        res = await resolve_channel_input(arg, client, verify_access=True)
+        if res.get("chat_id"):
+            c_id = res["chat_id"]
+            c_title = res.get("chat_title") or str(c_id)
+            Config.DUMP_CHANNEL = c_id
+            await db.update_system_config("DUMP_CHANNEL", c_id)
+            await db.update_admin_dump(c_id, True)
+            return await message.reply_text(
+                f"<blockquote><b>✅ <u>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ sᴇᴛ</u></b></blockquote>\n\n"
+                f"📢 <b>ᴄʜᴀɴɴᴇʟ:</b> <code>{c_title}</code>\n"
+                f"🆔 <b>ɪᴅ:</b> <code>{c_id}</code>\n"
+                f"📦 <b>sᴛᴀᴛᴜs:</b> <code>✅ ᴏɴ (ᴀᴄᴛɪᴠᴇ)</code>",
+                quote=True
+            )
+        else:
+            err = res.get("error") or "Could not resolve channel."
+            return await message.reply_text(f"❌ <b>ᴇʀʀᴏʀ:</b>\n\n{err}", quote=True)
+
+    # 3. Interactive prompt
+    curr = f"<code>{Config.DUMP_CHANNEL}</code>" if Config.DUMP_CHANNEL != 0 else "<code>0 (Disabled)</code>"
+    ask = await client.ask(
+        user_id,
+        text=(
+            "<blockquote><b>📦 <u>sᴇᴛ ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ</u></b></blockquote>\n\n"
+            f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr}\n\n"
+            "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ɪᴛs ɪᴅ / ʟɪɴᴋ.\n\n"
+            "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
+            "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
+            "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n\n"
+            "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴍᴀᴋᴇ sᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ!</i>\n\n"
+            "/cancel — <code>ᴄᴀɴᴄᴇʟ ᴘʀᴏᴄᴇss</code>"
+        ),
+        timeout=120
+    )
+    if not ask or (ask.text and ask.text.startswith("/cancel")):
+        return await message.reply_text("<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ !</b>", quote=True)
+
+    if ask.text and ask.text.strip() == "0":
+        Config.DUMP_CHANNEL = 0
+        await db.update_system_config("DUMP_CHANNEL", 0)
+        await db.update_admin_dump(0, False)
+        return await message.reply_text("✅ <b>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ᴅɪsᴀʙʟᴇᴅ!</b>", quote=True)
+
+    res = await resolve_channel_input(ask, client, verify_access=True)
+    if res.get("chat_id"):
+        c_id = res["chat_id"]
+        c_title = res.get("chat_title") or str(c_id)
+        Config.DUMP_CHANNEL = c_id
+        await db.update_system_config("DUMP_CHANNEL", c_id)
+        await db.update_admin_dump(c_id, True)
+        return await message.reply_text(
+            f"<blockquote><b>✅ <u>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ sᴇᴛ</u></b></blockquote>\n\n"
+            f"📢 <b>ᴄʜᴀɴɴᴇʟ:</b> <code>{c_title}</code>\n"
+            f"🆔 <b>ɪᴅ:</b> <code>{c_id}</code>\n"
+            f"📦 <b>sᴛᴀᴛᴜs:</b> <code>✅ ᴏɴ (ᴀᴄᴛɪᴠᴇ)</code>",
+            quote=True
+        )
+    else:
+        err = res.get("error") or "Could not resolve channel."
+        return await message.reply_text(f"❌ <b>ᴇʀʀᴏʀ:</b>\n\n{err}", quote=True)
+
+
+#===================Non-Command & Forward Message Handler===================#
 
 KNOWN_COMMANDS = {
     "start", "help", "settings", "forward", "fwd", "autosave", "live", "monitor",
-    "commands", "menu", "cmds",
+    "commands", "menu", "cmds", "id", "setdump", "dump",
     "broadcast", "bcast", "cancelbroadcast", "bcastcancel", "broadcastrestart", "bcastrestart",
     "restart", "reboot", "botrestart", "restarr", "terms", "tos", "privacy", "donate", "clone", "plans",
     "premium", "buy", "vip", "myplan", "plan", "addpremium", "addvip", "delpremium",
@@ -739,9 +910,21 @@ async def non_command_handler(client: Client, message: Message):
     except Exception:
         pass
 
+    # 3. Universal Forward Message Channel ID Parser
+    from plugins.forward_parser import extract_forward_info, format_forward_card
+    fwd_info = extract_forward_info(message)
+    if fwd_info.get("is_forward"):
+        card_text, card_kb = format_forward_card(fwd_info, user_id=user_id)
+        return await message.reply_text(
+            text=card_text,
+            reply_markup=card_kb,
+            disable_web_page_preview=True,
+            quote=True
+        )
+
     raw_text = (message.text or message.caption or "").strip()
 
-    # 3. Check if it's a known command -> let registered handlers execute
+    # 4. Check if it's a known command -> let registered handlers execute
     if raw_text.startswith("/"):
         cmd_word = raw_text.split()[0].lstrip("/").split("@")[0].lower()
         if cmd_word in KNOWN_COMMANDS:
@@ -758,23 +941,33 @@ async def non_command_handler(client: Client, message: Message):
             )
         )
 
-    # 4. Check if it's a link forward attempt
+    # 5. Check if it's a channel link or message link -> resolve channel metadata!
     if raw_text.startswith("https://t.me/") or raw_text.startswith("http://t.me/") or raw_text.startswith("t.me/"):
-        return await message.reply_text(
-            "<blockquote><b>🔗 <u>ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ ᴅᴇᴛᴇᴄᴛᴇᴅ</u></b></blockquote>\n\n"
-            "ᴛᴏ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇs ᴜsɪɴɢ ʟɪɴᴋs, ᴜsᴇ ᴛʜᴇ <code>/fwd</code> ʀᴀɴɢᴇ ᴄᴏᴍᴍᴀɴᴅ:\n"
-            "• <code>/fwd &lt;start_link&gt; &lt;end_link&gt;</code>\n\n"
-            "ᴏʀ ʟᴀᴜɴᴄʜ ᴛʜᴇ ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ғᴏʀᴡᴀʀᴅɪɴɢ ᴡɪᴢᴀʀᴅ ᴡɪᴛʜ <code>/forward</code>!",
-            quote=True,
-            reply_markup=markup(
-                row(
-                    btn("🚀 ʜᴏᴡ ᴛᴏ ғᴏʀᴡᴀʀᴅ", "how_to_use", "blue"),
-                    btn("⚙️ sᴇᴛᴛɪɴɢs", "settings#main", "blue")
-                )
+        from plugins.forward_parser import resolve_channel_input
+        res = await resolve_channel_input(raw_text, client)
+        if res.get("chat_id"):
+            fwd_info = {
+                "is_forward": True,
+                "chat_id": res["chat_id"],
+                "chat_title": res.get("chat_title") or "Channel",
+                "chat_username": res.get("chat_username"),
+                "chat_type": res.get("chat_type") or "channel",
+                "message_id": res.get("last_msg_id"),
+                "forward_date": None,
+                "forward_date_str": "",
+                "sender_id": None,
+                "sender_name": None,
+                "link": res.get("link"),
+            }
+            card_text, card_kb = format_forward_card(fwd_info, user_id=user_id)
+            return await message.reply_text(
+                text=card_text,
+                reply_markup=card_kb,
+                disable_web_page_preview=True,
+                quote=True
             )
-        )
 
-    # 5. Friendly non-command response
+    # 6. Friendly non-command response
     user_name = message.from_user.first_name if message.from_user else "Friend"
     reply_markup = get_main_buttons(user_id)
 
@@ -787,11 +980,105 @@ async def non_command_handler(client: Client, message: Message):
             f"• <code>/start</code> — ᴏᴘᴇɴ ᴍᴀɪɴ ᴅᴀsʜʙᴏᴀʀᴅ\n"
             f"• <code>/forward</code> — ʟᴀᴜɴᴄʜ ғᴏʀᴡᴀʀᴅɪɴɢ ᴡɪᴢᴀʀᴅ\n"
             f"• <code>/autosave</code> — 24/7 ᴄʜᴀɴɴᴇʟ ᴍᴏɴɪᴛᴏʀ\n"
+            f"• <code>/id</code> — ᴠɪᴇᴡ ʏᴏᴜʀ ɪᴅ ᴏʀ ᴄʜᴀɴɴᴇʟ ɪᴅ\n"
             f"• <code>/help</code> — ᴠɪᴇᴡ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs\n"
             f"• <code>/settings</code> — ᴄᴏɴғɪɢᴜʀᴇ ʙᴏᴛs & ᴄʜᴀɴɴᴇʟs\n\n"
+            f"👉 <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴀ ᴄʜᴀɴɴᴇʟ ʜᴇʀᴇ ᴛᴏ ɪɴsᴛᴀɴᴛʟʏ ᴇxᴛʀᴀᴄᴛ ɪᴛs ɪᴅ!</i>\n\n"
             f"👇 <i>ᴄʜᴏᴏsᴇ ᴀɴ ᴏᴘᴛɪᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ:</i>"
         ),
         reply_markup=reply_markup,
+        quote=True
+    )
+
+
+#===================Forward Card Interactive Callbacks===================#
+
+@Client.on_callback_query(filters.regex(r"^fwd_copy_(-?\d+)$"))
+async def fwd_copy_callback(client: Client, query: CallbackQuery):
+    cid = query.matches[0].group(1)
+    await query.answer(f"{cid}", show_alert=True)
+
+
+@Client.on_callback_query(filters.regex(r"^fwd_add_(-?\d+)$"))
+async def fwd_add_callback(client: Client, query: CallbackQuery):
+    user_id = query.from_user.id
+    cid = int(query.matches[0].group(1))
+    if await db.in_channel(user_id, cid):
+        return await query.answer("ℹ️ ᴛʜɪs ᴄʜᴀɴɴᴇʟ ɪs ᴀʟʀᴇᴀᴅʏ ɪɴ ʏᴏᴜʀ ᴛᴀʀɢᴇᴛs!", show_alert=True)
+
+    title = "Target Channel"
+    uname = "private"
+    try:
+        chat_obj = await client.get_chat(cid)
+        if chat_obj:
+            title = chat_obj.title or chat_obj.first_name or title
+            if chat_obj.username:
+                uname = "@" + chat_obj.username
+    except Exception:
+        pass
+    await db.add_channel(user_id, cid, title, uname)
+    await query.answer("✅ ᴄʜᴀɴɴᴇʟ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ ᴛᴏ ʏᴏᴜʀ ᴛᴀʀɢᴇᴛs!", show_alert=True)
+
+
+@Client.on_callback_query(filters.regex(r"^fwd_dump_(-?\d+)$"))
+async def fwd_dump_callback(client: Client, query: CallbackQuery):
+    user_id = query.from_user.id
+    if user_id not in Config.BOT_OWNER_ID:
+        return await query.answer("⚠️ Admin only!", show_alert=True)
+    cid = int(query.matches[0].group(1))
+    Config.DUMP_CHANNEL = cid
+    await db.update_system_config("DUMP_CHANNEL", cid)
+    await db.update_admin_dump(cid, True)
+    await query.answer(f"✅ Dump Channel set to: {cid}", show_alert=True)
+
+
+@Client.on_callback_query(filters.regex(r"^fwd_log_(-?\d+)$"))
+async def fwd_log_callback(client: Client, query: CallbackQuery):
+    user_id = query.from_user.id
+    if user_id not in Config.BOT_OWNER_ID:
+        return await query.answer("⚠️ Admin only!", show_alert=True)
+    cid = int(query.matches[0].group(1))
+    Config.LOG_CHANNEL = cid
+    await db.update_system_config("LOG_CHANNEL", cid)
+    await query.answer(f"✅ Log Channel set to: {cid}", show_alert=True)
+
+
+@Client.on_callback_query(filters.regex(r"^fwd_start_(-?\d+)_(\d+)$"))
+async def fwd_start_callback(client: Client, query: CallbackQuery):
+    user_id = query.from_user.id
+    cid = int(query.matches[0].group(1))
+    mid = int(query.matches[0].group(2))
+    _bot = await db.get_bot(user_id)
+    if not _bot:
+        return await query.answer("⚠️ Please add a bot in /settings first!", show_alert=True)
+    channels = await db.get_user_channels(user_id)
+    if not channels:
+        return await query.answer("⚠️ Please set a target channel in /settings first!", show_alert=True)
+    await query.answer()
+    await query.message.reply_text(
+        f"<blockquote><b>⚡ <u>ғᴏʀᴡᴀʀᴅ ʀᴀɴɢᴇ sᴇᴛᴜᴘ</u></b></blockquote>\n\n"
+        f"📡 <b>sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ:</b> <code>{cid}</code>\n"
+        f"🔢 <b>sᴛᴀʀᴛ ᴍᴇssᴀɢᴇ:</b> <code>{mid}</code>\n"
+        f"🎯 <b>ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ:</b> <code>{channels[0]['title']}</code>\n\n"
+        f"👉 <b>ᴛᴏ sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ, sᴇɴᴅ:</b>\n"
+        f"<code>/fwd {cid}/{mid} {cid}/&lt;end_id&gt;</code>\n\n"
+        f"ᴏʀ ʟᴀᴜɴᴄʜ ᴛʜᴇ ғᴜʟʟ ᴡɪᴢᴀʀᴅ ᴡɪᴛʜ <code>/forward</code>!",
+        quote=True
+    )
+
+
+@Client.on_callback_query(filters.regex(r"^fwd_clean_(-?\d+)$"))
+async def fwd_clean_callback(client: Client, query: CallbackQuery):
+    user_id = query.from_user.id
+    cid = int(query.matches[0].group(1))
+    _bot = await db.get_bot(user_id)
+    if not _bot or _bot['is_bot']:
+        return await query.answer("⚠️ Need a userbot to clean duplicates. Add one in /settings!", show_alert=True)
+    await query.answer()
+    await query.message.reply_text(
+        f"<blockquote><b>🧹 <u>ᴅᴜᴘʟɪᴄᴀᴛᴇ ᴄʟᴇᴀɴᴇʀ (/unequify)</u></b></blockquote>\n\n"
+        f"🎯 <b>ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ:</b> <code>{cid}</code>\n\n"
+        f"👉 <i>sᴇɴᴅ <code>/unequify</code> ᴛᴏ sᴛᴀʀᴛ ʀᴇᴍᴏᴠɪɴɢ ᴅᴜᴘʟɪᴄᴀᴛᴇs ɪɴ ᴛʜɪs ᴄʜᴀɴɴᴇʟ!</i>",
         quote=True
     )
 

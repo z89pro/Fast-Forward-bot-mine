@@ -93,6 +93,7 @@ class Bot(Client):
                 BotCommand("help", "ᴄᴏᴍᴘʟᴇᴛᴇ ғᴇᴀᴛᴜʀᴇ ɢᴜɪᴅᴇ & ʜᴇʟᴘ"),
                 BotCommand("commands", "ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ"),
                 BotCommand("menu", "ǫᴜɪᴄᴋ ɴᴀᴠɪɢᴀᴛɪᴏɴ ᴍᴇɴᴜ"),
+                BotCommand("id", "ᴠɪᴇᴡ ʏᴏᴜʀ ɪᴅ ᴏʀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ"),
                 BotCommand("settings", "ᴄᴏɴғɪɢᴜʀᴇ ᴀʟʟ ʙᴏᴛ sᴇᴛᴛɪɴɢs"),
                 BotCommand("status", "sʏsᴛᴇᴍ & ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs"),
 
@@ -128,6 +129,7 @@ class Bot(Client):
                 BotCommand("verify", "ᴄʜᴇᴄᴋ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘᴀss"),
 
                 # Admin & Maintenance
+                BotCommand("setdump", "sᴇᴛ ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ (ᴀᴅᴍɪɴ)"),
                 BotCommand("restart", "ʀᴇʙᴏᴏᴛ ʙᴏᴛ ᴇɴɢɪɴᴇ (ᴀᴅᴍɪɴ)"),
                 BotCommand("broadcast", "ʙʀᴏᴀᴅᴄᴀsᴛ ᴛᴏ ᴜsᴇʀs (ᴀᴅᴍɪɴ)"),
                 BotCommand("cancelbroadcast", "ᴄᴀɴᴄᴇʟ ʙʀᴏᴀᴅᴄᴀsᴛ (ᴀᴅᴍɪɴ)"),
@@ -139,7 +141,7 @@ class Bot(Client):
                 BotCommand("config", "sʏsᴛᴇᴍ ᴄᴏɴғɪɢ (ᴏᴡɴᴇʀ)"),
                 BotCommand("admins", "ʟɪsᴛ ʙᴏᴛ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)")
             ])
-            logger.info("✅ Telegram bot command menu registered successfully (39 commands).")
+            logger.info("✅ Telegram bot command menu registered successfully (41 commands).")
         except Exception as e:
             logger.warning(f"Failed to set bot commands: {e}")
 

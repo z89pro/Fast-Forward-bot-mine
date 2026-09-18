@@ -113,12 +113,16 @@ class CLIENT:
      if not msg or not msg.text or msg.text=='/cancel':
         await bot.send_message(user_id, '<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ !</b>')
         return None
-     elif not msg.forward_date:
-        await bot.send_message(user_id, "<b>ᴛʜɪs ɪs ɴᴏᴛ ᴀ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇ</b>")
-        return None
-     elif not msg.forward_from or str(msg.forward_from.id) != "93372553":
-        await bot.send_message(user_id, "<b>ᴛʜɪs ᴍᴇssᴀɢᴇ ᴡᴀs ɴᴏᴛ ғᴏʀᴡᴀʀᴅ ғʀᴏᴍ ʙᴏᴛ ғᴀᴛʜᴇʀ</b>")
-        return None
+     else:
+         from plugins.forward_parser import extract_forward_info
+         fwd_check = extract_forward_info(msg)
+         if not fwd_check.get("is_forward"):
+             await bot.send_message(user_id, "<b>ᴛʜɪs ɪs ɴᴏᴛ ᴀ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇ</b>")
+             return None
+         sender_id = str(fwd_check.get("sender_id") or fwd_check.get("chat_id") or "")
+         if sender_id != "93372553":
+             await bot.send_message(user_id, "<b>ᴛʜɪs ᴍᴇssᴀɢᴇ ᴡᴀs ɴᴏᴛ ғᴏʀᴡᴀʀᴅ ғʀᴏᴍ ʙᴏᴛ ғᴀᴛʜᴇʀ</b>")
+             return None
      bot_token = re.findall(r'\d[0-9]{8,10}:[0-9A-Za-z_-]{35}', msg.text, re.IGNORECASE)
      bot_token = bot_token[0] if bot_token else None
      if not bot_token:

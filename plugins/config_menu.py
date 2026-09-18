@@ -6,9 +6,23 @@ from config import Config, temp
 from database import db
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, CallbackQuery, Message
+from pyrogram.errors import MessageIdInvalid, MessageNotModified, RPCError
 from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 logger = logging.getLogger("SkinetConfig")
+
+async def safe_edit_message(message: Message, text: str, reply_markup=None, disable_web_page_preview: bool = True):
+    try:
+        return await message.edit_text(text, reply_markup=reply_markup, disable_web_page_preview=disable_web_page_preview)
+    except MessageNotModified:
+        return message
+    except (MessageIdInvalid, RPCError):
+        try:
+            return await message.reply_text(text, reply_markup=reply_markup, disable_web_page_preview=disable_web_page_preview)
+        except Exception:
+            return None
+    except Exception:
+        return None
 
 async def is_admin(user_id: int) -> bool:
     return await db.is_admin(user_id)
@@ -124,7 +138,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
     if data == "main":
         text = await build_config_view()
         vcfg = await db.get_verify_config()
-        await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
+        await safe_edit_message(query.message, text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
 
     elif data == "toggle_fsub":
         Config.FORCE_SUB_ON = not Config.FORCE_SUB_ON
@@ -133,7 +147,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.answer(f"ғᴏʀᴄᴇ sᴜʙ ɪs ɴᴏᴡ {status_txt}!")
         text = await build_config_view()
         vcfg = await db.get_verify_config()
-        await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
+        await safe_edit_message(query.message, text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
 
     elif data == "toggle_verify":
         vcfg = await db.get_verify_config()
@@ -144,7 +158,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.answer(f"ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ɴᴏᴡ {status_txt}!")
         text = await build_config_view()
         vcfg["enabled"] = new_val
-        await query.message.edit_text(text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
+        await safe_edit_message(query.message, text, reply_markup=build_config_buttons(vcfg), disable_web_page_preview=True)
 
     elif data == "verify_settings":
         await query.answer()
@@ -166,7 +180,8 @@ async def config_callback(bot: Client, query: CallbackQuery):
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             "<i>💡 ᴜsᴇ <code>/setverify</code> ɪɴ ᴄʜᴀᴛ ᴛᴏ ᴄʜᴀɴɢᴇ sᴛᴇᴘs, ᴅᴜʀᴀᴛɪᴏɴ, ᴀɴᴅ ᴀᴅᴅ sʜᴏʀᴛᴇɴᴇʀ ᴀᴘɪ ᴋᴇʏs.</i>"
         )
-        await query.message.edit_text(
+        await safe_edit_message(
+            query.message,
             txt,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#main")]
@@ -228,35 +243,53 @@ async def config_callback(bot: Client, query: CallbackQuery):
             text=(
                 "<blockquote><b>📦 <u>sᴇᴛ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
                 f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_dump}\n\n"
-                "sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴄʜᴀɴɴᴇʟ ɪᴅ ᴡʜᴇʀᴇ ᴍᴇᴅɪᴀ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴀʀᴄʜɪᴠᴇᴅ.\n\n"
-                "• <b>ᴇxᴀᴍᴘʟᴇ:</b> <code>-1001234567890</code>\n"
+                "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ / ʟɪɴᴋ.\n\n"
+                "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
+                "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
+                "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n"
                 "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
                 "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
                 "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
             ),
             timeout=120
         )
-        if not ask.text or ask.text.startswith("/cancel"):
+        if not ask or (ask.text and ask.text.startswith("/cancel")):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
 
-        raw = ask.text.strip()
-        if not (raw.lstrip("-").isdigit()):
+        if ask.text and ask.text.strip() == "0":
+            new_val = 0
+            Config.DUMP_CHANNEL = new_val
+            await db.update_system_config("DUMP_CHANNEL", new_val)
+            await db.update_admin_dump(new_val, enabled=False)
             return await bot.send_message(
                 user_id,
-                "<b>❌ ɪɴᴠᴀʟɪᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ! ᴍᴜsᴛ ʙᴇ ɴᴜᴍʙᴇʀs.</b>",
+                "✅ <b>ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ᴅɪsᴀʙʟᴇᴅ!</b>",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
             )
 
-        new_val = int(raw)
+        from plugins.forward_parser import resolve_channel_input
+        res = await resolve_channel_input(ask, bot, verify_access=True)
+        if not res.get("chat_id"):
+            err_msg = res.get("error") or "Could not parse channel from input."
+            return await bot.send_message(
+                user_id,
+                f"❌ <b>ᴇʀʀᴏʀ:</b>\n\n{err_msg}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
+            )
+
+        new_val = res["chat_id"]
+        c_title = res.get("chat_title") or str(new_val)
         Config.DUMP_CHANNEL = new_val
         await db.update_system_config("DUMP_CHANNEL", new_val)
-        await db.update_admin_dump(new_val, enabled=bool(new_val != 0))
+        await db.update_admin_dump(new_val, enabled=True)
 
-        disp = f"<code>{new_val}</code>" if new_val != 0 else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
         await bot.send_message(
             user_id,
-            f"✅ <b>ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴏ:</b> {disp}",
+            f"<blockquote><b>✅ <u>ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ᴜᴘᴅᴀᴛᴇᴅ</u></b></blockquote>\n\n"
+            f"📢 <b>ᴄʜᴀɴɴᴇʟ:</b> <code>{c_title}</code>\n"
+            f"🆔 <b>ɪᴅ:</b> <code>{new_val}</code>\n"
+            f"📦 <b>sᴛᴀᴛᴜs:</b> <code>✅ ᴏɴ (ᴀᴄᴛɪᴠᴇ)</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
         )
 
@@ -316,7 +349,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
                 InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")
             ]
         ])
-        await query.message.edit_text(text, reply_markup=btns)
+        await safe_edit_message(query.message, text, reply_markup=btns)
 
     elif data == "add_admin_prompt":
         await query.message.delete()
