@@ -971,7 +971,7 @@ KNOWN_COMMANDS = {
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
     "deladmin", "admins", "cancel", "yes", "no", "setbanner", "setheader", "delbanner",
     "clearbanner", "delheader", "setfooter", "setbrandfooter", "delfooter", "clearfooter",
-    "viewbranding", "branding", "status", "stats", "addbot", "connectbot"
+    "viewbranding", "branding", "status", "stats", "addbot", "connectbot", "auditlog"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)

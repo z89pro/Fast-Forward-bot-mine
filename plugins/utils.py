@@ -55,7 +55,17 @@ class STS:
        return int(no) / by 
     
     async def get_data(self, user_id):
-        bot = await db.get_bot(user_id)
+        # Prefer userbot if source is a private channel/chat
+        from_chat = self.get('FROM')
+        is_private = False
+        if from_chat:
+            sf = str(from_chat)
+            if (sf.isdigit() and int(sf) > 0) or sf.startswith("-100"):
+                is_private = True
+        if is_private:
+            bot = await db.get_userbot(user_id) or await db.get_bot(user_id)
+        else:
+            bot = await db.get_bot(user_id)
         k, filters = self, await db.get_filters(user_id)
         size, configs = None, await db.get_configs(user_id)
         if configs['duplicate']:

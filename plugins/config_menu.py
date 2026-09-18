@@ -172,6 +172,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
     elif data == "toggle_fsub":
         Config.FORCE_SUB_ON = not Config.FORCE_SUB_ON
         await db.update_system_config("FORCE_SUB_ON", Config.FORCE_SUB_ON)
+        await db.log_audit(user_id, 'toggle_fsub', {'force_sub': Config.FORCE_SUB_ON})
         status_txt = "ᴇɴᴀʙʟᴇᴅ" if Config.FORCE_SUB_ON else "ᴅɪsᴀʙʟᴇᴅ"
         await query.answer(f"ғᴏʀᴄᴇ sᴜʙ ɪs ɴᴏᴡ {status_txt}!")
         text = await build_config_view()
@@ -183,6 +184,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
         new_val = not vcfg.get("enabled", True)
         await db.update_verify_config("enabled", new_val)
         Config.VERIFY_ENABLED = new_val
+        await db.log_audit(user_id, 'toggle_verify', {'enabled': new_val})
         status_txt = "ᴇɴᴀʙʟᴇᴅ" if new_val else "ᴅɪsᴀʙʟᴇᴅ"
         await query.answer(f"ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ɴᴏᴡ {status_txt}!")
         text = await build_config_view()
@@ -383,15 +385,17 @@ async def config_callback(bot: Client, query: CallbackQuery):
             "<i>ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs ʜᴀᴠᴇ ғᴜʟʟ ᴀᴄᴄᴇss ᴛᴏ sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ, ᴘʀᴇᴍɪᴜᴍ ᴠɪᴘ ᴀᴘᴘʀᴏᴠᴀʟs, sʜᴏʀᴛᴇɴᴇʀ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ, ᴀɴᴅ ʟɪᴠᴇ ʟᴏɢs.</i>\n\n"
             "👇 <b>sᴇʟᴇᴄᴛ ᴀɴ ᴀᴄᴛɪᴏɴ ʙᴇʟᴏᴡ:</b>"
         )
-        btns = InlineKeyboardMarkup([
+        btn_list = [
             [
                 InlineKeyboardButton("➕ ᴀᴅᴅ ᴀᴅᴍɪɴ", callback_data="config#add_admin_prompt"),
                 InlineKeyboardButton("➖ ʀᴇᴍᴏᴠᴇ ᴀᴅᴍɪɴ", callback_data="config#del_admin_prompt")
-            ],
-            [
-                InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")
             ]
-        ])
+        ]
+        if primary_owner and user_id == primary_owner:
+            btn_list.append([InlineKeyboardButton("➕ ᴀᴅᴅ ᴀᴅᴍɪɴ (ʙᴀᴛᴄʜ)", callback_data="config#set_admins")])
+        
+        btn_list.append([InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")])
+        btns = InlineKeyboardMarkup(btn_list)
         await safe_edit_message(query.message, text, reply_markup=btns)
 
     elif data == "add_admin_prompt":
@@ -423,6 +427,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
             )
         new_admin = int(val)
         await db.add_admin(new_admin)
+        await db.log_audit(user_id, 'add_admin', {'admin_id': new_admin})
         await bot.send_message(
             user_id,
             f"✅ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ ᴜsᴇʀ <code>{new_admin}</code> ᴛᴏ ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs!</b>",
@@ -466,6 +471,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#manage_admins")]])
             )
         await db.remove_admin(del_admin)
+        await db.log_audit(user_id, 'remove_admin', {'admin_id': del_admin})
         await bot.send_message(
             user_id,
             f"✅ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ <code>{del_admin}</code> ғʀᴏᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs!</b>",
@@ -577,6 +583,7 @@ async def config_callback(bot: Client, query: CallbackQuery):
             )
 
         Config.FAST_DELAY = val
+        await db.log_audit(user_id, 'set_fast_delay', {'delay': val})
         await db.update_system_config("FAST_DELAY", val)
 
         await bot.send_message(
@@ -735,3 +742,22 @@ async def cmd_admins(bot: Client, message: Message):
     )
     await message.reply_text(admin_text, quote=True)
 
+
+@Client.on_message(filters.command("auditlog") & filters.private)
+async def auditlog_cmd(client: Client, message: Message):
+    user_id = message.from_user.id
+    if Config.BOT_OWNER_ID and user_id != Config.BOT_OWNER_ID[0]:
+        return await message.reply("⛔️ **ᴏɴʟʏ ᴛʜᴇ ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ ᴄᴀɴ ᴠɪᴇᴡ ᴀᴜᴅɪᴛ ʟᴏɢs.**")
+    
+    from database import db
+    logs = db.audit_log.find().sort("timestamp", -1).limit(20)
+    lines = []
+    async for log in logs:
+        ts = log['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+        lines.append(f"• <code>{ts}</code> - 👤 <code>{log['user_id']}</code>: <b>{log['action']}</b> <code>{log['details']}</code>")
+    
+    if not lines:
+        return await message.reply("<b>📝 ᴀᴜᴅɪᴛ ʟᴏɢ ɪs ᴇᴍᴘᴛʏ.</b>")
+    
+    text = "<b>🛡️ <u>ʀᴇᴄᴇɴᴛ ᴀᴜᴅɪᴛ ʟᴏɢs</u> (ᴛᴏᴘ 20)</b>\n\n" + "\n".join(lines)
+    await message.reply(text)

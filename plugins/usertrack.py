@@ -117,6 +117,10 @@ async def build_userstats_overview():
             InlineKeyboardButton("⚙️ sʏsᴛᴇᴍ ᴄᴏɴғɪɢ", callback_data="config#main")
         ],
         [
+            InlineKeyboardButton("📥 ᴄsᴠ ᴇxᴘᴏʀᴛ", callback_data="utr_export_csv"),
+            InlineKeyboardButton("📥 ᴊsᴏɴ ᴇxᴘᴏʀᴛ", callback_data="utr_export_json")
+        ],
+        [
             InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back")
         ]
     ])
@@ -362,3 +366,49 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
 
     elif data == "utr_noop":
         await query.answer()
+
+    elif data in ("utr_export_csv", "utr_export_json"):
+        import csv, json, os
+        await query.answer("📥 ɢᴇɴᴇʀᴀᴛɪɴɢ ᴇxᴘᴏʀᴛ...", show_alert=False)
+        cursor = db.col.find({})
+        users = [doc async for doc in cursor]
+        
+        prem_users = await db.get_all_premium_users()
+        vip_ids = {p.get("user_id") for p in prem_users}
+        
+        is_csv = data == "utr_export_csv"
+        ext = "csv" if is_csv else "json"
+        path = f"/tmp/users_export.{ext}"
+        
+        fields = ["id", "name", "username", "first_seen", "last_seen", "forward_count", "is_vip"]
+        
+        export_data = []
+        for u in users:
+            uid = u.get("id")
+            export_data.append({
+                "id": uid,
+                "name": u.get("name", ""),
+                "username": u.get("username", ""),
+                "first_seen": str(u.get("first_seen", "")),
+                "last_seen": str(u.get("last_seen", "")),
+                "forward_count": u.get("forward_count", 0),
+                "is_vip": bool(uid in vip_ids)
+            })
+            
+        if is_csv:
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fields)
+                writer.writeheader()
+                writer.writerows(export_data)
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(export_data, f, indent=2)
+                
+        await query.message.reply_document(
+            document=path,
+            caption=f"📦 <b>ᴜsᴇʀs ᴇxᴘᴏʀᴛ ({ext.upper()})</b>\n\n👥 <b>ᴛᴏᴛᴀʟ:</b> <code>{len(users)}</code>"
+        )
+        try:
+            os.remove(path)
+        except Exception:
+            pass

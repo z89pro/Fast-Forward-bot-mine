@@ -12,6 +12,11 @@ _TELEGRAPH_TOKEN = None
 async def get_or_create_telegraph_token() -> str:
     """Retrieves cached Telegraph access token or creates a new one via Telegraph API."""
     global _TELEGRAPH_TOKEN
+    from database import db
+    
+    if not _TELEGRAPH_TOKEN:
+        _TELEGRAPH_TOKEN = await db.get_telegraph_token()
+        
     if _TELEGRAPH_TOKEN:
         return _TELEGRAPH_TOKEN
 
@@ -25,6 +30,7 @@ async def get_or_create_telegraph_token() -> str:
                 data = await resp.json()
                 if data.get("ok"):
                     _TELEGRAPH_TOKEN = data["result"]["access_token"]
+                    await db.save_telegraph_token(_TELEGRAPH_TOKEN, payload["author_name"])
                     return _TELEGRAPH_TOKEN
     except Exception as e:
         logger.warning(f"Failed to create Telegraph account: {e}")

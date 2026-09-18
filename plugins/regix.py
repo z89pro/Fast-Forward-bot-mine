@@ -30,6 +30,10 @@ TEXT = Translation.TEXT
 
 @Client.on_callback_query(filters.regex(r'^start_public'))
 async def pub_(bot, message):
+    try:
+        await message.answer()
+    except Exception:
+        pass
     user = message.from_user.id
     from plugins.verify import is_user_verified, send_verify_prompt
     if not await is_user_verified(user):
@@ -71,10 +75,7 @@ async def pub_(bot, message):
         # ── Source chat probe with automatic userbot fallback ──
         source_ok = False
         try:
-           # limit=1 asks "can I read this chat at all". The old call passed the
-           # last message id positionally as message_ids, so a deleted id made
-           # the probe return nothing while looking like a success.
-           await client.get_messages(sts.get("FROM"), limit=1)
+           await client.get_chat(sts.get("FROM"))
            source_ok = True
         except FloodWait as e:
            await msg_edit(m, f"⏳ **ᴛᴇʟᴇɢʀᴀᴍ ʀᴀᴛᴇ ʟɪᴍɪᴛ — ᴡᴀɪᴛ <code>{e.value}s</code>, ᴛʜᴇɴ ᴛᴀᴘ ʀᴇᴛʀʏ.**", retry_btn(frwd_id), True)
@@ -91,7 +92,7 @@ async def pub_(bot, message):
                        pass
                    try:
                        client = await start_clone_bot(CLIENT.client(_userbot))
-                       await client.get_messages(sts.get("FROM"), limit=1)
+                       await client.get_chat(sts.get("FROM"))
                        _bot = _userbot
                        who = "ᴜsᴇʀʙᴏᴛ"
                        source_ok = True
@@ -182,7 +183,15 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     else:
         use_native_forward = bool(forward_tag)
     speed_cfg = user_configs.get('speed_cfg') or {'mode': 'fast', 'delay': 1.0, 'jitter': True, 'batch_size': 100}
-    base_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
+    
+    # ── SYSTEM OVERRIDE FOR FAST DELAY ──
+    # The config_menu sets FAST_DELAY system-wide which should act as the minimum bound
+    system_fast_delay = getattr(Config, 'FAST_DELAY', None)
+    if system_fast_delay is not None:
+        user_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
+        base_delay = max(user_delay, float(system_fast_delay))
+    else:
+        base_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
     jitter_enabled = bool(speed_cfg.get('jitter', True))
     batch_size = int(speed_cfg.get('batch_size', 100 if base_delay <= 1.0 else 20))
     adaptive_enabled = bool(user_configs.get('adaptive_flood_enabled', True))
@@ -435,7 +444,7 @@ async def _resume_single_task(bot_app, task_data):
         # Probe source access — if bot can't read, try userbot
         from_chat = task_data.get('from_chat')
         try:
-            await client.get_messages(from_chat, limit=1)
+            await client.get_chat(from_chat)
         except Exception:
             if _bot.get('is_bot'):
                 _userbot = await db.get_userbot(user_id)

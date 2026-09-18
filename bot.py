@@ -76,10 +76,15 @@ class Bot(Client):
             while True:
                 await asyncio.sleep(3600)
         except Exception as e:
-            logger.critical(f"❌ Failed to start bot client: {e}")
-            logger.info("Keeping web health-check server alive...")
-            while True:
-                await asyncio.sleep(3600)
+            # Everything else is a genuine fault — an unreachable Mongo, a
+            # malformed config, a bad API_ID/HASH. Parking here turned it into
+            # a permanently mute process that still passed the health check.
+            # Exit non-zero so the platform's restart policy can act on it.
+            logger.critical("=" * 70)
+            logger.critical(f"❌ FATAL: could not start the bot client: {type(e).__name__}: {e}")
+            logger.critical("Exiting so the supervisor can restart with a clean state.")
+            logger.critical("=" * 70)
+            raise
 
         me = await self.get_me()
         logger.info(f"✅ {me.first_name} (@{me.username}) started! Layer {layer} (Pyrogram {pyrogram_version})")
@@ -235,12 +240,31 @@ class Bot(Client):
         except Exception as e:
             logger.warning(f"Could not initialize forward auto-resumption: {e}")
 
-        # ── 5. Auto-resume live AutoSave channel monitors for all users ──
-        try:
-            from plugins.autosave import resume_all_autosave_monitors
-            asyncio.create_task(resume_all_autosave_monitors(self))
-        except Exception as e:
-            logger.debug(f"Could not initialize autosave auto-resumption: {e}")
+        # ── 6. Periodic VIP Premium Expiry Sweep (every 6h) ──
+        async def _expiry_sweep():
+            import time
+            while True:
+                try:
+                    now = time.time()
+                    expired_cursor = db.premium.find({"expires_at": {"$lte": now, "$gt": 0}, "expiry_notified": {"$ne": True}})
+                    async for doc in expired_cursor:
+                        uid = doc.get("user_id")
+                        if uid:
+                            try:
+                                await self.send_message(
+                                    uid,
+                                    "<blockquote><b>⚠️ <u>ᴠɪᴘ ᴘʟᴀɴ ᴇxᴘɪʀᴇᴅ</u></b></blockquote>\n\n"
+                                    "<i>ʏᴏᴜʀ ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ ᴘʟᴀɴ ʜᴀs ᴇxᴘɪʀᴇᴅ. ʏᴏᴜʀ sᴘᴇᴇᴅ & ғᴇᴀᴛᴜʀᴇs ʜᴀᴠᴇ ʙᴇᴇɴ ʀᴇsᴇᴛ ᴛᴏ sᴛᴀɴᴅᴀʀᴅ.\n\n"
+                                    "👉 ᴜsᴇ /plans ᴛᴏ ʀᴇɴᴇᴡ ʏᴏᴜʀ sᴜʙsᴄʀɪᴘᴛɪᴏɴ ᴀɴʏᴛɪᴍᴇ!</i>"
+                                )
+                            except Exception:
+                                pass
+                            await db.premium.update_one({"_id": doc["_id"]}, {"$set": {"expiry_notified": True}})
+                except Exception as ex:
+                    logger.debug(f"Expiry sweep error: {ex}")
+                await asyncio.sleep(21600)  # 6 hours
+
+        asyncio.create_task(_expiry_sweep())
 
     async def stop(self, *args):
         logger.info(f"🛑 Bot @{getattr(self, 'username', 'ForwardBot')} stopping...")

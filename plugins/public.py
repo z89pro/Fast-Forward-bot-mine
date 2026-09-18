@@ -71,6 +71,8 @@ async def prompt_add_channel(bot, message, user_id):
 async def run(bot, message):
     buttons = []
     user_id = message.from_user.id
+    if temp.lock.get(user_id):
+        return await message.reply_text("⏳ <b>ᴀ ᴛᴀsᴋ ɪs ᴀʟʀᴇᴀᴅʏ ɪɴ ᴘʀᴏɢʀᴇss. ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ ᴜɴᴛɪʟ ɪᴛ ᴄᴏᴍᴘʟᴇᴛᴇs ᴏʀ ᴜsᴇ /stop.</b>", quote=True)
     from plugins.verify import is_user_verified, send_verify_prompt
     if not await is_user_verified(user_id):
         return await send_verify_prompt(bot, message, user_id)

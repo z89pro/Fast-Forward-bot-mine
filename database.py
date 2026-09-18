@@ -27,6 +27,9 @@ class Database:
         self.tasks = self.db.active_tasks
         self.premium = self.db.premium_users
         self.orders = self.db.premium_orders 
+        self.broadcast_state = self.db.broadcast_state
+        self.telegraph = self.db.telegraph_tokens
+        self.audit_log = self.db.audit_log
         
     def new_user(self, id, name, referred_by=None):
         from datetime import datetime
@@ -317,8 +320,22 @@ class Database:
        await self.bot.delete_many(query)
       
     async def get_userbot(self, user_id: int):
-       """Fetch the user's UserBot session (is_bot: False)."""
-       return await self.bot.find_one({'user_id': int(user_id), 'is_bot': False})
+       """Fetch the user's UserBot session (is_bot: False). If caller is admin/owner, fallback to team userbot."""
+       ubot = await self.bot.find_one({'user_id': int(user_id), 'is_bot': False})
+       if ubot:
+           return ubot
+       # Check if caller is an admin or owner — allow sharing configured admin userbots
+       try:
+           admins = await self.get_all_admins()
+           if user_id in admins or user_id in Config.BOT_OWNER_ID:
+               for aid in admins:
+                   if aid != user_id:
+                       shared_ub = await self.bot.find_one({'user_id': int(aid), 'is_bot': False})
+                       if shared_ub:
+                           return shared_ub
+       except Exception:
+           pass
+       return None
 
     async def get_custom_bot(self, user_id: int):
        """Fetch the user's Bot Token (is_bot: True)."""
@@ -750,6 +767,38 @@ class Database:
         except Exception:
             return 0
 
+    async def save_broadcast_state(self, user_id, state_doc):
+        await self.broadcast_state.update_one(
+            {'user_id': int(user_id)},
+            {'$set': state_doc},
+            upsert=True
+        )
+
+    async def get_broadcast_state(self, user_id):
+        return await self.broadcast_state.find_one({'user_id': int(user_id)})
+
+    async def delete_broadcast_state(self, user_id):
+        await self.broadcast_state.delete_many({'user_id': int(user_id)})
+
+    async def save_telegraph_token(self, token, author_name):
+        await self.telegraph.update_one(
+            {'id': 'global_telegraph_token'},
+            {'$set': {'token': token, 'author_name': author_name}},
+            upsert=True
+        )
+
+    async def get_telegraph_token(self):
+        doc = await self.telegraph.find_one({'id': 'global_telegraph_token'})
+        return doc.get('token') if doc else None
+
+    async def log_audit(self, user_id, action, details=None):
+        from datetime import datetime
+        await self.audit_log.insert_one({
+            'user_id': user_id,
+            'action': action,
+            'details': details or {},
+            'timestamp': datetime.now()
+        })
     
 db = Database(Config.DATABASE_URI, Config.DATABASE_NAME)
 

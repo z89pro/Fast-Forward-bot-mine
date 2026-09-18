@@ -6,21 +6,33 @@ Smart Flask keep-alive for free-tier hosts (Render, Koyeb, Railway).
 - Both run simultaneously — web server never blocks the bot
 """
 import os
+import time
 import threading
 from flask import Flask, jsonify
+from config import temp
 
 app = Flask(__name__)
-
+START_TIME = time.time()
 
 @app.route("/")
 def home():
     return "✅ Forward Bot is alive!", 200
 
-
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok", "bot": "running"}), 200
-
+    uptime = time.time() - START_TIME
+    active_forwards = len(getattr(temp, 'IS_FRWD_CHAT', []))
+    lock_dict = getattr(temp, 'lock', {})
+    active_locks = sum(1 for v in lock_dict.values() if v)
+    
+    status = "ok" if active_locks < 10 else "degraded"
+    
+    return jsonify({
+        "status": status, 
+        "uptime": uptime,
+        "active_forwards": active_forwards,
+        "active_locks": active_locks
+    }), 200
 
 def keep_alive():
     """

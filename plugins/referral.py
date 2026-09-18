@@ -1,4 +1,5 @@
 import logging
+import time
 from config import Config, temp
 from database import db
 from pyrogram import Client, filters, enums
@@ -279,31 +280,40 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         if not perk:
             return await query.answer("Perk not found!", show_alert=True)
             
+        ref_data = await db.get_referral_data(user_id)
+        if ref_data.get('referral_points', 0) < perk["cost"]:
+            return await query.answer(
+                f"❌ ɴᴏᴛ ᴇɴᴏᴜɢʜ ᴘᴏɪɴᴛs! ʏᴏᴜ ɴᴇᴇᴅ {perk['cost']} ᴘᴛs.", show_alert=True)
+
+        # Apply before deducting. The old order charged first, so the two perks
+        # that matched no branch below (ad_remover, verify_bypass) took the
+        # points and granted nothing.
+        try:
+            if perk["key"] == "vip_pass_7d":
+                # verify.py reads vip_until off the referral record — nothing
+                # ever wrote it, so this perk could never actually bypass.
+                ref_data['vip_until'] = int(time.time()) + int(perk["val"])
+                await db.update_referral_data(user_id, ref_data)
+                from plugins import verify as _verify
+                _verify._VERIFIED_CACHE[user_id] = float(ref_data['vip_until'])
+            else:
+                configs = await db.get_configs(user_id)
+                if perk["key"] == "speed_cfg":
+                    configs['speed_cfg'] = perk["val"]
+                elif perk["key"] == "course_seller_mode":
+                    configs['course_seller_mode'] = True
+                    configs['auto_course_list'] = True
+                    configs['auto_numbering'] = True
+                elif perk["key"] == "clean_caption":
+                    configs['clean_caption'] = True
+                await db.update_configs(user_id, configs)
+        except Exception as e:
+            return await query.answer(f"⚠️ ᴄᴏᴜʟᴅ ɴᴏᴛ ᴀᴘᴘʟʏ ᴛʜᴀᴛ ᴘᴇʀᴋ: {e}", show_alert=True)
+
         success, res = await db.redeem_referral_points(user_id, perk["cost"], perk["title"])
         if not success:
             return await query.answer(f"⚠️ {res}", show_alert=True)
-            
-        # Apply the perk to user configurations in database
-        configs = await db.get_configs(user_id)
-        if perk["key"] == "all_vip":
-            configs['speed_cfg'] = {"mode": "extreme", "delay": 0.5, "jitter": True, "batch_size": 100}
-            configs['course_seller_mode'] = True
-            configs['auto_course_list'] = True
-            configs['auto_numbering'] = True
-            configs['username_remover'] = True
-            configs['link_remover'] = True
-            configs['clean_caption'] = True
-            configs['autosave_unlocked'] = True
-        elif perk["key"] == "speed_cfg":
-            configs['speed_cfg'] = perk["val"]
-        elif perk["key"] == "course_seller_mode":
-            configs['course_seller_mode'] = True
-            configs['auto_course_list'] = True
-            configs['auto_numbering'] = True
-        elif perk["key"] == "autosave_unlocked":
-            configs['autosave_unlocked'] = True
-            
-        await db.update_configs(user_id, configs)
+
         await query.answer("🎉 Perk unlocked successfully!", show_alert=True)
         
         success_text = (
