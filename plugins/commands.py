@@ -14,29 +14,34 @@ from config import Config, temp
 from platform import python_version
 from translation import Translation
 from pyrogram import Client, filters, enums, __version__ as pyrogram_version
+from pyrogram.errors import ListenerTimeout
 
 def get_main_buttons(user_id=None):
     is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
     rows = [
         row(
             btn('➕ ᴀᴅᴅ ʙᴏᴛ', 'settings#bots', 'green'),
-            btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue')
+            btn('📡 ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ', 'settings#addchannel', 'green')
         ),
         row(
-            btn('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', 'autosave#main', 'green'),
-            btn('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ', 'settings#courseseller', 'yellow')
+            btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue'),
+            btn('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', 'autosave#main', 'green')
         ),
         row(
-            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green'),
-            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue')
+            btn('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ', 'settings#courseseller', 'yellow'),
+            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green')
         ),
         row(
-            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue'),
-            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green')
+            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue'),
+            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue')
         ),
         row(
-            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue'),
-            btn('🧭 ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ', 'cmd_tab_all', 'blue')
+            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green'),
+            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue')
+        ),
+        row(
+            btn('🧭 ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ', 'cmd_tab_all', 'blue'),
+            btn('📖 ʜᴏᴡ ᴛᴏ ᴜsᴇ', 'how_to_use', 'blue')
         )
     ]
     if is_admin:
@@ -262,10 +267,21 @@ async def how_to_use(bot, query):
     await query.message.edit_text(
         text=Translation.HOW_USE_TXT,
         reply_markup=markup(
-            row(btn('📚 ᴏᴘᴇɴ ꜰᴜʟʟ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'green')),
+            row(btn('➕ ᴀᴅᴅ ʙᴏᴛ', 'settings#bots', 'green'),
+                btn('📡 ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ', 'settings#addchannel', 'green')),
+            row(btn('▶️ sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ', 'how_to_fwd', 'green')),
+            row(btn('📚 ꜰᴜʟʟ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue')),
             row(btn('🔙 ʙᴀᴄᴋ', 'help', 'red'))
         ),
         disable_web_page_preview=True
+    )
+
+
+@Client.on_callback_query(filters.regex(r'^how_to_fwd$'))
+async def how_to_fwd(bot, query):
+    await query.answer(
+        "sᴇɴᴅ /forward ᴛᴏ sᴛᴀʀᴛ ᴛʜᴇ ᴡɪᴢᴀʀᴅ — ᴏʀ /fwd 10-20 ᴛᴏ sᴋɪᴘ sᴛʀᴀɪɢʜᴛ ᴛᴏ ɪᴛ.",
+        show_alert=True
     )
 
 @Client.on_callback_query(filters.regex(r'^back'))
@@ -895,20 +911,23 @@ async def setdump_command(client: Client, message: Message):
 
     # 3. Interactive prompt
     curr = f"<code>{Config.DUMP_CHANNEL}</code>" if Config.DUMP_CHANNEL != 0 else "<code>0 (Disabled)</code>"
-    ask = await client.ask(
-        user_id,
-        text=(
-            "<blockquote><b>📦 <u>sᴇᴛ ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ</u></b></blockquote>\n\n"
-            f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr}\n\n"
-            "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ɪᴛs ɪᴅ / ʟɪɴᴋ.\n\n"
-            "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
-            "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
-            "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n\n"
-            "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴍᴀᴋᴇ sᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ!</i>\n\n"
-            "/cancel — <code>ᴄᴀɴᴄᴇʟ ᴘʀᴏᴄᴇss</code>"
-        ),
-        timeout=120
-    )
+    try:
+        ask = await client.ask(
+            user_id,
+            text=(
+                "<blockquote><b>📦 <u>sᴇᴛ ɢʟᴏʙᴀʟ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ</u></b></blockquote>\n\n"
+                f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr}\n\n"
+                "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ɪᴛs ɪᴅ / ʟɪɴᴋ.\n\n"
+                "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
+                "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
+                "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n\n"
+                "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴍᴀᴋᴇ sᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ!</i>\n\n"
+                "/cancel — <code>ᴄᴀɴᴄᴇʟ ᴘʀᴏᴄᴇss</code>"
+            ),
+            timeout=120
+        )
+    except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+        return await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.</b>", quote=True)
     if not ask or (ask.text and ask.text.startswith("/cancel")):
         return await message.reply_text("<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ !</b>", quote=True)
 

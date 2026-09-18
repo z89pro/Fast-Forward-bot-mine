@@ -8,6 +8,7 @@ from .test import CLIENT, start_clone_bot
 from .regix import custom_caption, copy
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from pyrogram.errors import ListenerTimeout
 from buttons import colored_markup
 
 logger = logging.getLogger("SkinetAutoSave")
@@ -103,18 +104,22 @@ async def autosave_callback(bot, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")]])
             )
         
-        src_msg = await bot.ask(
-            user_id,
-            text=(
-                "<b>📡 sᴇɴᴅ sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ ᴏʀ ᴄʜᴀᴛ ID ᴛᴏ ᴍᴏɴɪᴛᴏʀ:</b>\n\n"
-                "ᴇxᴀᴍᴘʟᴇs:\n"
-                "• <code>https://t.me/c/1234567890</code> (ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ)\n"
-                "• <code>https://t.me/public_channel</code> (ᴘᴜʙʟɪᴄ ᴄʜᴀɴɴᴇʟ)\n"
-                "• <code>-1001234567890</code> (ᴅɪʀᴇᴄᴛ ᴄʜᴀᴛ ID)\n\n"
-                "<i>sᴇɴᴅ /cancel ᴛᴏ ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=300
-        )
+        try:
+            src_msg = await bot.ask(
+                user_id,
+                text=(
+                    "<b>📡 sᴇɴᴅ sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ ᴏʀ ᴄʜᴀᴛ ID ᴛᴏ ᴍᴏɴɪᴛᴏʀ:</b>\n\n"
+                    "ᴇxᴀᴍᴘʟᴇs:\n"
+                    "• <code>https://t.me/c/1234567890</code> (ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ)\n"
+                    "• <code>https://t.me/public_channel</code> (ᴘᴜʙʟɪᴄ ᴄʜᴀɴɴᴇʟ)\n"
+                    "• <code>-1001234567890</code> (ᴅɪʀᴇᴄᴛ ᴄʜᴀᴛ ID)\n\n"
+                    "<i>sᴇɴᴅ /cancel ᴛᴏ ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=300
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text, is_running, count = await build_autosave_text(user_id)
+            return await bot.send_message(user_id, text, reply_markup=get_autosave_markup(is_running, count))
         if not src_msg.text or src_msg.text.startswith("/cancel"):
             return await bot.send_message(user_id, "**ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!**")
         
@@ -135,16 +140,20 @@ async def autosave_callback(bot, query: CallbackQuery):
         default_dest = channels[0]['chat_id'] if channels else None
         default_title = channels[0]['title'] if channels else "ɢʟᴏʙᴀʟ ᴅᴇғᴀᴜʟᴛ"
 
-        dst_msg = await bot.ask(
-            user_id,
-            text=(
-                f"<b>📤 sᴇɴᴅ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ/ID:</b>\n\n"
-                f"ᴏʀ sᴇɴᴅ <code>/skip</code> ᴛᴏ ᴜsᴇ ʏᴏᴜʀ ᴅᴇғᴀᴜʟᴛ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ:\n"
-                f"👉 <b>ᴅᴇғᴀᴜʟᴛ:</b> <code>{default_title}</code>\n\n"
-                "<i>sᴇɴᴅ /cancel ᴛᴏ ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=300
-        )
+        try:
+            dst_msg = await bot.ask(
+                user_id,
+                text=(
+                    f"<b>📤 sᴇɴᴅ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ/ID:</b>\n\n"
+                    f"ᴏʀ sᴇɴᴅ <code>/skip</code> ᴛᴏ ᴜsᴇ ʏᴏᴜʀ ᴅᴇғᴀᴜʟᴛ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ:\n"
+                    f"👉 <b>ᴅᴇғᴀᴜʟᴛ:</b> <code>{default_title}</code>\n\n"
+                    "<i>sᴇɴᴅ /cancel ᴛᴏ ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=300
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text, is_running, count = await build_autosave_text(user_id)
+            return await bot.send_message(user_id, text, reply_markup=get_autosave_markup(is_running, count))
         if not dst_msg.text or dst_msg.text.startswith("/cancel"):
             return await bot.send_message(user_id, "**ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ!**")
         

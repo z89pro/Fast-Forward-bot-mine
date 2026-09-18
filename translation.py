@@ -23,6 +23,7 @@ An enterprise-grade Telegram channel cloning, media migration, and course distri
 <b>📚 Available Commands:</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏣ <code>/start</code> — Start bot & view main card
+⏣ <code>/addbot</code> — Connect your bot token or userbot
 ⏣ <code>/commands</code> — Interactive command navigator & categories
 ⏣ <code>/forward</code> — Interactive channel forward wizard
 ⏣ <code>/fwd &lt;links/ranges&gt;</code> — Multi-range batch forward (e.g. 10-20 30-40)
@@ -58,21 +59,46 @@ An enterprise-grade Telegram channel cloning, media migration, and course distri
 • 🛠 <b>Skinet Modifier:</b> Competitor username & link replacement
 • 🚀 <b>Smart AutoSave:</b> Real-time channel listener & auto-post"""
 
-  HOW_USE_TXT = """<blockquote><b>📖 <u>ɢᴇᴛᴛɪɴɢ sᴛᴀʀᴛᴇᴅ — ǫᴜɪᴄᴋ sᴇᴛᴜᴘ ɢᴜɪᴅᴇ</u></b></blockquote>
+  HOW_USE_TXT = """<blockquote><b>📖 <u>sᴇᴛᴜᴘ ɢᴜɪᴅᴇ — ʀᴇᴀᴅ ᴛʜɪs ғɪʀsᴛ</u></b></blockquote>
 
-<b>Follow these 3 simple steps to start forwarding:</b>
+<b>ᴛʜɪs ʙᴏᴛ ᴄᴏᴘɪᴇs ᴍᴇssᴀɢᴇs ғʀᴏᴍ ᴏɴᴇ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴀɴᴏᴛʜᴇʀ.</b>
+ʏᴏᴜ ɴᴇᴇᴅ ᴛᴡᴏ ᴛʜɪɴɢs ʙᴇғᴏʀᴇ ɪᴛ ᴄᴀɴ ᴡᴏʀᴋ:
 
-1️⃣ <b>Add a Bot Token or UserBot:</b>
-   • Open <code>/settings</code> ➔ <b>🤖 ʙᴏᴛs</b> ➔ <b>✚ ᴀᴅᴅ ʙᴏᴛ ✚</b>
-   • Send your Bot token from @BotFather, or login a UserBot for private channels.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣ <b>ᴀ ᴡᴏʀᴋᴇʀ</b> — ᴛʜᴇ ᴀᴄᴄᴏᴜɴᴛ ᴛʜᴀᴛ ᴅᴏᴇs ᴛʜᴇ ᴄᴏᴘʏɪɴɢ
 
-2️⃣ <b>Link Your Target Channel:</b>
-   • Open <code>/settings</code> ➔ <b>🏷 ᴄʜᴀɴɴᴇʟs</b> ➔ <b>✚ ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ ✚</b>
-   • Forward any message from your target channel (ensure bot is Admin!).
+   • ᴛᴀᴘ <b>➕ ᴀᴅᴅ ʙᴏᴛ</b> ᴏɴ ᴛʜᴇ ᴍᴀɪɴ ᴍᴇɴᴜ, ᴏʀ sᴇɴᴅ /addbot
+   • ᴏᴘᴇɴ @BotFather ➔ /newbot ➔ ᴄᴏᴘʏ ᴛʜᴇ ᴛᴏᴋᴇɴ ➔ sᴇɴᴅ ɪᴛ ʜᴇʀᴇ
+   • ғᴏʀ <b>ᴘʀɪᴠᴀᴛᴇ</b> ᴄʜᴀɴɴᴇʟs ʏᴏᴜ ɴᴇᴇᴅ ᴀ ᴜsᴇʀʙᴏᴛ ɪɴsᴛᴇᴀᴅ (ᴛᴀᴘ ➕ ᴀᴅᴅ ʙᴏᴛ ➔ ᴜsᴇʀʙᴏᴛ)
 
-3️⃣ <b>Start Forwarding:</b>
-   • Send <code>/forward</code> to launch the interactive wizard.
-   • Or use <code>/fwd &lt;link1&gt; &lt;link2&gt;</code> for instant batch forwarding!"""
+2️⃣ <b>ᴀ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ</b> — ᴡʜᴇʀᴇ ᴍᴇssᴀɢᴇs ɢᴏ
+
+   • ᴛᴀᴘ <b>📡 ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ</b> ᴏɴ ᴛʜᴇ ᴍᴀɪɴ ᴍᴇɴᴜ
+   • ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ɪᴛs ʟɪɴᴋ / ID
+   • ⚠️ <b>ᴍᴀᴋᴇ ʏᴏᴜʀ ʙᴏᴛ ᴀɴ ᴀᴅᴍɪɴ ᴛʜᴇʀᴇ</b> ᴡɪᴛʜ "ᴘᴏsᴛ ᴍᴇssᴀɢᴇs" ᴏɴ
+
+3️⃣ <b>ᴀ sᴏᴜʀᴄᴇ</b> — ᴡʜᴇʀᴇ ᴍᴇssᴀɢᴇs ᴄᴏᴍᴇ ғʀᴏᴍ
+
+   • ɴᴏ sᴇᴛᴜᴘ ɴᴇᴇᴅᴇᴅ — ʏᴏᴜ ᴘɪᴄᴋ ɪᴛ ᴡʜᴇɴ ʏᴏᴜ sᴛᴀʀᴛ ᴀ ᴛᴀsᴋ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>ᴛʜᴇɴ sᴛᴀʀᴛ ᴀ ᴛᴀsᴋ:</b>
+
+▶️ <code>/forward</code> — ᴡɪᴢᴀʀᴅ. ɪᴛ ᴀsᴋs ʏᴏᴜ ǫᴜᴇsᴛɪᴏɴs ᴏɴᴇ ʙʏ ᴏɴᴇ.
+▶️ <code>/fwd 10-20 30-40</code> — ᴏɴᴇ-ʟɪɴᴇʀ ᴠᴇʀsɪᴏɴ ᴏғ ᴛʜᴇ sᴀᴍᴇ ᴛʜɪɴɢ.
+
+<b>ᴅᴜʀɪɴɢ ᴀ ᴛᴀsᴋ:</b>
+⏸ <code>/pause</code> — sᴛᴏᴘ ғᴏʀ ɴᴏᴡ, ᴋᴇᴇᴘ ᴘʟᴀᴄᴇ
+▶️ <code>/resume</code> — ᴄᴀʀʀʏ ᴏɴ ғʀᴏᴍ ᴡʜᴇʀᴇ ʏᴏᴜ ᴘᴀᴜsᴇᴅ
+⏹ <code>/stop</code> — ᴄᴀɴᴄᴇʟ ᴛʜᴇ ᴛᴀsᴋ ᴄᴏᴍᴘʟᴇᴛᴇʟʏ
+
+<b>ᴄᴏᴍᴍᴏɴ ᴘʀᴏʙʟᴇᴍs:</b>
+• <i>"ʙᴏᴛ ɪs ɴᴏᴛ ᴀᴅᴍɪɴ"</i> ➔ ᴀᴅᴅ ɪᴛ ᴛᴏ ᴛʜᴇ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴀs ᴀᴅᴍɪɴ.
+• <i>"ᴄᴏᴜʟᴅ ɴᴏᴛ ʀᴇᴀᴅ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ"</i> ➔ sᴇɴᴅ ᴛʜᴇ ʟɪɴᴋ, ᴏʀ ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ɪᴛ.
+• <i>ɴᴏᴛʜɪɴɢ ʜᴀᴘᴘᴇɴs</i> ➔ sᴇɴᴅ /addbot ᴀɴᴅ ᴀᴅᴅ ᴀ ᴡᴏʀᴋᴇʀ ғɪʀsᴛ.
+• <i>ᴘʀɪᴠᴀᴛᴇ sᴏᴜʀᴄᴇ</i> ➔ ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ ᴍᴜsᴛ ʙᴇ ᴀ ᴍᴇᴍʙᴇʀ ᴛʜᴇʀᴇ.
+
+👇 <i>ᴛᴀᴘ ᴀ ʙᴜᴛᴛᴏɴ ᴛᴏ sᴛᴀʀᴛ:</i>"""
 
   ABOUT_TXT = """<blockquote><b>ℹ️ <u>ᴀʙᴏᴜᴛ — sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ</u></b></blockquote>
 

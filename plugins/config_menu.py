@@ -7,7 +7,7 @@ from config import Config, temp
 from database import db
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, CallbackQuery, Message
-from pyrogram.errors import MessageIdInvalid, MessageNotModified, RPCError
+from pyrogram.errors import MessageIdInvalid, MessageNotModified, RPCError, ListenerTimeout
 from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 logger = logging.getLogger("SkinetConfig")
@@ -221,19 +221,23 @@ async def config_callback(bot: Client, query: CallbackQuery):
     elif data == "set_log":
         await query.message.delete()
         curr_log = f"<code>{Config.LOG_CHANNEL}</code>" if (Config.LOG_CHANNEL and Config.LOG_CHANNEL != 0) else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
-        ask = await bot.ask(
-            user_id,
-            text=(
-                "<blockquote><b>📡 <u>sᴇᴛ ʟᴏɢ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
-                f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_log}\n\n"
-                "sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴄʜᴀɴɴᴇʟ ɪᴅ ᴡʜᴇʀᴇ sʏsᴛᴇᴍ ᴛᴇʟᴇᴍᴇᴛʀʏ ᴀɴᴅ ʀᴇsᴛᴀʀᴛ ᴇᴠᴇɴᴛs ᴡɪʟʟ ʙᴇ ᴅᴜᴍᴘᴇᴅ.\n\n"
-                "• <b>ᴇxᴀᴍᴘʟᴇ:</b> <code>-1001234567890</code>\n"
-                "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
-                "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
-                "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    "<blockquote><b>📡 <u>sᴇᴛ ʟᴏɢ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
+                    f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_log}\n\n"
+                    "sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴄʜᴀɴɴᴇʟ ɪᴅ ᴡʜᴇʀᴇ sʏsᴛᴇᴍ ᴛᴇʟᴇᴍᴇᴛʀʏ ᴀɴᴅ ʀᴇsᴛᴀʀᴛ ᴇᴠᴇɴᴛs ᴡɪʟʟ ʙᴇ ᴅᴜᴍᴘᴇᴅ.\n\n"
+                    "• <b>ᴇxᴀᴍᴘʟᴇ:</b> <code>-1001234567890</code>\n"
+                    "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
+                    "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
+                    "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -267,21 +271,25 @@ async def config_callback(bot: Client, query: CallbackQuery):
     elif data == "set_dump":
         await query.message.delete()
         curr_dump = f"<code>{Config.DUMP_CHANNEL}</code>" if (Config.DUMP_CHANNEL and Config.DUMP_CHANNEL != 0) else "<code>0</code> <i>(ᴅɪsᴀʙʟᴇᴅ)</i>"
-        ask = await bot.ask(
-            user_id,
-            text=(
-                "<blockquote><b>📦 <u>sᴇᴛ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
-                f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_dump}\n\n"
-                "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ / ʟɪɴᴋ.\n\n"
-                "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
-                "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
-                "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n"
-                "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
-                "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
-                "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    "<blockquote><b>📦 <u>sᴇᴛ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ ɪᴅ</u></b></blockquote>\n\n"
+                    f"<b>ᴄᴜʀʀᴇɴᴛ ᴠᴀʟᴜᴇ:</b> {curr_dump}\n\n"
+                    "ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ʏᴏᴜʀ ᴅᴜᴍᴘ ᴄʜᴀɴɴᴇʟ, ᴏʀ sᴇɴᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ / ʟɪɴᴋ.\n\n"
+                    "• <b>ғᴏʀᴡᴀʀᴅ:</b> <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ (ʀᴇᴄᴏᴍᴍᴇɴᴅᴇᴅ)</i>\n"
+                    "• <b>ɪᴅ:</b> <code>-1001234567890</code>\n"
+                    "• <b>ʟɪɴᴋ:</b> <code>https://t.me/c/...</code> ᴏʀ <code>@my_channel</code>\n"
+                    "• <b>ᴅɪsᴀʙʟᴇ:</b> sᴇɴᴅ <code>0</code> ᴛᴏ ᴋᴇᴇᴘ ᴅɪsᴀʙʟᴇᴅ\n"
+                    "• <b>ᴄᴀɴᴄᴇʟ:</b> sᴇɴᴅ <code>/cancel</code> ᴛᴏ ᴀʙᴏʀᴛ\n\n"
+                    "⚠️ <i>ᴇɴsᴜʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀᴅᴅᴇᴅ ᴀs ᴀɴ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ!</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask or (ask.text and ask.text.startswith("/cancel")):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -324,19 +332,23 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "set_fsub":
         await query.message.delete()
-        ask = await bot.ask(
-            user_id,
-            text=(
-                "<b>📢 sᴇɴᴅ ɴᴇᴡ ғᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ:</b>\n\n"
-                "ᴇxᴀᴍᴘʟᴇs:\n"
-                "• <code>@MyChannel</code>\n"
-                "• <code>https://t.me/MyChannel</code>\n"
-                "• <code>-1001234567890</code>\n"
-                "sᴇɴᴅ <code>none</code> ᴛᴏ ᴄʟᴇᴀʀ\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    "<b>📢 sᴇɴᴅ ɴᴇᴡ ғᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ:</b>\n\n"
+                    "ᴇxᴀᴍᴘʟᴇs:\n"
+                    "• <code>@MyChannel</code>\n"
+                    "• <code>https://t.me/MyChannel</code>\n"
+                    "• <code>-1001234567890</code>\n"
+                    "sᴇɴᴅ <code>none</code> ᴛᴏ ᴄʟᴇᴀʀ\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -384,16 +396,20 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "add_admin_prompt":
         await query.message.delete()
-        ask = await bot.ask(
-            user_id,
-            text=(
-                "<b>👑 sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅ ᴛᴏ ᴘʀᴏᴍᴏᴛᴇ ᴀs ᴀᴅᴍɪɴ:</b>\n\n"
-                "ᴇxᴀᴍᴘʟᴇ: <code>987654321</code>\n"
-                "<i>ᴜsᴇʀ ɪᴅ ᴄᴀɴ ʙᴇ ғᴏᴜɴᴅ ᴠɪᴀ @userinfobot ᴏʀ /status.</i>\n\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    "<b>👑 sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅ ᴛᴏ ᴘʀᴏᴍᴏᴛᴇ ᴀs ᴀᴅᴍɪɴ:</b>\n\n"
+                    "ᴇxᴀᴍᴘʟᴇ: <code>987654321</code>\n"
+                    "<i>ᴜsᴇʀ ɪᴅ ᴄᴀɴ ʙᴇ ғᴏᴜɴᴅ ᴠɪᴀ @userinfobot ᴏʀ /status.</i>\n\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -417,16 +433,20 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.message.delete()
         admins = await db.get_all_admins()
         primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
-        ask = await bot.ask(
-            user_id,
-            text=(
-                f"👑 <b>ᴄᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴs:</b> <code>{' '.join(str(x) for x in admins)}</code>\n\n"
-                "<b>sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅ ᴛᴏ ʀᴇᴍᴏᴠᴇ ғʀᴏᴍ ᴀᴅᴍɪɴs:</b>\n"
-                "<i>ɴᴏᴛᴇ: ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ ᴄᴀɴɴᴏᴛ ʙᴇ ʀᴇᴍᴏᴠᴇᴅ.</i>\n\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    f"👑 <b>ᴄᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴs:</b> <code>{' '.join(str(x) for x in admins)}</code>\n\n"
+                    "<b>sᴇɴᴅ ᴛʜᴇ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅ ᴛᴏ ʀᴇᴍᴏᴠᴇ ғʀᴏᴍ ᴀᴅᴍɪɴs:</b>\n"
+                    "<i>ɴᴏᴛᴇ: ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ ᴄᴀɴɴᴏᴛ ʙᴇ ʀᴇᴍᴏᴠᴇᴅ.</i>\n\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -455,17 +475,21 @@ async def config_callback(bot: Client, query: CallbackQuery):
     elif data == "set_upi":
         await query.message.delete()
         curr_upi = getattr(Config, 'UPI_ID', '') or 'ɴᴏɴᴇ'
-        ask = await bot.ask(
-            user_id,
-            text=(
-                f"💳 <b>ᴄᴜʀʀᴇɴᴛ ᴜᴘɪ ɪᴅ:</b> <code>{curr_upi}</code>\n\n"
-                "<b>sᴇɴᴅ ɴᴇᴡ ᴜᴘɪ ɪᴅ ғᴏʀ ʀᴇᴄᴇɪᴠɪɴɢ ᴘʀᴇᴍɪᴜᴍ ᴘᴀʏᴍᴇɴᴛs:</b>\n"
-                "ᴇxᴀᴍᴘʟᴇ: <code>yourname@upi</code> ᴏʀ <code>merchant@okhdfcbank</code>\n"
-                "sᴇɴᴅ <code>none</code> ᴛᴏ ʀᴇᴍᴏᴠᴇ.\n\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    f"💳 <b>ᴄᴜʀʀᴇɴᴛ ᴜᴘɪ ɪᴅ:</b> <code>{curr_upi}</code>\n\n"
+                    "<b>sᴇɴᴅ ɴᴇᴡ ᴜᴘɪ ɪᴅ ғᴏʀ ʀᴇᴄᴇɪᴠɪɴɢ ᴘʀᴇᴍɪᴜᴍ ᴘᴀʏᴍᴇɴᴛs:</b>\n"
+                    "ᴇxᴀᴍᴘʟᴇ: <code>yourname@upi</code> ᴏʀ <code>merchant@okhdfcbank</code>\n"
+                    "sᴇɴᴅ <code>none</code> ᴛᴏ ʀᴇᴍᴏᴠᴇ.\n\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -485,17 +509,21 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.message.delete()
         admins = await db.get_all_admins()
         curr = " ".join([str(x) for x in admins])
-        ask = await bot.ask(
-            user_id,
-            text=(
-                f"👑 <b>ᴄᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴ ɪᴅs:</b> <code>{curr}</code>\n\n"
-                "<b>sᴇɴᴅ sᴘᴀᴄᴇ-sᴇᴘᴀʀᴀᴛᴇᴅ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅs ᴛᴏ sᴇᴛ ᴀs ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴs:</b>\n"
-                "ᴇxᴀᴍᴘʟᴇ: <code>8349955493 987654321</code>\n\n"
-                "<i>ɴᴏᴛᴇ: ʏᴏᴜʀ ɪᴅ ᴡɪʟʟ ᴀʟᴡᴀʏs ʙᴇ ᴘʀᴇsᴇʀᴠᴇᴅ sᴏ ʏᴏᴜ ᴄᴀɴɴᴏᴛ ʟᴏᴄᴋ ʏᴏᴜʀsᴇʟғ ᴏᴜᴛ.</i>\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    f"👑 <b>ᴄᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴ ɪᴅs:</b> <code>{curr}</code>\n\n"
+                    "<b>sᴇɴᴅ sᴘᴀᴄᴇ-sᴇᴘᴀʀᴀᴛᴇᴅ ᴛᴇʟᴇɢʀᴀᴍ ᴜsᴇʀ ɪᴅs ᴛᴏ sᴇᴛ ᴀs ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴs:</b>\n"
+                    "ᴇxᴀᴍᴘʟᴇ: <code>8349955493 987654321</code>\n\n"
+                    "<i>ɴᴏᴛᴇ: ʏᴏᴜʀ ɪᴅ ᴡɪʟʟ ᴀʟᴡᴀʏs ʙᴇ ᴘʀᴇsᴇʀᴠᴇᴅ sᴏ ʏᴏᴜ ᴄᴀɴɴᴏᴛ ʟᴏᴄᴋ ʏᴏᴜʀsᴇʟғ ᴏᴜᴛ.</i>\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -516,19 +544,23 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "set_speed":
         await query.message.delete()
-        ask = await bot.ask(
-            user_id,
-            text=(
-                "<b>⚡️ sᴇɴᴅ ɴᴇᴡ ᴅᴇғᴀᴜʟᴛ ғᴏʀᴡᴀʀᴅ ᴅᴇʟᴀʏ (ɪɴ sᴇᴄᴏɴᴅs):</b>\n\n"
-                "ᴘʀᴇsᴇᴛs:\n"
-                "• <code>0.2</code> ᴏʀ <code>0.5</code> (ᴇxᴛʀᴇᴍᴇ ғᴀsᴛ)\n"
-                "• <code>1.0</code> (ғᴀsᴛ ᴅᴇғᴀᴜʟᴛ)\n"
-                "• <code>3.0</code> (ɴᴏʀᴍᴀʟ sᴀғᴇ)\n"
-                "• <code>5.0</code> (ᴀɴᴛɪ-ғʟᴏᴏᴅ sᴛʀɪᴄᴛ)\n\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=120
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    "<b>⚡️ sᴇɴᴅ ɴᴇᴡ ᴅᴇғᴀᴜʟᴛ ғᴏʀᴡᴀʀᴅ ᴅᴇʟᴀʏ (ɪɴ sᴇᴄᴏɴᴅs):</b>\n\n"
+                    "ᴘʀᴇsᴇᴛs:\n"
+                    "• <code>0.2</code> ᴏʀ <code>0.5</code> (ᴇxᴛʀᴇᴍᴇ ғᴀsᴛ)\n"
+                    "• <code>1.0</code> (ғᴀsᴛ ᴅᴇғᴀᴜʟᴛ)\n"
+                    "• <code>3.0</code> (ɴᴏʀᴍᴀʟ sᴀғᴇ)\n"
+                    "• <code>5.0</code> (ᴀɴᴛɪ-ғʟᴏᴏᴅ sᴛʀɪᴄᴛ)\n\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -555,16 +587,20 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "set_token":
         await query.message.delete()
-        ask = await bot.ask(
-            user_id,
-            text=(
-                "<b>🤖 sᴇɴᴅ ɴᴇᴡ ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ᴛᴏᴋᴇɴ:</b>\n\n"
-                "ғᴏʀᴍᴀᴛ: <code>1234567890:AAHxxxx...</code>\n\n"
-                "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴀғᴛᴇʀ sᴀᴠɪɴɢ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏᴋᴇɴ, ʏᴏᴜ ᴍᴜsᴛ ʀᴇsᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ғᴏʀ ᴛʜᴇ ᴄʜᴀɴɢᴇ ᴛᴏ ᴛᴀᴋᴇ ᴇғғᴇᴄᴛ!</i>\n"
-                "<i>/cancel - ᴀʙᴏʀᴛ</i>"
-            ),
-            timeout=180
-        )
+        try:
+            ask = await bot.ask(
+                user_id,
+                text=(
+                    "<b>🤖 sᴇɴᴅ ɴᴇᴡ ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ᴛᴏᴋᴇɴ:</b>\n\n"
+                    "ғᴏʀᴍᴀᴛ: <code>1234567890:AAHxxxx...</code>\n\n"
+                    "⚠️ <b>ɪᴍᴘᴏʀᴛᴀɴᴛ:</b> <i>ᴀғᴛᴇʀ sᴀᴠɪɴɢ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏᴋᴇɴ, ʏᴏᴜ ᴍᴜsᴛ ʀᴇsᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ғᴏʀ ᴛʜᴇ ᴄʜᴀɴɢᴇ ᴛᴏ ᴛᴀᴋᴇ ᴇғғᴇᴄᴛ!</i>\n"
+                    "<i>/cancel - ᴀʙᴏʀᴛ</i>"
+                ),
+                timeout=180
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask.text or ask.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -591,11 +627,15 @@ async def config_callback(bot: Client, query: CallbackQuery):
 
     elif data == "set_api":
         await query.message.delete()
-        ask_id = await bot.ask(
-            user_id,
-            text="<b>🔑 sᴇɴᴅ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘɪ ɪᴅ (ɴᴜᴍʙᴇʀs):</b>\n\n<i>/cancel - ᴀʙᴏʀᴛ</i>",
-            timeout=120
-        )
+        try:
+            ask_id = await bot.ask(
+                user_id,
+                text="<b>🔑 sᴇɴᴅ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘɪ ɪᴅ (ɴᴜᴍʙᴇʀs):</b>\n\n<i>/cancel - ᴀʙᴏʀᴛ</i>",
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask_id.text or ask_id.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
@@ -605,11 +645,15 @@ async def config_callback(bot: Client, query: CallbackQuery):
         
         api_id = int(ask_id.text.strip())
 
-        ask_hash = await bot.ask(
-            user_id,
-            text="<b>🔑 sᴇɴᴅ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘɪ ʜᴀsʜ (ʜᴇx sᴛʀɪɴɢ):</b>\n\n<i>/cancel - ᴀʙᴏʀᴛ</i>",
-            timeout=120
-        )
+        try:
+            ask_hash = await bot.ask(
+                user_id,
+                text="<b>🔑 sᴇɴᴅ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘɪ ʜᴀsʜ (ʜᴇx sᴛʀɪɴɢ):</b>\n\n<i>/cancel - ᴀʙᴏʀᴛ</i>",
+                timeout=120
+            )
+        except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+            text = await build_config_view()
+            return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)
         if not ask_hash.text or ask_hash.text.startswith("/cancel"):
             text = await build_config_view()
             return await bot.send_message(user_id, text, reply_markup=build_config_buttons(), disable_web_page_preview=True)

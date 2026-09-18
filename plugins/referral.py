@@ -3,6 +3,7 @@ from config import Config, temp
 from database import db
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, CallbackQuery, Message
+from pyrogram.errors import ListenerTimeout
 from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 logger = logging.getLogger("SkinetReferral")
@@ -344,11 +345,14 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         if not is_owner(user_id):
             return await query.answer("Admins only!", show_alert=True)
         await query.message.delete()
-        ask = await client.ask(
-            user_id,
-            text="<b>👑 Send User ID and points to add:</b>\nFormat: <code>user_id:points</code> (e.g. <code>123456789:50</code>)\n/cancel - Abort",
-            timeout=120
-        )
+        try:
+            ask = await client.ask(
+                user_id,
+                text="<b>👑 Send User ID and points to add:</b>\nFormat: <code>user_id:points</code> (e.g. <code>123456789:50</code>)\n/cancel - Abort",
+                timeout=120
+            )
+        except ListenerTimeout:
+            return await client.send_message(user_id, "⏰ ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.")
         if not ask.text or ask.text.startswith("/cancel") or ":" not in ask.text:
             return await client.send_message(user_id, "Process cancelled or invalid format.")
             

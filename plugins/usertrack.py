@@ -6,6 +6,7 @@ from config import Config
 from database import db
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from pyrogram.errors import ListenerTimeout
 
 logger = logging.getLogger("SkinetUserTrack")
 
@@ -282,11 +283,14 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
     elif data.startswith("utr_addpts_"):
         target_id = int(data.replace("utr_addpts_", ""))
         await query.message.delete()
-        ask = await client.ask(
-            user_id,
-            text=f"<b>👑 sᴇɴᴅ ᴘᴏɪɴᴛs ᴛᴏ ᴀᴅᴅ ᴛᴏ ᴜsᴇʀ <code>{target_id}</code>:</b>\n(e.g. <code>25</code>)\n/cancel - ᴀʙᴏʀᴛ",
-            timeout=120
-        )
+        try:
+            ask = await client.ask(
+                user_id,
+                text=f"<b>👑 sᴇɴᴅ ᴘᴏɪɴᴛs ᴛᴏ ᴀᴅᴅ ᴛᴏ ᴜsᴇʀ <code>{target_id}</code>:</b>\n(e.g. <code>25</code>)\n/cancel - ᴀʙᴏʀᴛ",
+                timeout=120
+            )
+        except ListenerTimeout:
+            return await client.send_message(user_id, "⏰ ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.")
         if not ask.text or ask.text.startswith("/cancel") or not ask.text.strip().isdigit():
             return await client.send_message(user_id, "ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ ᴏʀ ɪɴᴠᴀʟɪᴅ ɴᴜᴍʙᴇʀ.")
         

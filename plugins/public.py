@@ -13,10 +13,63 @@ from buttons import btn, row, markup, colored_markup
 
 #===================Run Function===================#
 
+ADD_CHANNEL_BTN = "➕ ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ"
+
+
+async def resolve_and_add_target(bot, message, user_id, source_msg):
+    """Resolve a link / ID / forwarded message into a target channel.
+
+    Registers it as a target if it isn't one already. Returns
+    (chat_id, title), or None when the input isn't a usable channel.
+    """
+    from plugins.forward_parser import resolve_channel_input
+    res = await resolve_channel_input(source_msg, bot)
+    if not res.get("chat_id"):
+        return None
+    chat_id = res["chat_id"]
+    title = res.get("chat_title") or str(chat_id)
+    username = res.get("chat_username") or "private"
+    if username and not username.startswith("@") and username != "private":
+        username = "@" + username
+    try:
+        if not await db.in_channel(user_id, chat_id):
+            await db.add_channel(user_id, chat_id, title, username)
+    except Exception:
+        pass
+    return chat_id, title
+
+
+async def prompt_add_channel(bot, message, user_id):
+    """Ask for a channel and register it. Returns (chat_id, title) or None."""
+    try:
+        reply = await bot.ask(
+            message.chat.id,
+            text=("<b>➕ ᴀᴅᴅ ᴀ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ\n\n"
+                  "sᴇɴᴅ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ ᴏʀ ID, ᴏʀ ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ɪᴛ.\n\n"
+                  "⚠️ <i>ᴍᴀᴋᴇ sᴜʀᴇ ʏᴏᴜʀ ʙᴏᴛ ɪs ᴀᴅᴍɪɴ ᴛʜᴇʀᴇ ᴡɪᴛʜ ᴘᴏsᴛ ᴘᴇʀᴍɪssɪᴏɴs.</i>\n"
+                  "/cancel - ᴄᴀɴᴄᴇʟ ᴛʜɪs ᴘʀᴏᴄᴇss</b>"),
+            timeout=180,
+        )
+    except Exception:
+        await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.</b>")
+        return None
+    text = (reply.text or "").strip() if reply else ""
+    if not text or text.lower().startswith(('/', 'cancel')):
+        await message.reply_text(Translation.CANCEL)
+        return None
+    added = await resolve_and_add_target(bot, message, user_id, reply)
+    if not added:
+        await message.reply_text(
+            "<b>❌ ᴄᴏᴜʟᴅ ɴᴏᴛ ʀᴇᴀᴅ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.</b>\n"
+            "<i>sᴇɴᴅ ᴀ ʟɪɴᴋ ʟɪᴋᴇ <code>https://t.me/mychannel</code>, "
+            "ᴀɴ ID ʟɪᴋᴇ <code>-1001234567890</code>, "
+            "ᴏʀ ғᴏʀᴡᴀʀᴅ ᴀ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ɪᴛ.</i>")
+        return None
+    return added
+
 @Client.on_message(filters.private & filters.command(["fwd", "forward"]))
 async def run(bot, message):
     buttons = []
-    btn_data = {}
     user_id = message.from_user.id
     from plugins.verify import is_user_verified, send_verify_prompt
     if not await is_user_verified(user_id):
@@ -73,20 +126,56 @@ async def run(bot, message):
             return await message.reply_text(f"⚠️ <b>ᴇʀʀᴏʀ ɪɴ ʀᴀɴɢᴇ ᴘᴀʀsɪɴɢ:</b> {parse_err}")
 
     if len(channels) > 1:
-       for channel in channels:
-          buttons.append([KeyboardButton(f"{channel['title']}")])
-          btn_data[channel['title']] = channel['chat_id']
-       buttons.append([KeyboardButton("cancel")]) 
-       try:
-           _toid = await bot.ask(message.chat.id, Translation.TO_MSG.format(_bot['name'], _bot['username']), reply_markup=ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True), timeout=180)
-       except Exception:
-           return await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>", reply_markup=ReplyKeyboardRemove())
-       if not _toid or not _toid.text or _toid.text.lower().startswith(('/', 'cancel')):
-          return await message.reply_text(Translation.CANCEL, reply_markup=ReplyKeyboardRemove())
-       to_title = _toid.text
-       toid = btn_data.get(to_title)
-       if not toid:
-          return await message.reply_text("Wrong channel chosen!", reply_markup=ReplyKeyboardRemove())
+       # Keyed several ways so a tapped button, a typed title, or a typed
+       # number all resolve — the old code only matched the exact button text
+       # and dead-ended on "Wrong channel chosen!" for anything else.
+       target_map = {}
+       for idx, channel in enumerate(channels, start=1):
+          label = f"{idx}. {channel['title']}"
+          buttons.append([KeyboardButton(label)])
+          target_map[label] = channel
+          target_map[str(idx)] = channel
+          target_map[channel['title'].strip().lower()] = channel
+       buttons.append([KeyboardButton(ADD_CHANNEL_BTN)])
+       buttons.append([KeyboardButton("cancel")])
+       keyboard = ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
+
+       toid = to_title = None
+       for _attempt in range(3):
+           try:
+               _toid = await bot.ask(message.chat.id, Translation.TO_MSG.format(_bot['name'], _bot['username']), reply_markup=keyboard, timeout=180)
+           except Exception:
+               return await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>", reply_markup=ReplyKeyboardRemove())
+           answer = (_toid.text or "").strip() if _toid else ""
+           if not answer or answer.lower().startswith(('/', 'cancel')):
+              return await message.reply_text(Translation.CANCEL, reply_markup=ReplyKeyboardRemove())
+
+           if answer == ADD_CHANNEL_BTN:
+              added = await prompt_add_channel(bot, message, user_id)
+              if added:
+                 toid, to_title = added
+                 break
+              continue
+
+           picked = target_map.get(answer) or target_map.get(answer.lower())
+           if not picked:
+              # Not one of the buttons — maybe a link, an ID, or a forward.
+              added = await resolve_and_add_target(bot, message, user_id, _toid)
+              if added:
+                 toid, to_title = added
+                 break
+              await message.reply_text(
+                 "<b>❌ ᴛʜᴀᴛ ᴡᴀsɴ'ᴛ ᴏɴᴇ ᴏғ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟs.</b>\n\n"
+                 "<i>ᴛᴀᴘ ᴀ ʙᴜᴛᴛᴏɴ ᴀʙᴏᴠᴇ, sᴇɴᴅ ɪᴛs ɴᴜᴍʙᴇʀ, ᴏʀ sᴇɴᴅ ᴀ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋ / ID.</i>")
+              continue
+           toid = picked['chat_id']
+           to_title = picked['title']
+           break
+       if toid is None:
+          return await message.reply_text(
+             "<b>⛔ ᴛᴏᴏ ᴍᴀɴʏ ᴜɴʀᴇᴄᴏɢɴɪᴢᴇᴅ ᴀɴsᴡᴇʀs. ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>\n"
+             "<i>ᴛᴀᴘ /forward ᴛᴏ sᴛᴀʀᴛ ᴀɢᴀɪɴ.</i>",
+             reply_markup=ReplyKeyboardRemove())
     else:
        toid = channels[0]['chat_id']
        to_title = channels[0]['title']

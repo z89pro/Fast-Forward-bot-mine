@@ -20,6 +20,21 @@ TRANSFER_MODES = {
 TRANSFER_MODE_ORDER = ['auto', 'forward', 'copy', 'upload']
 
 
+@Client.on_message(filters.command('addbot') & filters.private)
+async def addbot(client, message):
+   """`/addbot` is advertised in the Telegram menu, so it needs a real handler.
+
+   Shares the settings#addbot flow — CLIENT.add_bot only reads `from_user.id`.
+   """
+   if not message.from_user:
+      return
+   if await CLIENT.add_bot(client, message) is True:
+      await message.reply_text(
+         "<b>ʙᴏᴛ ᴛᴏᴋᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴀᴅᴅᴇᴅ ᴛᴏ ᴅʙ ✅</b>",
+         reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton('⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs', callback_data="settings#bots")]]))
+
+
 @Client.on_message(filters.command('settings'))
 async def settings(client, message):
    text = (
@@ -928,7 +943,11 @@ async def settings_query(bot, query):
 
   elif type == "ftm_set_user_rep":
      await query.message.delete()
-     ask = await bot.ask(user_id, text="<b>👤 Send your replacement username (e.g. <code>@MyBrandCourses</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
+     try:
+        ask = await bot.ask(user_id, text="<b>👤 Send your replacement username (e.g. <code>@MyBrandCourses</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
+     except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+        configs = await get_configs(user_id)
+        return await bot.send_message(user_id, ftm_text(configs), reply_markup=ftm_buttons(configs))
      if ask.text and not ask.text.startswith('/'):
         val = None if ask.text.strip().lower() == 'none' else ask.text.strip()
         configs = await get_configs(user_id)
@@ -938,7 +957,11 @@ async def settings_query(bot, query):
 
   elif type == "ftm_set_link_rep":
      await query.message.delete()
-     ask = await bot.ask(user_id, text="<b>🔗 Send your replacement link (e.g. <code>https://t.me/MyChannel</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
+     try:
+        ask = await bot.ask(user_id, text="<b>🔗 Send your replacement link (e.g. <code>https://t.me/MyChannel</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
+     except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+        configs = await get_configs(user_id)
+        return await bot.send_message(user_id, ftm_text(configs), reply_markup=ftm_buttons(configs))
      if ask.text and not ask.text.startswith('/'):
         val = None if ask.text.strip().lower() == 'none' else ask.text.strip()
         configs = await get_configs(user_id)
@@ -948,7 +971,11 @@ async def settings_query(bot, query):
 
   elif type == "ftm_add_word":
      await query.message.delete()
-     ask = await bot.ask(user_id, text="<b>🔤 Send word replacement rule as <code>old_word:new_word</code>:</b>\n(Example: <code>@competitor:@mychannel</code> or <code>badword:</code> to delete word)\n/cancel - Cancel", timeout=120)
+     try:
+        ask = await bot.ask(user_id, text="<b>🔤 Send word replacement rule as <code>old_word:new_word</code>:</b>\n(Example: <code>@competitor:@mychannel</code> or <code>badword:</code> to delete word)\n/cancel - Cancel", timeout=120)
+     except (asyncio.exceptions.TimeoutError, ListenerTimeout):
+        configs = await get_configs(user_id)
+        return await bot.send_message(user_id, ftm_text(configs), reply_markup=ftm_buttons(configs))
      if ask.text and ":" in ask.text and not ask.text.startswith('/'):
         parts = ask.text.split(":", 1)
         old, new = parts[0].strip(), parts[1].strip()
