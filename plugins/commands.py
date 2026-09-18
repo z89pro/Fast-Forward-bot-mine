@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import asyncio 
 import datetime
@@ -22,15 +23,18 @@ def get_main_buttons(user_id=None):
             btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue')
         ),
         row(
-            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green'),
-            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue')
+            btn('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ', 'settings#courseseller', 'yellow'),
+            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green')
         ),
         row(
-            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue'),
-            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green')
+            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue'),
+            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue')
         ),
         row(
-            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue'),
+            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green'),
+            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue')
+        ),
+        row(
             btn('ℹ️ ᴀʙᴏᴜᴛ', 'about', 'blue')
         )
     ]
@@ -129,16 +133,16 @@ async def start(client, message):
 
 #==================Restart Function==================#
 
-@Client.on_message(filters.private & filters.command(['restart', 'reboot']))
+@Client.on_message(filters.command(['restart', 'reboot', 'botrestart', 'restarr']))
 async def restart(client, message):
-    user_id = message.from_user.id
-    if not await db.is_admin(user_id):
-        return await message.reply_text("⚠️ <b>Access Denied:</b> This command is restricted to Bot Administrators.", quote=True)
+    user_id = message.from_user.id if message.from_user else (message.sender_chat.id if message.sender_chat else 0)
+    if not user_id or not await db.is_admin(user_id):
+        return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.", quote=True)
 
     from datetime import datetime, timezone, timedelta
     ist = timezone(timedelta(hours=5, minutes=30))
     stamp = datetime.now(ist).strftime("%d-%b-%Y %I:%M:%S %p")
-    user_name = message.from_user.first_name or "Admin"
+    user_name = message.from_user.first_name if message.from_user else "Admin"
 
     msg = await message.reply_text(
         text=Translation.RESTART_TXT.format(user_name, stamp),
@@ -154,8 +158,27 @@ async def restart(client, message):
             json.dump({'chat_id': message.chat.id, 'message_id': msg.id}, f)
     except Exception:
         pass
+
+    # Stop any background live monitors cleanly
+    for uid, live_cl in list(temp.LIVE_TASKS.items()):
+        try:
+            await live_cl.stop()
+        except Exception:
+            pass
+
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+    except Exception:
+        pass
+
     await asyncio.sleep(1.5)
-    os.execl(sys.executable, sys.executable, *sys.argv)
+    args = [sys.executable]
+    if sys.argv and sys.argv[0].endswith('.py'):
+        args.extend(sys.argv)
+    else:
+        args.append("bot.py")
+    os.execl(sys.executable, *args)
     
 def get_help_buttons():
     return markup(
@@ -321,15 +344,21 @@ async def status(bot, query):
 
     # Calculate bot uptime
     uptime_str = format_uptime()
+    is_adm = await db.is_admin(query.from_user.id)
+
+    status_rows = []
+    if is_adm:
+        status_rows.append(row(btn('🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ (ᴀᴅᴍɪɴ)', 'config#restart', 'yellow')))
+    status_rows.append(
+        row(
+            btn('• ʙᴀᴄᴋ', 'help', 'red'),
+            btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue')
+        )
+    )
 
     await query.message.edit_text(
         text=Translation.STATUS_TXT.format(users_count, bots_count, temp.forwardings, total_channels),
-        reply_markup=markup(
-            row(
-                btn('• ʙᴀᴄᴋ', 'help', 'red'),
-                btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue')
-            )
-        ),
+        reply_markup=markup(*status_rows),
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
     )
@@ -407,11 +436,11 @@ async def verify_menu_callback(bot, query):
 KNOWN_COMMANDS = {
     "start", "help", "settings", "forward", "fwd", "autosave", "live", "monitor",
     "broadcast", "bcast", "cancelbroadcast", "bcastcancel", "broadcastrestart", "bcastrestart",
-    "restart", "reboot", "terms", "tos", "privacy", "donate", "clone", "plans",
+    "restart", "reboot", "botrestart", "restarr", "terms", "tos", "privacy", "donate", "clone", "plans",
     "premium", "buy", "vip", "myplan", "plan", "addpremium", "addvip", "delpremium",
     "delvip", "vipadmin", "premiumadmin", "referral", "refer", "earn", "topref", "leaderboard", "refadmin",
     "stop", "pause", "resume", "reset", "resetall", "tutorial", "guide", "skinet",
-    "modifier", "ftm", "courseseller", "seller", "unequify", "userstats", "track",
+    "modifier", "ftm", "courseseller", "seller", "course", "courses", "unequify", "userstats", "track",
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
     "deladmin", "admins", "cancel", "yes", "no"
 }

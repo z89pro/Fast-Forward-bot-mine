@@ -10,6 +10,7 @@ Features:
   • Built-in Web Server for 24/7 keep-alive & health checks
 """
 import os
+import re
 import sys
 import json
 import asyncio
@@ -108,7 +109,8 @@ class Bot(Client):
                 BotCommand("terms", "ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ"),
                 BotCommand("privacy", "ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ"),
                 BotCommand("help", "ʜᴇʟᴘ ᴀɴᴅ ғᴇᴀᴛᴜʀᴇs ɢᴜɪᴅᴇ"),
-                BotCommand("status", "ᴄʜᴇᴄᴋ ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs")
+                BotCommand("status", "ᴄʜᴇᴄᴋ ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs"),
+                BotCommand("restart", "ʀᴇʙᴏᴏᴛ ʙᴏᴛ ᴇɴɢɪɴᴇ (ᴀᴅᴍɪɴ)")
             ])
             logger.info("✅ Telegram bot command menu registered.")
         except Exception as e:

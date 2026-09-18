@@ -307,13 +307,15 @@ async def ftm_cmd(client: Client, message: Message):
         quote=True
     )
 
-@Client.on_message(filters.private & filters.command(['courseseller', 'seller']))
+@Client.on_message(filters.command(['courseseller', 'seller', 'course', 'courses']))
 async def seller_cmd(client: Client, message: Message):
-    mod = TUTORIAL_MODULES[5]
+    from plugins.settings import course_seller_text, course_seller_buttons
+    from plugins.test import get_configs
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    configs = await get_configs(user_id)
     await message.reply_text(
-        mod["text"],
-        reply_markup=tutorial_page_keyboard(5),
-        disable_web_page_preview=True,
+        course_seller_text(configs),
+        reply_markup=course_seller_buttons(configs),
         quote=True
     )
 
