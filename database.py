@@ -165,7 +165,12 @@ class Database:
             'remove_tags': True,
             'upload_type': 'media',
             'watermark_text': None,
-            'autosave_unlocked': False
+            'autosave_unlocked': False,
+            'course_start_offset': 1,
+            'course_number_style': 'bracket',
+            'course_sticky_button': None,
+            'course_detect_missing': True,
+            'course_export_txt': True
         }
         if str(id) in ["0", "01", "default", "None"]:
             return dict(default)

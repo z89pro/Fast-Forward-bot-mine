@@ -204,10 +204,13 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                     b_sleep = human_delay(base_delay * 2) if jitter_enabled else (base_delay * 2)
                     await asyncio.sleep(max(1.0, b_sleep))
                     MSG = []
-            else:
-                lec_idx = len(course_items) + 1
+                lec_start = int(user_configs.get('course_start_offset', 1) or 1)
+                lec_idx = lec_start + len(course_items)
                 new_caption = custom_caption(message, caption, clean_caption=clean_caption, replace_words=replace_words, user_configs=user_configs, lecture_index=lec_idx)
-                details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': button, "protect": protect, "upload_type": user_configs.get('upload_type', 'media')}
+                sticky_raw = user_configs.get('course_sticky_button')
+                sticky_btn = build_universal_button(sticky_raw) if sticky_raw else None
+                lec_button = merge_sticky_button(button, sticky_btn)
+                details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': lec_button, "protect": protect, "upload_type": user_configs.get('upload_type', 'media')}
                 sent_id = await copy(client, details, m, sts, dump_target=dump_target)
                 sts.add('total_files')
                 if sent_id:
@@ -250,7 +253,7 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     # Course Seller Index
     if (user_configs.get('course_seller_mode') or user_configs.get('auto_course_list')) and course_items:
         try:
-            await send_course_index_list(client, user, sts, course_items)
+            await send_course_index_list(client, user, sts, course_items, user_configs=user_configs)
         except Exception as err:
             logger.warning(f"Error sending course list: {err}")
 
@@ -428,7 +431,63 @@ async def copy(bot, msg, m, sts, dump_target=None):
      sts.add('deleted')
      return None
 
-async def send_course_index_list(client, user, sts, course_items):
+def build_universal_button(raw_str):
+   if not raw_str or not isinstance(raw_str, str):
+      return None
+   raw = raw_str.strip()
+   if not raw:
+      return None
+   try:
+      if '|' in raw:
+         parts = raw.split('|', 1)
+         t = parts[0].strip()
+         u = parts[1].strip()
+         if t and u:
+            return InlineKeyboardButton(t, url=u)
+      elif ' - ' in raw:
+         parts = raw.split(' - ', 1)
+         t = parts[0].strip()
+         u = parts[1].strip()
+         if t and u:
+            return InlineKeyboardButton(t, url=u)
+   except Exception:
+      pass
+   return None
+
+def merge_sticky_button(existing_button, sticky_btn):
+   if not sticky_btn:
+      return existing_button
+   if not existing_button:
+      return InlineKeyboardMarkup([[sticky_btn]])
+   if isinstance(existing_button, InlineKeyboardMarkup):
+      new_keyboard = [list(row) for row in existing_button.inline_keyboard]
+      new_keyboard.append([sticky_btn])
+      return InlineKeyboardMarkup(new_keyboard)
+   return existing_button
+
+def detect_missing_lectures(items):
+   nums = []
+   for it in items:
+      title = it.get('title', '')
+      m = re.search(r'(?:lec(?:ture)?|part|ch(?:apter)?|session|class)[\s_.:-]*(\d+)', title, re.IGNORECASE)
+      if not m:
+         m = re.search(r'^\s*(\d+)[\s_.:-]', title)
+      if m:
+         try:
+            nums.append(int(m.group(1)))
+         except Exception:
+            pass
+   if len(nums) >= 2:
+      min_n = min(nums)
+      max_n = max(nums)
+      if 0 < (max_n - min_n) < 500:
+         full_set = set(range(min_n, max_n + 1))
+         missing = sorted(list(full_set - set(nums)))
+         return missing
+   return []
+
+async def send_course_index_list(client, user, sts, course_items, user_configs=None):
+   user_configs = user_configs or {}
    to_chat = sts.get('TO')
    from_title = str(sts.get('FROM'))
    to_str = str(to_chat).strip()
@@ -445,16 +504,38 @@ async def send_course_index_list(client, user, sts, course_items):
       else:
          clean_chat = to_str
 
+   sticky_raw = user_configs.get('course_sticky_button')
+   sticky_btn = build_universal_button(sticky_raw) if sticky_raw else None
+   idx_markup = InlineKeyboardMarkup([[sticky_btn]]) if sticky_btn else None
+
+   missing_lecs = []
+   if user_configs.get('course_detect_missing', True):
+      missing_lecs = detect_missing_lectures(course_items)
+
+   missing_card = ""
+   if missing_lecs:
+      missing_str = ", ".join(f"[{x:02d}]" for x in missing_lecs[:15])
+      if len(missing_lecs) > 15:
+         missing_str += f" (+{len(missing_lecs) - 15} more)"
+      missing_card = f"⚠️ <b>ᴍɪssɪɴɢ ʟᴇᴄᴛᴜʀᴇs ᴅᴇᴛᴇᴄᴛᴇᴅ:</b> <code>{missing_str}</code>\n"
+   else:
+      missing_card = "🎉 <b>ᴄᴏᴜʀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇɴᴇss:</b> <code>100% (No gaps detected)</code>\n"
+
    header = (
       "📚 <b><u>ᴄᴏᴜʀsᴇ ʟᴇᴄᴛᴜʀᴇs ɪɴᴅᴇx / sʏʟʟᴀʙᴜs</u></b>\n"
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
       f"🎯 <b>sᴏᴜʀᴄᴇ:</b> <code>{from_title}</code>\n"
-      f"📦 <b>ᴛᴏᴛᴀʟ ʟᴇᴄᴛᴜʀᴇs:</b> <code>{len(course_items)}</code>\n\n"
+      f"📦 <b>ᴛᴏᴛᴀʟ ʟᴇᴄᴛᴜʀᴇs:</b> <code>{len(course_items)}</code>\n"
+      f"{missing_card}"
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
    )
 
    chunk_size = 25
+   total_pages = (len(course_items) + chunk_size - 1) // chunk_size
    for chunk_idx in range(0, len(course_items), chunk_size):
       chunk = course_items[chunk_idx:chunk_idx + chunk_size]
+      page_num = (chunk_idx // chunk_size) + 1
+      page_str = f"📑 <b>ᴘᴀɢᴇ:</b> <code>{page_num}/{total_pages}</code>\n\n" if total_pages > 1 else ""
       lines = []
       for item in chunk:
          num_str = f"{item['num']:02d}"
@@ -469,10 +550,10 @@ async def send_course_index_list(client, user, sts, course_items):
             lines.append(f"<b>[{num_str}]</b> {title}")
 
       footer = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡️ <i>ɢᴇɴᴇʀᴀᴛᴇᴅ ʙʏ sᴋɪɴᴇᴛ ᴠᴇʀsᴇ (ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ)</i>"
-      full_text = header + "\n".join(lines) + footer
+      full_text = header + page_str + "\n".join(lines) + footer
 
       try:
-         sent_idx = await client.send_message(to_chat, full_text, disable_web_page_preview=True)
+         sent_idx = await client.send_message(to_chat, full_text, disable_web_page_preview=True, reply_markup=idx_markup)
          if chunk_idx == 0:
             try:
                await sent_idx.pin(disable_notification=True)
@@ -482,9 +563,56 @@ async def send_course_index_list(client, user, sts, course_items):
          pass
 
       try:
-         await client.send_message(user, full_text, disable_web_page_preview=True)
+         await client.send_message(user, full_text, disable_web_page_preview=True, reply_markup=idx_markup)
       except Exception:
          pass
+
+   # Auto Export Document (.txt)
+   if user_configs.get('course_export_txt', True) and course_items:
+      try:
+         safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', from_title)[:25] or "Course"
+         txt_content = (
+            "====================================================\n"
+            "📚 COURSE LECTURES INDEX & SYLLABUS\n"
+            f"🎯 Source: {from_title}\n"
+            f"📦 Total Forwarded Lectures: {len(course_items)}\n"
+            f"📅 Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            "⚡ Generated by Skinet Verse (Course Seller Mode)\n"
+            "====================================================\n\n"
+         )
+         for it in course_items:
+            num_str = f"{it['num']:02d}"
+            title = it['title']
+            msg_id = it.get('msg_id')
+            if msg_id:
+               link = f"https://t.me/{chan_ref}/{msg_id}" if is_public else f"https://t.me/c/{clean_chat}/{msg_id}"
+               txt_content += f"[{num_str}] {title}\n     Link: {link}\n\n"
+            else:
+               txt_content += f"[{num_str}] {title}\n\n"
+
+         txt_content += "====================================================\n"
+         if missing_lecs:
+            txt_content += f"⚠️ Missing Lectures Detected: {', '.join(f'[{x:02d}]' for x in missing_lecs)}\n"
+         else:
+            txt_content += "🎉 Course Completeness: 100% (No gaps detected!)\n"
+         txt_content += "====================================================\n"
+
+         doc_file = f"/tmp/{safe_name}_Syllabus_Index.txt"
+         with open(doc_file, "w", encoding="utf-8") as f_out:
+            f_out.write(txt_content)
+
+         await client.send_document(
+            chat_id=user,
+            document=doc_file,
+            caption=f"📄 <b><u>ᴄᴏᴜʀsᴇ sʏʟʟᴀʙᴜs ᴅᴏᴄᴜᴍᴇɴᴛ</u></b>\n\n"
+                    f"📦 <b>ᴛᴏᴛᴀʟ ʟᴇᴄᴛᴜʀᴇs:</b> <code>{len(course_items)}</code>\n"
+                    f"🎯 <b>sᴏᴜʀᴄᴇ:</b> <code>{from_title}</code>\n\n"
+                    f"⚡ <i>ʏᴏᴜ ᴄᴀɴ sʜᴀʀᴇ ᴛʜɪs ᴄʟᴇᴀɴ ɪɴᴅᴇx ғɪʟᴇ ᴡɪᴛʜ ʏᴏᴜʀ sᴛᴜᴅᴇɴᴛs!</i>"
+         )
+         if os.path.exists(doc_file):
+            os.remove(doc_file)
+      except Exception as exp_err:
+         logger.warning(f"Failed to export course syllabus document: {exp_err}")
 
 
 async def forward(bot, msg, m, sts, protect, dump_target=None):
@@ -681,8 +809,19 @@ def clean_caption_advanced(text: str, user_configs: dict = None, lecture_index: 
 
   # 7. Lecture numbering prefix
   if auto_num and lecture_index is not None:
-    prefix = f"<b>[{lecture_index:02d}]</b> "
-    if not text.startswith("[") and not text.startswith("<b>["):
+    num_style = user_configs.get('course_number_style', 'bracket')
+    if num_style == 'lecture':
+      prefix = f"<b>Lecture {lecture_index:02d} -</b> "
+    elif num_style == 'part':
+      prefix = f"<b>Part {lecture_index:02d}:</b> "
+    elif num_style == 'lec':
+      prefix = f"<b>Lec {lecture_index:02d} |</b> "
+    elif num_style == 'dot':
+      prefix = f"<b>{lecture_index:02d}.</b> "
+    else:
+      prefix = f"<b>[{lecture_index:02d}]</b> "
+
+    if not any(text.startswith(p) for p in ("[", "<b>[", "<b>Lecture", "<b>Part", "<b>Lec")):
       text = prefix + (text if text else (file_name or f"Lecture {lecture_index:02d}"))
 
   return text

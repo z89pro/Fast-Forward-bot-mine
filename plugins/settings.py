@@ -715,6 +715,86 @@ async def settings_query(bot, query):
      await query.answer(f"Hidden Link Sanitizer: {'ON' if not curr else 'OFF'}")
      await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
 
+  elif type == "cs_cycle_style":
+     configs = await get_configs(user_id)
+     styles = ['bracket', 'lecture', 'part', 'lec', 'dot']
+     cur = configs.get('course_number_style', 'bracket')
+     nxt = styles[(styles.index(cur) + 1) % len(styles)] if cur in styles else 'bracket'
+     configs['course_number_style'] = nxt
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Style: {nxt}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_missing":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('course_detect_missing', True))
+     configs['course_detect_missing'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Gap Check: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_toggle_export":
+     configs = await get_configs(user_id)
+     curr = bool(configs.get('course_export_txt', True))
+     configs['course_export_txt'] = not curr
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Auto TXT Export: {'ON' if not curr else 'OFF'}")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_set_offset":
+     try:
+        ask = await query.message.chat.ask(
+           "🔢 <b><u>sᴇᴛ sᴛᴀʀᴛɪɴɢ ʟᴇᴄᴛᴜʀᴇ ɴᴜᴍʙᴇʀ</u></b>\n\n"
+           "Send the starting number (e.g. <code>1</code> or <code>15</code> or <code>101</code>).\n"
+           "Send /cancel to abort.",
+           filters=filters.text,
+           timeout=60
+        )
+        if ask.text and not ask.text.startswith('/'):
+           try:
+              val = max(1, int(ask.text.strip()))
+              configs = await get_configs(user_id)
+              configs['course_start_offset'] = val
+              await db.update_configs(user_id, configs)
+              await ask.reply_text(f"✅ Starting lecture index set to: <b>{val}</b>", quote=True)
+           except ValueError:
+              await ask.reply_text("❌ Invalid integer! Please send a valid number.", quote=True)
+     except Exception:
+        pass
+     configs = await get_configs(user_id)
+     await query.message.reply_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_set_btn":
+     try:
+        ask = await query.message.chat.ask(
+           "🔘 <b><u>sᴇᴛ sᴛɪᴄᴋʏ ᴄᴏᴜʀsᴇ ʙᴜᴛᴛᴏɴ</u></b>\n\n"
+           "Send your button text and URL separated by <code>|</code>:\n"
+           "Example: <code>💬 Ask Doubts | https://t.me/MySupportBot</code>\n\n"
+           "Send /cancel to abort.",
+           filters=filters.text,
+           timeout=60
+        )
+        if ask.text and not ask.text.startswith('/'):
+           raw = ask.text.strip()
+           if '|' in raw or ' - ' in raw:
+              configs = await get_configs(user_id)
+              configs['course_sticky_button'] = raw
+              await db.update_configs(user_id, configs)
+              await ask.reply_text("✅ Sticky Course Button saved!", quote=True)
+           else:
+              await ask.reply_text("❌ Invalid format! Please use: <code>Text | URL</code>", quote=True)
+     except Exception:
+        pass
+     configs = await get_configs(user_id)
+     await query.message.reply_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
+  elif type == "cs_clear_btn":
+     configs = await get_configs(user_id)
+     configs['course_sticky_button'] = None
+     await db.update_configs(user_id, configs)
+     await query.answer("Sticky Course Button cleared.")
+     await query.message.edit_text(course_seller_text(configs), reply_markup=course_seller_buttons(configs))
+
   elif type == "ftm":
      configs = await get_configs(user_id)
      await query.message.edit_text(
@@ -812,28 +892,57 @@ def course_seller_text(cfg):
     mode_status = "🟢 ᴀᴄᴛɪᴠᴇ" if cfg.get('course_seller_mode') else "🔴 ᴅɪsᴀʙʟᴇᴅ"
     list_status = "✅ ᴏɴ" if cfg.get('auto_course_list') else "❌ ᴏғғ"
     num_status = "✅ ᴏɴ" if cfg.get('auto_numbering') else "❌ ᴏғғ"
+    style_names = {
+        'bracket': '[01]',
+        'lecture': 'Lecture 01 -',
+        'part': 'Part 01:',
+        'lec': 'Lec 01 |',
+        'dot': '01.'
+    }
+    cur_style = style_names.get(cfg.get('course_number_style', 'bracket'), '[01]')
+    offset_val = int(cfg.get('course_start_offset', 1) or 1)
+    gap_status = "✅ ᴏɴ" if cfg.get('course_detect_missing', True) else "❌ ᴏғғ"
+    export_status = "✅ ᴏɴ" if cfg.get('course_export_txt', True) else "❌ ᴏғғ"
+    sticky_btn = cfg.get('course_sticky_button') or "None"
     user_rem = "✅ ᴏɴ" if cfg.get('username_remover') else "❌ ᴏғғ"
     link_rem = "✅ ᴏɴ" if cfg.get('link_remover') else "❌ ᴏғғ"
     hid_rem = "✅ ᴏɴ" if cfg.get('hidden_link_remover') else "❌ ᴏғғ"
     
     return (
-        "<blockquote><b>🎓 <u>ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ ⚡️</u></b></blockquote>\n\n"
+        "<blockquote><b>🎓 <u>ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ & ᴅɪsᴛʀɪʙᴜᴛᴏʀ sᴜɪᴛᴇ ⚡️</u></b></blockquote>\n\n"
         "<b>Power tools engineered specifically for Course Sellers & Content Distributors:</b>\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"⚡️ <b>Master Seller Mode:</b> <code>{mode_status}</code>\n"
         f"📚 <b>Auto Course List Maker:</b> <code>{list_status}</code>\n"
         f"🔢 <b>Auto Lecture Numbering:</b> <code>{num_status}</code>\n"
+        f"🎨 <b>Numbering Style:</b> <code>{cur_style}</code>\n"
+        f"🎯 <b>Start Index Offset:</b> <code>{offset_val}</code>\n"
+        f"🔍 <b>Missing Lecture Gap Check:</b> <code>{gap_status}</code>\n"
+        f"📄 <b>Auto Syllabus TXT Export:</b> <code>{export_status}</code>\n"
+        f"🔘 <b>Sticky Course Button:</b> <code>{sticky_btn}</code>\n"
         f"👤 <b>Competitor Username Remover:</b> <code>{user_rem}</code>\n"
         f"🔗 <b>Link Remover & Replacer:</b> <code>{link_rem}</code>\n"
         f"🔍 <b>Hidden Link Sanitizer:</b> <code>{hid_rem}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>When enabled, the bot automatically removes competitor ads, numbers your lectures, and creates a clean clickable syllabus table of contents!</i>"
+        "💡 <i>Commands: /setlecstart &lt;num&gt; | /setcoursebutton &lt;text | url&gt;</i>"
     )
 
 def course_seller_buttons(cfg):
     mode_btn = "🛑 ᴅɪsᴀʙʟᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ" if cfg.get('course_seller_mode') else "⚡ ᴇɴᴀʙʟᴇ sᴇʟʟᴇʀ ᴍᴏᴅᴇ"
     list_mark = "✅" if cfg.get('auto_course_list') else "❌"
     num_mark = "✅" if cfg.get('auto_numbering') else "❌"
+    style_names = {
+        'bracket': '[01]',
+        'lecture': 'Lecture 01',
+        'part': 'Part 01',
+        'lec': 'Lec 01',
+        'dot': '01.'
+    }
+    cur_style = style_names.get(cfg.get('course_number_style', 'bracket'), '[01]')
+    offset_val = int(cfg.get('course_start_offset', 1) or 1)
+    gap_mark = "✅" if cfg.get('course_detect_missing', True) else "❌"
+    exp_mark = "✅" if cfg.get('course_export_txt', True) else "❌"
+    has_btn = "✏️ ᴇᴅɪᴛ" if cfg.get('course_sticky_button') else "➕ sᴇᴛ"
     user_mark = "✅" if cfg.get('username_remover') else "❌"
     link_mark = "✅" if cfg.get('link_remover') else "❌"
     hid_mark = "✅" if cfg.get('hidden_link_remover') else "❌"
@@ -841,18 +950,30 @@ def course_seller_buttons(cfg):
     buttons = [
         [InlineKeyboardButton(mode_btn, callback_data="settings#cs_toggle_mode")],
         [
-            InlineKeyboardButton(f"📚 ᴄᴏᴜʀsᴇ ʟɪsᴛ ᴍᴀᴋᴇʀ {list_mark}", callback_data="settings#cs_toggle_list"),
-            InlineKeyboardButton(f"🔢 ᴀᴜᴛᴏ ɴᴜᴍʙᴇʀɪɴɢ {num_mark}", callback_data="settings#cs_toggle_num")
+            InlineKeyboardButton(f"📚 ᴄᴏᴜʀsᴇ ʟɪsᴛ {list_mark}", callback_data="settings#cs_toggle_list"),
+            InlineKeyboardButton(f"🔢 ɴᴜᴍʙᴇʀɪɴɢ {num_mark}", callback_data="settings#cs_toggle_num")
         ],
         [
-            InlineKeyboardButton(f"👤 ᴜsᴇʀɴᴀᴍᴇ ʀᴇᴍᴏᴠᴇʀ {user_mark}", callback_data="settings#cs_toggle_user"),
-            InlineKeyboardButton(f"🔗 ʟɪɴᴋ ʀᴇᴍᴏᴠᴇʀ {link_mark}", callback_data="settings#cs_toggle_link")
+            InlineKeyboardButton(f"🎨 sᴛʏʟᴇ: {cur_style}", callback_data="settings#cs_cycle_style"),
+            InlineKeyboardButton(f"🎯 sᴛᴀʀᴛ: {offset_val}", callback_data="settings#cs_set_offset")
         ],
         [
-            InlineKeyboardButton(f"🔍 ʜɪᴅᴅᴇɴ ʟɪɴᴋs {hid_mark}", callback_data="settings#cs_toggle_hidden"),
-            InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm")
+            InlineKeyboardButton(f"🔍 ɢᴀᴘ ᴄʜᴇᴄᴋ {gap_mark}", callback_data="settings#cs_toggle_missing"),
+            InlineKeyboardButton(f"📄 ᴛxᴛ ᴇxᴘᴏʀᴛ {exp_mark}", callback_data="settings#cs_toggle_export")
         ],
-        [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
+        [
+            InlineKeyboardButton(f"🔘 sᴛɪᴄᴋʏ ʙᴜᴛᴛᴏɴ ({has_btn})", callback_data="settings#cs_set_btn"),
+            InlineKeyboardButton("🗑 ᴄʟᴇᴀʀ ʙᴛɴ", callback_data="settings#cs_clear_btn")
+        ],
+        [
+            InlineKeyboardButton(f"👤 ᴜsᴇʀɴᴀᴍᴇ {user_mark}", callback_data="settings#cs_toggle_user"),
+            InlineKeyboardButton(f"🔗 ʟɪɴᴋs {link_mark}", callback_data="settings#cs_toggle_link"),
+            InlineKeyboardButton(f"🔍 ʜɪᴅᴅᴇɴ {hid_mark}", callback_data="settings#cs_toggle_hidden")
+        ],
+        [
+            InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm"),
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")
+        ]
     ]
     return InlineKeyboardMarkup(buttons)
 

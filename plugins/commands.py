@@ -431,6 +431,53 @@ async def verify_menu_callback(bot, query):
         await send_verify_prompt(bot, query.message, user_id)
 
 
+#===================Course Seller Fast Commands===================#
+
+@Client.on_message(filters.command(['setlecstart', 'lecstart']))
+async def setlecstart_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if len(message.command) < 2:
+        return await message.reply_text(
+            "🔢 <b><u>sᴇᴛ sᴛᴀʀᴛɪɴɢ ʟᴇᴄᴛᴜʀᴇ ɴᴜᴍʙᴇʀ</u></b>\n\n"
+            "<b>Usage:</b> <code>/setlecstart &lt;number&gt;</code>\n"
+            "<b>Example:</b> <code>/setlecstart 15</code> (Starts numbering from Lecture [15])",
+            quote=True
+        )
+    try:
+        val = max(1, int(message.command[1]))
+        configs = await db.get_configs(user_id)
+        configs['course_start_offset'] = val
+        await db.update_configs(user_id, configs)
+        await message.reply_text(f"✅ Starting lecture index set to: <b>{val}</b>", quote=True)
+    except ValueError:
+        await message.reply_text("❌ Please provide a valid integer (e.g. <code>/setlecstart 1</code>).", quote=True)
+
+@Client.on_message(filters.command(['setcoursebutton', 'coursebutton']))
+async def setcoursebutton_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if len(message.command) < 2:
+        return await message.reply_text(
+            "🔘 <b><u>sᴇᴛ sᴛɪᴄᴋʏ ᴄᴏᴜʀsᴇ ʙᴜᴛᴛᴏɴ</u></b>\n\n"
+            "<b>Usage:</b> <code>/setcoursebutton &lt;Button Text | URL&gt;</code>\n"
+            "<b>Example:</b> <code>/setcoursebutton 💬 Ask Doubts | https://t.me/MyHelpdesk</code>\n\n"
+            "<i>To remove the button, send: <code>/setcoursebutton none</code></i>",
+            quote=True
+        )
+    raw_arg = message.text.split(None, 1)[1].strip()
+    configs = await db.get_configs(user_id)
+    if raw_arg.lower() in ('none', 'off', 'clear', 'delete', 'remove'):
+        configs['course_sticky_button'] = None
+        await db.update_configs(user_id, configs)
+        return await message.reply_text("✅ Sticky Course Button cleared!", quote=True)
+
+    if '|' in raw_arg or ' - ' in raw_arg:
+        configs['course_sticky_button'] = raw_arg
+        await db.update_configs(user_id, configs)
+        await message.reply_text(f"✅ Sticky Course Button saved:\n<code>{raw_arg}</code>", quote=True)
+    else:
+        await message.reply_text("❌ Invalid format! Please use: <code>Text | URL</code>", quote=True)
+
+
 #===================Non-Command & Unknown Message Handler===================#
 
 KNOWN_COMMANDS = {
@@ -440,7 +487,8 @@ KNOWN_COMMANDS = {
     "premium", "buy", "vip", "myplan", "plan", "addpremium", "addvip", "delpremium",
     "delvip", "vipadmin", "premiumadmin", "referral", "refer", "earn", "topref", "leaderboard", "refadmin",
     "stop", "pause", "resume", "reset", "resetall", "tutorial", "guide", "skinet",
-    "modifier", "ftm", "courseseller", "seller", "course", "courses", "unequify", "userstats", "track",
+    "modifier", "ftm", "courseseller", "seller", "course", "courses", "setlecstart", "lecstart",
+    "setcoursebutton", "coursebutton", "exportindex", "unequify", "userstats", "track",
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
     "deladmin", "admins", "cancel", "yes", "no"
 }
