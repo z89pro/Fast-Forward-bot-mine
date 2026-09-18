@@ -58,6 +58,14 @@ main_buttons = get_main_buttons()
 @Client.on_message(filters.private & filters.command(['start']))
 async def start(client, message):
     user = message.from_user
+    is_banned, ban_reason = await db.is_user_banned(user.id)
+    if is_banned:
+        return await message.reply_text(
+            f"<blockquote><b>🚫 <u>ᴀᴄᴄᴏᴜɴᴛ sᴜsᴘᴇɴᴅᴇᴅ</u></b></blockquote>\n\n"
+            f"ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴛʜɪs ʙᴏᴛ.\n"
+            f"<b>ʀᴇᴀsᴏɴ:</b> {ban_reason}\n\n"
+            f"<i>ɪғ ʏᴏᴜ ʙᴇʟɪᴇᴠᴇ ᴛʜɪs ɪs ᴀɴ ᴇʀʀᴏʀ, ᴄᴏɴᴛᴀᴄᴛ ᴛʜᴇ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀ.</i>"
+        )
 
     # Verification token deep-link: /start vrf_{token} or /start verify_{token}
     if len(message.command) > 1 and (message.command[1].startswith("verify_") or message.command[1].startswith("vrf_")):
@@ -983,12 +991,23 @@ KNOWN_COMMANDS = {
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
     "deladmin", "admins", "cancel", "yes", "no", "setbanner", "setheader", "delbanner",
     "clearbanner", "delheader", "setfooter", "setbrandfooter", "delfooter", "clearfooter",
-    "viewbranding", "branding", "status", "stats", "addbot", "connectbot", "auditlog"
+    "viewbranding", "branding", "status", "stats", "addbot", "connectbot", "auditlog",
+    "tasks", "alltasks", "canceltask", "ban", "unban", "banned", "blacklist",
+    "addblacklist", "delblacklist", "blacklistadd", "blacklistdel", "rmblacklist"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)
 async def non_command_handler(client: Client, message: Message):
     user_id = message.from_user.id if message.from_user else message.chat.id
+
+    # Check if user is banned
+    is_banned, ban_reason = await db.is_user_banned(user_id)
+    if is_banned:
+        return await message.reply_text(
+            f"<blockquote><b>🚫 <u>ᴀᴄᴄᴏᴜɴᴛ sᴜsᴘᴇɴᴅᴇᴅ</u></b></blockquote>\n\n"
+            f"ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴛʜɪs ʙᴏᴛ.\n"
+            f"<b>ʀᴇᴀsᴏɴ:</b> {ban_reason}"
+        )
 
     # 1. Skip if there is an active listener (like bot.ask) for this chat/user
     try:
@@ -1074,28 +1093,8 @@ async def non_command_handler(client: Client, message: Message):
                 quote=True
             )
 
-    # 6. Friendly non-command response
-    user_name = message.from_user.first_name if message.from_user else "Friend"
-    reply_markup = get_main_buttons(user_id)
-
-    await message.reply_text(
-        text=(
-            f"<blockquote><b>👋 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴀssɪsᴛᴀɴᴛ</u></b></blockquote>\n\n"
-            f"👋 <b>ʜᴇʟʟᴏ, {user_name}!</b>\n\n"
-            f"ɪ ᴀᴍ <b>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ ғᴏʀᴡᴀʀᴅ ʙᴏᴛ</b>, ʏᴏᴜʀ ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ᴍᴇᴅɪᴀ ᴍɪɢʀᴀᴛɪᴏɴ ᴀɴᴅ ᴄʜᴀɴɴᴇʟ ᴄʟᴏɴɪɴɢ ᴇɴɢɪɴᴇ.\n\n"
-            f"💡 <b>ǫᴜɪᴄᴋ sᴛᴀʀᴛ:</b>\n"
-            f"• <code>/start</code> — ᴏᴘᴇɴ ᴍᴀɪɴ ᴅᴀsʜʙᴏᴀʀᴅ\n"
-            f"• <code>/forward</code> — ʟᴀᴜɴᴄʜ ғᴏʀᴡᴀʀᴅɪɴɢ ᴡɪᴢᴀʀᴅ\n"
-            f"• <code>/autosave</code> — 24/7 ᴄʜᴀɴɴᴇʟ ᴍᴏɴɪᴛᴏʀ\n"
-            f"• <code>/id</code> — ᴠɪᴇᴡ ʏᴏᴜʀ ɪᴅ ᴏʀ ᴄʜᴀɴɴᴇʟ ɪᴅ\n"
-            f"• <code>/help</code> — ᴠɪᴇᴡ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs\n"
-            f"• <code>/settings</code> — ᴄᴏɴғɪɢᴜʀᴇ ʙᴏᴛs & ᴄʜᴀɴɴᴇʟs\n\n"
-            f"👉 <i>ғᴏʀᴡᴀʀᴅ ᴀɴʏ ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴀ ᴄʜᴀɴɴᴇʟ ʜᴇʀᴇ ᴛᴏ ɪɴsᴛᴀɴᴛʟʏ ᴇxᴛʀᴀᴄᴛ ɪᴛs ɪᴅ!</i>\n\n"
-            f"👇 <i>ᴄʜᴏᴏsᴇ ᴀɴ ᴏᴘᴛɪᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ:</i>"
-        ),
-        reply_markup=reply_markup,
-        quote=True
-    )
+    # 6. Ignore other plain messages silently (prevents menu popups on random numbers/text)
+    return
 
 
 #===================Forward Card Interactive Callbacks===================#

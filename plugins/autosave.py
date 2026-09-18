@@ -58,6 +58,14 @@ async def build_autosave_text(user_id: int):
 @Client.on_message(filters.private & filters.command(["autosave", "live", "monitor"]))
 async def autosave_cmd(bot, message):
     user_id = message.from_user.id
+    is_banned, ban_reason = await db.is_user_banned(user_id)
+    if is_banned:
+        return await message.reply_text(
+            f"<blockquote><b>🚫 <u>ᴀᴄᴄᴏᴜɴᴛ sᴜsᴘᴇɴᴅᴇᴅ</u></b></blockquote>\n\n"
+            f"ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴛʜɪs ʙᴏᴛ.\n"
+            f"<b>ʀᴇᴀsᴏɴ:</b> {ban_reason}",
+            quote=True
+        )
     text, is_running, count = await build_autosave_text(user_id)
     await message.reply_text(text, reply_markup=get_autosave_markup(is_running, count), quote=True)
 
@@ -66,6 +74,9 @@ async def autosave_cmd(bot, message):
 @Client.on_callback_query(filters.regex(r"^autosave"))
 async def autosave_callback(bot, query: CallbackQuery):
     user_id = query.from_user.id
+    is_banned, ban_reason = await db.is_user_banned(user_id)
+    if is_banned:
+        return await query.answer(f"🚫 Account Banned: {ban_reason}", show_alert=True)
     data = query.data.split("#")[1] if "#" in query.data else "main"
 
     if data == "main":

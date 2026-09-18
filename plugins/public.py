@@ -71,6 +71,15 @@ async def prompt_add_channel(bot, message, user_id):
 async def run(bot, message):
     buttons = []
     user_id = message.from_user.id
+    is_banned, ban_reason = await db.is_user_banned(user_id)
+    if is_banned:
+        return await message.reply_text(
+            f"<blockquote><b>🚫 <u>ᴀᴄᴄᴏᴜɴᴛ sᴜsᴘᴇɴᴅᴇᴅ</u></b></blockquote>\n\n"
+            f"ʏᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴛʜɪs ʙᴏᴛ.\n"
+            f"<b>ʀᴇᴀsᴏɴ:</b> {ban_reason}",
+            quote=True
+        )
+
     if temp.lock.get(user_id):
         return await message.reply_text("⏳ <b>ᴀ ᴛᴀsᴋ ɪs ᴀʟʀᴇᴀᴅʏ ɪɴ ᴘʀᴏɢʀᴇss. ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ ᴜɴᴛɪʟ ɪᴛ ᴄᴏᴍᴘʟᴇᴛᴇs ᴏʀ ᴜsᴇ /stop.</b>", quote=True)
     from plugins.verify import is_user_verified, send_verify_prompt
@@ -95,6 +104,17 @@ async def run(bot, message):
             if parsed_chat and parsed_ranges:
                 toid = channels[0]['chat_id']
                 to_title = channels[0]['title']
+
+                is_bl_from, pat_from = await db.check_blacklisted(channel=parsed_chat)
+                is_bl_to, pat_to = await db.check_blacklisted(channel=toid)
+                if is_bl_from or is_bl_to:
+                    matched = pat_from if is_bl_from else pat_to
+                    return await message.reply_text(
+                        f"<blockquote><b>⛔ <u>ᴄᴏɴᴛᴇɴᴛ ᴠɪᴏʟᴀᴛɪᴏɴ</u></b></blockquote>\n\n"
+                        f"ᴛʜɪs ᴄʜᴀɴɴᴇʟ ɪs ʙʟᴏᴄᴋʟɪsᴛᴇᴅ ʙʏ ʙᴏᴛ ᴍᴏᴅᴇʀᴀᴛɪᴏɴ (<code>{matched}</code>).",
+                        quote=True
+                    )
+
                 try:
                     title = (await bot.get_chat(parsed_chat)).title
                 except Exception:

@@ -12,8 +12,23 @@ logger = logging.getLogger("SkinetUserTrack")
 
 PAGE_SIZE = 8
 
+async def is_authorized(user_id: int) -> bool:
+    if not user_id:
+        return False
+    try:
+        owners = [int(x) for x in Config.BOT_OWNER_ID if str(x).isdigit()]
+        if int(user_id) in owners:
+            return True
+    except Exception:
+        pass
+    return await db.is_admin(user_id)
+
 def is_owner(user_id: int) -> bool:
-    return bool(user_id and user_id in Config.BOT_OWNER_ID)
+    try:
+        owners = [int(x) for x in Config.BOT_OWNER_ID if str(x).isdigit()]
+        return int(user_id) in owners
+    except Exception:
+        return False
 
 _HTML_TAG = re.compile(r'<[^>]*>?')
 _HTML_ENTITY = re.compile(r'&[a-zA-Z0-9#]+;')
@@ -158,6 +173,12 @@ async def build_user_profile(user_id: int):
         vip_status = "🥉 <b>ᴠɪᴘ sᴛᴀᴛᴜs:</b> <code>ғʀᴇᴇ ᴍᴇᴍʙᴇʀ</code>"
         vip_btn_text = "💎 ɢʀᴀɴᴛ ᴠɪᴘ"
 
+    is_banned, ban_reason = await db.is_user_banned(user_id)
+    ban_display = f"🔴 <b>ʙᴀɴɴᴇᴅ</b> (<i>{ban_reason}</i>)" if is_banned else "🟢 <b>ᴄʟᴇᴀɴ / ᴀᴄᴛɪᴠᴇ</b>"
+    
+    active_task = await db.get_user_active_task(user_id)
+    task_display = f"⚡️ <b>ʀᴜɴɴɪɴɢ</b> (<code>{active_task.get('task_id')}</code>)" if active_task else "💤 <b>ɪᴅʟᴇ</b>"
+
     text = (
         f"<blockquote><b>👤 <u>ᴜsᴇʀ ᴘʀᴏғɪʟᴇ: {name}{owner_badge}</u></b></blockquote>\n\n"
         f"🆔 <b>ᴛᴇʟᴇɢʀᴀᴍ ID:</b> <code>{user_id}</code>\n"
@@ -171,22 +192,33 @@ async def build_user_profile(user_id: int):
         f"🤖 <b>ʙᴏᴛ ᴇɴɢɪɴᴇ:</b> <code>{bot_status} ({bot_type})</code>\n"
         f"🏷 <b>ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs:</b> <code>{len(channels)}</code>\n"
         f"{vip_status}\n"
+        f"🛡️ <b>ᴀᴄᴄᴏᴜɴᴛ sᴛᴀᴛᴜs:</b> {ban_display}\n"
+        f"🔄 <b>ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋ:</b> {task_display}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🔗 <b>ʀᴇғᴇʀʀᴇᴅ ʙʏ:</b> <code>{referred_by}</code>\n"
         f"👥 <b>ɪɴᴠɪᴛᴇᴅ ғʀɪᴇɴᴅs:</b> <code>{ref_count}</code>\n"
         f"💎 <b>ʀᴇғᴇʀʀᴀʟ ᴘᴏɪɴᴛs:</b> <code>{ref_points} ᴘᴛs</code>"
     )
 
-    buttons = InlineKeyboardMarkup([
+    action_buttons = []
+    if active_task:
+        action_buttons.append(InlineKeyboardButton("🛑 sᴛᴏᴘ ᴛᴀsᴋ", callback_data=f"mod_stop_{active_task.get('task_id')}"))
+    if is_banned:
+        action_buttons.append(InlineKeyboardButton("🔓 ᴜɴʙᴀɴ", callback_data=f"mod_unban_{user_id}"))
+    else:
+        action_buttons.append(InlineKeyboardButton("🚫 ʙᴀɴ", callback_data=f"mod_ban_{user_id}"))
+
+    btn_rows = [
         [
             InlineKeyboardButton("➕ ᴀᴅᴅ ᴘᴏɪɴᴛs", callback_data=f"utr_addpts_{user_id}"),
             InlineKeyboardButton(vip_btn_text, callback_data=f"utr_vip_{user_id}")
-        ],
-        [
-            InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview")
         ]
-    ])
-    return text, buttons
+    ]
+    if action_buttons:
+        btn_rows.append(action_buttons)
+    btn_rows.append([InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview")])
+
+    return text, InlineKeyboardMarkup(btn_rows)
 
 
 # ================= COMMANDS =================
@@ -194,9 +226,9 @@ async def build_user_profile(user_id: int):
 @Client.on_message(filters.private & filters.command(["userstats", "track", "admintrack"]))
 async def userstats_cmd(client: Client, message: Message):
     user_id = message.from_user.id
-    if not is_owner(user_id):
+    if not await is_authorized(user_id):
         return await message.reply_text(
-            "⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ᴛʜɪs ᴀɴᴀʟʏᴛɪᴄs ᴅᴀsʜʙᴏᴀʀᴅ ɪs sᴛʀɪᴄᴛʟʏ ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴏᴡɴᴇʀs.",
+            "⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ᴛʜɪs ᴀɴᴀʟʏᴛɪᴄs ᴅᴀsʜʙᴏᴀʀᴅ ɪs sᴛʀɪᴄᴛʟʏ ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴏᴡɴᴇʀs & ᴀᴅᴍɪɴs.",
             quote=True
         )
 
@@ -217,7 +249,7 @@ async def userstats_cmd(client: Client, message: Message):
 @Client.on_callback_query(filters.regex(r"^utr_"))
 async def utr_callbacks(client: Client, query: CallbackQuery):
     user_id = query.from_user.id
-    if not is_owner(user_id):
+    if not await is_authorized(user_id):
         return await query.answer("ᴀᴅᴍɪɴs ᴏɴʟʏ!", show_alert=True)
 
     data = query.data

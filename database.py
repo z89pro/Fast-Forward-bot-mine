@@ -30,6 +30,7 @@ class Database:
         self.broadcast_state = self.db.broadcast_state
         self.telegraph = self.db.telegraph_tokens
         self.audit_log = self.db.audit_log
+        self.blacklist = self.db.blacklist
         
     def new_user(self, id, name, referred_by=None):
         from datetime import datetime
@@ -145,6 +146,67 @@ class Database:
         users = self.col.find({'ban_status.is_banned': True})
         b_users = [user['id'] async for user in users]
         return b_users
+
+    async def get_banned_details(self):
+        cursor = self.col.find({'ban_status.is_banned': True})
+        return [doc async for doc in cursor]
+
+    async def is_user_banned(self, user_id: int) -> tuple[bool, str]:
+        """Check if a user is banned. Returns (is_banned, ban_reason)."""
+        ban = await self.get_ban_status(user_id)
+        if ban.get('is_banned'):
+            return True, ban.get('ban_reason', 'Violation of terms')
+        return False, ''
+
+    # ── Global Moderation Blacklist System ─────────────────────────
+    async def add_blacklist(self, pattern: str, item_type: str = "keyword"):
+        """Add a keyword or channel ID to the moderation blacklist."""
+        clean = pattern.strip().lower()
+        if not clean:
+            return
+        await self.blacklist.update_one(
+            {"pattern": clean},
+            {"$set": {"pattern": clean, "type": item_type}},
+            upsert=True
+        )
+
+    async def remove_blacklist(self, pattern: str):
+        """Remove a pattern from the moderation blacklist."""
+        clean = pattern.strip().lower()
+        await self.blacklist.delete_many({"pattern": clean})
+
+    async def get_blacklist(self) -> list:
+        """Return all blacklisted patterns."""
+        cursor = self.blacklist.find({})
+        return [doc async for doc in cursor]
+
+    async def check_blacklisted(self, text: str = None, channel = None) -> tuple[bool, str]:
+        """
+        Check if text (caption/title/filename) or channel matches blacklisted entries.
+        Returns (is_matched, matched_pattern).
+        """
+        bl = await self.get_blacklist()
+        if not bl:
+            return False, ""
+
+        chan_str = str(channel or "").strip().lower()
+
+        for item in bl:
+            pat = item.get("pattern", "")
+            itype = item.get("type", "keyword")
+            if not pat:
+                continue
+
+            if itype == "channel" and chan_str:
+                if pat == chan_str or pat in chan_str:
+                    return True, pat
+            elif itype == "keyword" and text:
+                if pat in text.lower():
+                    return True, pat
+            elif text and pat in text.lower():
+                return True, pat
+
+        return False, ""
 
     async def update_configs(self, id, configs):
         await self.col.update_one({'id': int(id)}, {'$set': {'configs': configs}})

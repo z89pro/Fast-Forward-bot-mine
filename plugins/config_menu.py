@@ -78,6 +78,9 @@ async def build_config_view() -> str:
     v_status = "🟢 <b>ᴇɴᴀʙʟᴇᴅ</b>" if vcfg.get('enabled') else "🔴 <b>ᴅɪsᴀʙʟᴇᴅ</b>"
     v_info = f"{vcfg.get('duration', 24)}ʜ ({vcfg.get('steps', 1)} sᴛᴇᴘ)"
     upi_val = getattr(Config, 'UPI_ID', '') or "<i>ɴᴏᴛ sᴇᴛ</i>"
+    active_tasks = await db.get_active_tasks()
+    blacklist = await db.get_blacklist()
+    banned = await db.get_banned()
     
     text = (
         "<blockquote><b>⚙️ <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ</u></b></blockquote>\n\n"
@@ -90,6 +93,9 @@ async def build_config_view() -> str:
         f"🔒 <b>ғᴏʀᴄᴇ sᴜʙ ᴇɴғᴏʀᴄᴇᴅ:</b> {fsub_status}\n"
         f"🛡️ <b>ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ:</b> {v_status} (<code>{v_info}</code>)\n"
         f"💳 <b>ᴜᴘɪ ᴘᴀʏᴍᴇɴᴛ ɪᴅ:</b> <code>{upi_val}</code>\n"
+        f"📊 <b>ʟɪᴠᴇ ᴛᴀsᴋs ʀᴜɴɴɪɴɢ:</b> <code>{len(active_tasks)}</code>\n"
+        f"🛡️ <b>ʙʟᴀᴄᴋʟɪsᴛ ʀᴜʟᴇs:</b> <code>{len(blacklist)}</code>\n"
+        f"🚫 <b>ʙᴀɴɴᴇᴅ ᴜsᴇʀs:</b> <code>{len(banned)}</code>\n"
         f"🤖 <b>ʙᴏᴛ ᴛᴏᴋᴇɴ:</b> <code>{masked_token}</code>\n"
         f"🔑 <b>ᴀᴘɪ ɪᴅ / ʜᴀsʜ:</b> <code>{Config.API_ID}</code> / <code>{masked_hash}</code>\n"
         f"⚡️ <b>ᴅᴇғᴀᴜʟᴛ sᴘᴇᴇᴅ ᴅᴇʟᴀʏ:</b> <code>{fast_delay}s</code>\n"
@@ -115,6 +121,14 @@ def build_config_buttons(vcfg=None) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(f"🛡️ ᴠᴇʀɪғʏ: {v_mark}", callback_data="config#toggle_verify"),
             InlineKeyboardButton("⚙️ ᴠᴇʀɪғʏ sᴇᴛᴛɪɴɢs", callback_data="config#verify_settings")
+        ],
+        [
+            InlineKeyboardButton("📈 ᴜsᴇʀ ᴛʀᴀᴄᴋɪɴɢ", callback_data="utr_overview"),
+            InlineKeyboardButton("🛡️ ᴛᴀsᴋ sᴜʀᴠᴇɪʟʟᴀɴᴄᴇ", callback_data="config#tasks")
+        ],
+        [
+            InlineKeyboardButton("🚫 ᴄᴏɴᴛᴇɴᴛ ʙʟᴀᴄᴋʟɪsᴛ", callback_data="config#blacklist"),
+            InlineKeyboardButton("🔨 ʙᴀɴɴᴇᴅ ᴜsᴇʀs", callback_data="config#banned")
         ],
         [
             InlineKeyboardButton("👑 ᴍᴀɴᴀɢᴇ ᴀᴅᴍɪɴs", callback_data="config#manage_admins"),
@@ -675,6 +689,93 @@ async def config_callback(bot: Client, query: CallbackQuery):
             user_id,
             f"✅ <b>ᴀᴘɪ ᴄʀᴇᴅᴇɴᴛɪᴀʟs ᴜᴘᴅᴀᴛᴇᴅ!</b>\nᴀᴘɪ ɪᴅ: <code>{api_id}</code>\nᴀᴘɪ ʜᴀsʜ: <code>{mask_secret(api_hash)}</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]])
+        )
+
+    elif data == "tasks":
+        tasks = await db.get_active_tasks()
+        if not tasks:
+            await query.answer("No active tasks found.")
+            return await query.message.edit_text(
+                "<blockquote><b>🛡️ <u>ᴛᴀsᴋ sᴜʀᴠᴇɪʟʟᴀɴᴄᴇ ᴄᴇɴᴛᴇʀ</u></b></blockquote>\n\n"
+                "✨ <b>ɴᴏ ᴀᴄᴛɪᴠᴇ ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋs ʀᴜɴɴɪɴɢ ᴄᴜʀʀᴇɴᴛʟʏ.</b>\n"
+                "<i>ᴀʟʟ ᴡᴏʀᴋᴇʀs ᴀʀᴇ ɪᴅʟᴇ ᴀɴᴅ sʏsᴛᴇᴍ ɪs ᴄʟᴇᴀɴ.</i>",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="config#tasks")],
+                    [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]
+                ])
+            )
+        text = (
+            f"<blockquote><b>🛡️ <u>ᴀᴄᴛɪᴠᴇ ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋs ({len(tasks)})</u></b></blockquote>\n"
+            f"<i>ᴍᴏɴɪᴛᴏʀɪɴɢ ᴀʟʟ ʟɪᴠᴇ ᴜsᴇʀ ᴊᴏʙs:</i>\n\n"
+        )
+        rows = []
+        for idx, t in enumerate(tasks[:8], start=1):
+            tid = t.get("task_id", "unknown")
+            uid = t.get("user_id", "unknown")
+            src = t.get("from_chat", "N/A")
+            dst = t.get("to_chat", "N/A")
+            fetched = t.get("fetched", 0)
+            tot = t.get("limit", 0)
+            flt = t.get("filtered", 0)
+            text += (
+                f"<b>{idx}. ᴛᴀsᴋ:</b> <code>{tid}</code>\n"
+                f"👤 <b>ᴜsᴇʀ:</b> <code>{uid}</code>\n"
+                f"📡 <b>sᴏᴜʀᴄᴇ:</b> <code>{src}</code> ➜ 🎯 <b>ᴛᴀʀɢᴇᴛ:</b> <code>{dst}</code>\n"
+                f"📊 <b>ᴘʀᴏɢʀᴇss:</b> <code>{fetched}/{tot}</code> (🚫: {flt})\n"
+                "────────────────────────────\n"
+            )
+            rows.append([
+                InlineKeyboardButton(f"🛑 sᴛᴏᴘ #{idx}", callback_data=f"mod_stop_{tid}"),
+                InlineKeyboardButton(f"🚫 ʙᴀɴ ᴜsᴇʀ", callback_data=f"mod_ban_{uid}")
+            ])
+        rows.append([
+            InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="config#tasks"),
+            InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")
+        ])
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(rows), disable_web_page_preview=True)
+
+    elif data == "blacklist":
+        bl = await db.get_blacklist()
+        if not bl:
+            text = (
+                "<blockquote><b>🛡️ <u>ᴄᴏɴᴛᴇɴᴛ ᴍᴏᴅᴇʀᴀᴛɪᴏɴ ʙʟᴀᴄᴋʟɪsᴛ</u></b></blockquote>\n\n"
+                "✨ <b>ᴛʜᴇ ʙʟᴀᴄᴋʟɪsᴛ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴇᴍᴘᴛʏ.</b>\n\n"
+                "👉 <b>ᴜsᴇ:</b> <code>/addblacklist &lt;pattern&gt;</code> ᴛᴏ ʙʟᴏᴄᴋ ɪʟʟᴇɢᴀʟ/ɴsғᴡ ᴄᴏɴᴛᴇɴᴛ."
+            )
+        else:
+            text = f"<blockquote><b>🛡️ <u>ᴄᴏɴᴛᴇɴᴛ ᴍᴏᴅᴇʀᴀᴛɪᴏɴ ʙʟᴀᴄᴋʟɪsᴛ ({len(bl)})</u></b></blockquote>\n\n"
+            for b in bl[:12]:
+                text += f"• <code>{b.get('pattern')}</code> (<i>{b.get('type', 'keyword')}</i>)\n"
+            text += "\n👉 <i>ᴜsᴇ <code>/addblacklist</code> ᴏʀ <code>/delblacklist</code> ᴛᴏ ᴍᴀɴᴀɢᴇ.</i>"
+
+        await query.message.edit_text(
+            text,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]
+            ])
+        )
+
+    elif data == "banned":
+        banned_docs = await db.get_banned_details()
+        if not banned_docs:
+            text = (
+                "<blockquote><b>🚫 <u>ʙᴀɴɴᴇᴅ ᴜsᴇʀs</u></b></blockquote>\n\n"
+                "✨ <b>ɴᴏ ᴜsᴇʀs ᴀʀᴇ ᴄᴜʀʀᴇɴᴛʟʏ ʙᴀɴɴᴇᴅ.</b>"
+            )
+            rows = [[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]]
+        else:
+            text = f"<blockquote><b>🚫 <u>ʙᴀɴɴᴇᴅ ᴜsᴇʀs ({len(banned_docs)})</u></b></blockquote>\n\n"
+            rows = []
+            for b in banned_docs[:10]:
+                uid = b.get("id")
+                reason = b.get("ban_status", {}).get("ban_reason", "No reason")
+                text += f"• <code>{uid}</code>: <i>{reason}</i>\n"
+                rows.append([InlineKeyboardButton(f"🔓 ᴜɴʙᴀɴ {uid}", callback_data=f"mod_unban_{uid}")])
+            rows.append([InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")])
+
+        await query.message.edit_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(rows)
         )
 
     elif data == "restart":

@@ -226,6 +226,37 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     success_streak = 0
     course_items = []
 
+    # ── Moderation & Anti-Piracy Checks ──
+    is_banned, ban_reason = await db.is_user_banned(user)
+    if is_banned:
+        if m:
+            await edit(m, f"<blockquote><b>🚫 <u>ᴀᴄᴄᴏᴜɴᴛ sᴜsᴘᴇɴᴅᴇᴅ</u></b></blockquote>\n\nʏᴏᴜ ᴀʀᴇ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴛʜɪs ʙᴏᴛ.\n<b>ʀᴇᴀsᴏɴ:</b> {ban_reason}", "ᴄᴀɴᴄᴇʟʟᴇᴅ", sts)
+        return
+
+    is_bl_source, pat_source = await db.check_blacklisted(channel=sts.get("FROM"))
+    is_bl_target, pat_target = await db.check_blacklisted(channel=i.TO)
+    if is_bl_source or is_bl_target:
+        matched = pat_source if is_bl_source else pat_target
+        if Config.LOG_CHANNEL:
+            try:
+                await send(client, Config.LOG_CHANNEL,
+                    f"🚨 <b>#BlacklistBlockedTask</b>\n\n"
+                    f"👤 <b>User:</b> <code>{user}</code>\n"
+                    f"📡 <b>Source:</b> <code>{sts.get('FROM')}</code>\n"
+                    f"🎯 <b>Target:</b> <code>{i.TO}</code>\n"
+                    f"🚫 <b>Matched Blacklist:</b> <code>{matched}</code>"
+                )
+            except Exception:
+                pass
+        if m:
+            await edit(m, f"<blockquote><b>⛔ <u>ᴄᴏɴᴛᴇɴᴛ ᴠɪᴏʟᴀᴛɪᴏɴ</u></b></blockquote>\n\nᴛʜɪs ᴄʜᴀɴɴᴇʟ ɪs ʙʟᴏᴄᴋʟɪsᴛᴇᴅ ʙʏ ʙᴏᴛ ᴍᴏᴅᴇʀᴀᴛɪᴏɴ (<code>{matched}</code>).", "ᴄᴀɴᴄᴇʟʟᴇᴅ", sts)
+        return
+
+    try:
+        await db.touch_user(user)
+    except Exception:
+        pass
+
     # ── Save active task in MongoDB checkpoint store ──
     task_doc = {
         "task_id": str(task_id),
@@ -365,6 +396,23 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 search_blob = f"{file_name} {message.caption or ''} {message.text or ''}".lower()
                 if not any(kw in search_blob for kw in required_keywords):
                     sts.add('filtered')
+            # ── 5b. Content Moderation & Anti-Piracy / NSFW Filter ──
+            text_to_scan = f"{file_name} {message.caption or ''} {message.text or ''}".strip()
+            if text_to_scan:
+                is_bl, bl_match = await db.check_blacklisted(text=text_to_scan)
+                if is_bl:
+                    sts.add('filtered')
+                    if Config.LOG_CHANNEL:
+                        try:
+                            await send(client, Config.LOG_CHANNEL,
+                                f"🚨 <b>#ContentViolationDetected</b>\n\n"
+                                f"👤 <b>User:</b> <code>{user}</code>\n"
+                                f"📡 <b>Source:</b> <code>{sts.get('FROM')}</code>\n"
+                                f"🚫 <b>Matched Blacklist:</b> <code>{bl_match}</code>\n"
+                                f"📄 <b>Content:</b> <code>{(text_to_scan[:100])}</code>"
+                            )
+                        except Exception:
+                            pass
                     continue
 
             # ── 6. In-Memory Deduplication ──
@@ -445,6 +493,15 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     
     # Task completed normally - remove checkpoint
     await db.delete_active_task(task_id)
+
+    # ── User Tracking Telemetry ──
+    try:
+        final_forwarded = sts.get('total_files') or 0
+        if final_forwarded > 0:
+            await db.increment_user_forwards(user, final_forwarded)
+        await db.touch_user(user)
+    except Exception:
+        pass
 
     if Config.LOG_CHANNEL:
         try:
@@ -699,6 +756,10 @@ async def download_and_reupload(bot, from_chat_id, message_id, to_chat, caption=
         if method_name not in _NO_CAPTION:
             kwargs["caption"] = caption
             kwargs["reply_markup"] = button
+        orig_media = getattr(src, src.media.value, None) if src.media else None
+        orig_name = getattr(orig_media, 'file_name', None) if orig_media else None
+        if orig_name and method_name == "send_document":
+            kwargs["file_name"] = orig_name
         kwargs[file_arg] = path
         return await getattr(bot, method_name)(**kwargs)
     finally:

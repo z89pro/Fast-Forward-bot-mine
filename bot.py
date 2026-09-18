@@ -144,6 +144,10 @@ class Bot(Client):
                 BotCommand("delpremium", "ʀᴇᴠᴏᴋᴇ ᴠɪᴘ (ᴀᴅᴍɪɴ)"),
                 BotCommand("setverify", "ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴇᴛᴛɪɴɢs (ᴀᴅᴍɪɴ)"),
                 BotCommand("userstats", "ᴜsᴇʀ ᴀɴᴀʟʏᴛɪᴄs (ᴀᴅᴍɪɴ)"),
+                BotCommand("tasks", "sᴜʀᴠᴇɪʟʟᴀɴᴄᴇ: ᴀʟʟ ᴀᴄᴛɪᴠᴇ ᴛᴀsᴋs (ᴀᴅᴍɪɴ)"),
+                BotCommand("ban", "ʙᴀɴ ᴜsᴇʀ ғʀᴏᴍ ʙᴏᴛ (ᴀᴅᴍɪɴ)"),
+                BotCommand("unban", "ᴜɴʙᴀɴ ᴜsᴇʀ (ᴀᴅᴍɪɴ)"),
+                BotCommand("blacklist", "ᴠɪᴇᴡ & ᴍᴀɴᴀɢᴇ ʙʟᴀᴄᴋʟɪsᴛ (ᴀᴅᴍɪɴ)"),
                 BotCommand("config", "sʏsᴛᴇᴍ ᴄᴏɴғɪɢ (ᴏᴡɴᴇʀ)"),
                 BotCommand("admins", "ʟɪsᴛ ʙᴏᴛ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)")
             ])
@@ -225,12 +229,13 @@ class Bot(Client):
         except Exception:
             admins_to_notify = Config.BOT_OWNER_ID or []
 
-        for aid in admins_to_notify:
-            if aid != restarted_chat_id:
-                try:
-                    await self.send_message(aid, reboot_done_text, reply_markup=restart_markup)
-                except Exception:
-                    pass
+        if reboot_notice:
+            for aid in admins_to_notify:
+                if aid != restarted_chat_id:
+                    try:
+                        await self.send_message(aid, reboot_done_text, reply_markup=restart_markup)
+                    except Exception:
+                        pass
 
         # ── 4. Auto-Resume Interrupted Forwarding Tasks from Checkpoint ──
         try:
