@@ -85,34 +85,61 @@ class Bot(Client):
         logger.info(f"✅ {me.first_name} (@{me.username}) started! Layer {layer} (Pyrogram {pyrogram_version})")
 
         # Register bot commands in Telegram Menu
+        # Register all bot commands in Telegram Menu
         try:
             await self.set_bot_commands([
-                BotCommand("start", "sᴛᴀʀᴛ ʙᴏᴛ & ᴄʜᴇᴄᴋ sᴛᴀᴛᴜs"),
-                BotCommand("forward", "sᴛᴀʀᴛ ᴍᴇssᴀɢᴇ ғᴏʀᴡᴀʀᴅɪɴɢ"),
-                BotCommand("fwd", "ᴅɪʀᴇᴄᴛ ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ ʟɪɴᴋs"),
-                BotCommand("autosave", "sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ & ʟɪᴠᴇ ᴍᴏɴɪᴛᴏʀɪɴɢ"),
-                BotCommand("plans", "ᴘʀᴇᴍɪᴜᴍ ᴠɪᴘ ᴘᴀssᴇs & ᴘᴜʀᴄʜᴀsᴇ"),
-                BotCommand("myplan", "ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴠɪᴘ sᴛᴀᴛᴜs"),
-                BotCommand("vipadmin", "ᴠɪᴘ ᴀᴅᴍɪɴ ᴄᴏɴᴛʀᴏʟ ᴄᴇɴᴛᴇʀ (ᴀᴅᴍɪɴ)"),
-                BotCommand("addpremium", "ɢʀᴀɴᴛ ᴠɪᴘ ᴛᴏ ᴜsᴇʀ (ᴀᴅᴍɪɴ)"),
-                BotCommand("delpremium", "ʀᴇᴠᴏᴋᴇ ᴠɪᴘ ғʀᴏᴍ ᴜsᴇʀ (ᴀᴅᴍɪɴ)"),
-                BotCommand("referral", "ʀᴇғᴇʀ ғʀɪᴇɴᴅs & ᴇᴀʀɴ ʀᴇᴡᴀʀᴅs"),
-                BotCommand("verify", "ᴄʜᴇᴄᴋ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴏʀ ɢᴇᴛ ᴘᴀss"),
-                BotCommand("setverify", "ᴛᴏᴋᴇɴ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴇᴛᴛɪɴɢs (ᴀᴅᴍɪɴ)"),
+                # Main & Navigation
+                BotCommand("start", "sᴛᴀʀᴛ ʙᴏᴛ & ᴠɪᴇᴡ ᴍᴀɪɴ ᴄᴀʀᴅ"),
+                BotCommand("help", "ᴄᴏᴍᴘʟᴇᴛᴇ ғᴇᴀᴛᴜʀᴇ ɢᴜɪᴅᴇ & ʜᴇʟᴘ"),
+                BotCommand("commands", "ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ"),
+                BotCommand("menu", "ǫᴜɪᴄᴋ ɴᴀᴠɪɢᴀᴛɪᴏɴ ᴍᴇɴᴜ"),
+                BotCommand("settings", "ᴄᴏɴғɪɢᴜʀᴇ ᴀʟʟ ʙᴏᴛ sᴇᴛᴛɪɴɢs"),
+                BotCommand("status", "sʏsᴛᴇᴍ & ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs"),
+
+                # Forwarding Suite
+                BotCommand("forward", "sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ ᴡɪᴢᴀʀᴅ"),
+                BotCommand("fwd", "ᴍᴜʟᴛɪ-ʀᴀɴɢᴇ ʙᴀᴛᴄʜ ғᴏʀᴡᴀʀᴅ"),
+                BotCommand("autosave", "𝟸𝟺/𝟽 ʀᴇᴀʟ-ᴛɪᴍᴇ ᴀᴜᴛᴏsᴀᴠᴇ"),
                 BotCommand("pause", "ᴘᴀᴜsᴇ ᴏɴɢᴏɪɴɢ ғᴏʀᴡᴀʀᴅɪɴɢ"),
                 BotCommand("resume", "ʀᴇsᴜᴍᴇ ᴘᴀᴜsᴇᴅ ғᴏʀᴡᴀʀᴅɪɴɢ"),
                 BotCommand("stop", "ᴄᴀɴᴄᴇʟ ᴏɴɢᴏɪɴɢ ғᴏʀᴡᴀʀᴅɪɴɢ"),
-                BotCommand("settings", "ᴄᴏɴғɪɢᴜʀᴇ ʙᴏᴛ sᴇᴛᴛɪɴɢs"),
-                BotCommand("config", "ʙᴏᴛ sʏsᴛᴇᴍ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ (ᴏᴡɴᴇʀ)"),
-                BotCommand("unequify", "ʀᴇᴍᴏᴠᴇ ᴅᴜᴘʟɪᴄᴀᴛᴇs ɪɴ ᴄʜᴀɴɴᴇʟ"),
+                BotCommand("unequify", "ᴄʟᴇᴀɴ ᴅᴜᴘʟɪᴄᴀᴛᴇs ɪɴ ᴄʜᴀɴɴᴇʟ"),
                 BotCommand("reset", "ʀᴇsᴇᴛ sᴇᴛᴛɪɴɢs ᴛᴏ ᴅᴇғᴀᴜʟᴛ"),
-                BotCommand("terms", "ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ"),
-                BotCommand("privacy", "ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ"),
-                BotCommand("help", "ʜᴇʟᴘ ᴀɴᴅ ғᴇᴀᴛᴜʀᴇs ɢᴜɪᴅᴇ"),
-                BotCommand("status", "ᴄʜᴇᴄᴋ ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs"),
-                BotCommand("restart", "ʀᴇʙᴏᴏᴛ ʙᴏᴛ ᴇɴɢɪɴᴇ (ᴀᴅᴍɪɴ)")
+
+                # Course Seller & Branding Suite
+                BotCommand("courseseller", "ᴍᴀsᴛᴇʀ ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ sᴜɪᴛᴇ"),
+                BotCommand("setbanner", "sᴇᴛ ʜᴇᴀᴅᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ"),
+                BotCommand("delbanner", "ᴄʟᴇᴀʀ ʜᴇᴀᴅᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ"),
+                BotCommand("setfooter", "sᴇᴛ ғᴏᴏᴛᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ"),
+                BotCommand("delfooter", "ᴄʟᴇᴀʀ ғᴏᴏᴛᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ"),
+                BotCommand("viewbranding", "ᴘʀᴇᴠɪᴇᴡ ʙʀᴀɴᴅɪɴɢ sᴜɪᴛᴇ"),
+                BotCommand("setlecstart", "sᴇᴛ sᴛᴀʀᴛɪɴɢ ʟᴇᴄᴛᴜʀᴇ ɴᴜᴍʙᴇʀ"),
+                BotCommand("setcoursebutton", "sᴇᴛ sᴛɪᴄᴋʏ ᴄᴏᴜʀsᴇ ʙᴜᴛᴛᴏɴ"),
+
+                # Guides & Knowledge
+                BotCommand("tutorial", "𝟷𝟸-ᴍᴏᴅᴜʟᴇ ᴍᴀsᴛᴇʀ ɢᴜɪᴅᴇ"),
+                BotCommand("skinet", "ᴍᴏᴅɪғɪᴇʀ & ᴄʟᴇᴀɴᴇʀ ɢᴜɪᴅᴇ"),
+
+                # VIP Passes & Referrals
+                BotCommand("plans", "ᴠɪᴘ ᴘᴀssᴇs & ᴘᴜʀᴄʜᴀsᴇ"),
+                BotCommand("myplan", "ᴄʜᴇᴄᴋ ᴀᴄᴛɪᴠᴇ ᴠɪᴘ sᴛᴀᴛᴜs"),
+                BotCommand("referral", "ʀᴇғᴇʀ ғʀɪᴇɴᴅs & ᴇᴀʀɴ"),
+                BotCommand("topref", "ʀᴇғᴇʀʀᴀʟ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ"),
+                BotCommand("verify", "ᴄʜᴇᴄᴋ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘᴀss"),
+
+                # Admin & Maintenance
+                BotCommand("restart", "ʀᴇʙᴏᴏᴛ ʙᴏᴛ ᴇɴɢɪɴᴇ (ᴀᴅᴍɪɴ)"),
+                BotCommand("broadcast", "ʙʀᴏᴀᴅᴄᴀsᴛ ᴛᴏ ᴜsᴇʀs (ᴀᴅᴍɪɴ)"),
+                BotCommand("cancelbroadcast", "ᴄᴀɴᴄᴇʟ ʙʀᴏᴀᴅᴄᴀsᴛ (ᴀᴅᴍɪɴ)"),
+                BotCommand("vipadmin", "ᴠɪᴘ ᴀᴅᴍɪɴ ʜᴜʙ (ᴀᴅᴍɪɴ)"),
+                BotCommand("addpremium", "ɢʀᴀɴᴛ ᴠɪᴘ ᴛᴏ ᴜsᴇʀ (ᴀᴅᴍɪɴ)"),
+                BotCommand("delpremium", "ʀᴇᴠᴏᴋᴇ ᴠɪᴘ (ᴀᴅᴍɪɴ)"),
+                BotCommand("setverify", "ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴇᴛᴛɪɴɢs (ᴀᴅᴍɪɴ)"),
+                BotCommand("userstats", "ᴜsᴇʀ ᴀɴᴀʟʏᴛɪᴄs (ᴀᴅᴍɪɴ)"),
+                BotCommand("config", "sʏsᴛᴇᴍ ᴄᴏɴғɪɢ (ᴏᴡɴᴇʀ)"),
+                BotCommand("admins", "ʟɪsᴛ ʙᴏᴛ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)")
             ])
-            logger.info("✅ Telegram bot command menu registered.")
+            logger.info("✅ Telegram bot command menu registered successfully (39 commands).")
         except Exception as e:
             logger.warning(f"Failed to set bot commands: {e}")
 

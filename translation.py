@@ -23,6 +23,7 @@ An enterprise-grade Telegram channel cloning, media migration, and course distri
 <b>📚 Available Commands:</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏣ <code>/start</code> — Start bot & view main card
+⏣ <code>/commands</code> — Interactive command navigator & categories
 ⏣ <code>/forward</code> — Interactive channel forward wizard
 ⏣ <code>/fwd &lt;links/ranges&gt;</code> — Multi-range batch forward (e.g. 10-20 30-40)
 ⏣ <code>/courseseller</code> — Master Course Seller Suite & settings

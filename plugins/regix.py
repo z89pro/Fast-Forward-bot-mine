@@ -216,6 +216,7 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                     b_sleep = human_delay(b_del) if jitter_enabled else b_del
                     await asyncio.sleep(max(1.0, b_sleep))
                     MSG = []
+            else:
                 lec_start = int(user_configs.get('course_start_offset', 1) or 1)
                 lec_idx = lec_start + len(course_items)
                 new_caption = custom_caption(message, caption, clean_caption=clean_caption, replace_words=replace_words, user_configs=user_configs, lecture_index=lec_idx)
@@ -248,6 +249,12 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 eff_del = adaptive_delay if adaptive_enabled else base_delay
                 sleep_time = human_delay(eff_del) if jitter_enabled else eff_del
                 await asyncio.sleep(sleep_time)
+
+        # Flush any remaining messages in buffer for native forward_tag mode
+        if forward_tag and MSG:
+            await forward(client, MSG, m, sts, protect, dump_target=dump_target)
+            sts.add('total_files', len(MSG))
+            MSG = []
 
     except Exception as e:
         if m:

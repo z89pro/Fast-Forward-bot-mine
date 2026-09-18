@@ -74,10 +74,17 @@ async def start_clone_bot(FwdBot, data=None):
             if new_diff <= 0:
                 return
             ids = list(range(current, current + new_diff))
-            messages = await self.get_messages(chat_id, ids)
-            for message in messages:
+            current += new_diff
+            try:
+                messages = await self.get_messages(chat_id, ids)
+            except Exception:
+                messages = []
+            if not messages:
+                continue
+            valid_messages = [m for m in messages if m and not getattr(m, 'empty', False)]
+            valid_messages.sort(key=lambda m: getattr(m, 'id', 0))
+            for message in valid_messages:
                 yield message
-                current += 1
    #
    FwdBot.iter_messages = iter_messages
    return FwdBot
