@@ -93,6 +93,7 @@ class Bot(Client):
                 BotCommand("help", "ᴄᴏᴍᴘʟᴇᴛᴇ ғᴇᴀᴛᴜʀᴇ ɢᴜɪᴅᴇ & ʜᴇʟᴘ"),
                 BotCommand("commands", "ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ"),
                 BotCommand("menu", "ǫᴜɪᴄᴋ ɴᴀᴠɪɢᴀᴛɪᴏɴ ᴍᴇɴᴜ"),
+                BotCommand("addbot", "ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ ʙᴏᴛ ᴛᴏᴋᴇɴ ᴏʀ ᴜsᴇʀʙᴏᴛ"),
                 BotCommand("id", "ᴠɪᴇᴡ ʏᴏᴜʀ ɪᴅ ᴏʀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴄʜᴀɴɴᴇʟ ɪᴅ"),
                 BotCommand("settings", "ᴄᴏɴғɪɢᴜʀᴇ ᴀʟʟ ʙᴏᴛ sᴇᴛᴛɪɴɢs"),
                 BotCommand("status", "sʏsᴛᴇᴍ & ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs"),
@@ -141,13 +142,14 @@ class Bot(Client):
                 BotCommand("config", "sʏsᴛᴇᴍ ᴄᴏɴғɪɢ (ᴏᴡɴᴇʀ)"),
                 BotCommand("admins", "ʟɪsᴛ ʙᴏᴛ ᴀᴅᴍɪɴs (ᴏᴡɴᴇʀ)")
             ])
-            logger.info("✅ Telegram bot command menu registered successfully (41 commands).")
+            logger.info("✅ Telegram bot command menu registered successfully (42 commands).")
         except Exception as e:
             logger.warning(f"Failed to set bot commands: {e}")
 
         # Ensure latest dynamic system configs are active in-memory
         try:
             await db.load_system_config_into_env()
+            asyncio.create_task(db.sanitize_corrupted_user_names())
         except Exception as e:
             logger.debug(f"Load system config error: {e}")
 

@@ -5,6 +5,7 @@ from config import temp
 from .test import CLIENT, start_clone_bot
 from translation import Translation
 from pyrogram import Client, filters, enums
+from pyrogram.errors import ListenerTimeout
 from pyrogram.types import InlineKeyboardButton
 from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
@@ -26,8 +27,11 @@ async def unequify(client, message):
    _bot = await db.get_bot(user_id)
    if not _bot or _bot['is_bot']:
       return await message.reply("<b>Need userbot to do this process. Please add a userbot using /settings</b>")
-   target = await client.ask(user_id, text="**Forward the last message from target chat or send last message link.**\n/cancel - `cancel this process`")
-   if target.text and target.text.startswith("/"):
+   try:
+      target = await client.ask(user_id, text="**Forward the last message from target chat or send last message link.**\n/cancel - `cancel this process`", timeout=120)
+   except Exception:
+      return await message.reply("⏰ **ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ.**")
+   if not target or (target.text and target.text.startswith("/")):
       return await message.reply("**process cancelled !**")
    from plugins.forward_parser import resolve_channel_input
    res = await resolve_channel_input(target, client)
@@ -35,9 +39,12 @@ async def unequify(client, message):
       return await message.reply_text(f"❌ **invalid input!** {res.get('error', 'Please forward the last message from target chat or send its message link.')}")
    chat_id = res["chat_id"]
    last_msg_id = res["last_msg_id"]
-   confirm = await client.ask(user_id, text="**send /yes to start the process and /no to cancel this process**")
-   if not confirm.text or confirm.text.lower() in ['/no', 'no', '/cancel']:
-      return await confirm.reply("**process cancelled !**")
+   try:
+      confirm = await client.ask(user_id, text="**send /yes to start the process and /no to cancel this process**", timeout=60)
+   except Exception:
+      return await message.reply("⏰ **ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ.**")
+   if not confirm or not confirm.text or confirm.text.lower() in ['/no', 'no', '/cancel']:
+      return await (confirm.reply("**process cancelled !**") if confirm else message.reply("**process cancelled !**"))
    sts = await confirm.reply("`processing..`")
    try:
       bot = await start_clone_bot(CLIENT.client(_bot))
@@ -49,7 +56,7 @@ async def unequify(client, message):
    except Exception:
        await sts.edit(f"**please make your [userbot](t.me/{_bot['username']}) admin in target chat with full permissions**")
        return await bot.stop()
-   MESSAGES = []
+   MESSAGES = set()
    DUPLICATE = []
    total = deleted = 0
    temp.lock[user_id] = True
@@ -57,16 +64,17 @@ async def unequify(client, message):
      await sts.edit(Translation.DUPLICATE_TEXT.format(total, deleted, "ᴘʀᴏɢʀᴇssɪɴɢ"), reply_markup=CANCEL_BTN)
      async for message in bot.search_messages(chat_id=chat_id, filter=enums.MessagesFilter.DOCUMENT):
         if temp.CANCEL.get(user_id) == True:
+           temp.lock[user_id] = False
            await sts.edit(Translation.DUPLICATE_TEXT.format(total, deleted, "ᴄᴀɴᴄᴇʟʟᴇᴅ"), reply_markup=COMPLETED_BTN)
            return await bot.stop()
         file = message.document
         if not file:
            continue
-        file_id = file.file_unique_id 
+        file_id = file.file_unique_id
         if file_id in MESSAGES:
            DUPLICATE.append(message.id)
         else:
-           MESSAGES.append(file_id)
+           MESSAGES.add(file_id)
         total += 1
         if total % 100 == 0:
            await sts.edit(Translation.DUPLICATE_TEXT.format(total, deleted, "ᴘʀᴏɢʀᴇssɪɴɢ"), reply_markup=CANCEL_BTN)

@@ -1,5 +1,6 @@
 import os
 import sys
+import html
 import asyncio
 import logging
 from config import Config, temp
@@ -10,6 +11,34 @@ from pyrogram.errors import MessageIdInvalid, MessageNotModified, RPCError
 from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 logger = logging.getLogger("SkinetConfig")
+
+async def get_admin_display_name(client: Client, user_id: int) -> tuple:
+    """Resolves (name, username) for an admin or authorized user."""
+    name, username = "", ""
+    try:
+        u = await db.get_user(user_id)
+        if u:
+            from plugins.usertrack import display_name
+            dname = display_name(u)
+            if dname and not dname.startswith("User "):
+                name = dname
+            username = u.get("username") or ""
+    except Exception:
+        pass
+
+    if not name:
+        try:
+            tg_u = await client.get_users(user_id)
+            if tg_u:
+                first = tg_u.first_name or ""
+                last = f" {tg_u.last_name}" if tg_u.last_name else ""
+                full = f"{first}{last}".strip()
+                name = full or tg_u.username or f"User {user_id}"
+                username = tg_u.username or username
+        except Exception:
+            pass
+
+    return name or f"User {user_id}", username
 
 async def safe_edit_message(message: Message, text: str, reply_markup=None, disable_web_page_preview: bool = True):
     try:
@@ -328,9 +357,11 @@ async def config_callback(bot: Client, query: CallbackQuery):
         primary_owner = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
         admin_lines = []
         for a in admins:
-            tag = " 👑 (ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ)" if a == primary_owner else " 🛡️ (ᴀᴅᴍɪɴ)"
-            admin_lines.append(f"• <code>{a}</code>{tag}")
-        admins_body = "\n".join(admin_lines) if admin_lines else "<i>ɴᴏɴᴇ</i>"
+            name, uname = await get_admin_display_name(bot, a)
+            uname_str = f" (@{uname})" if uname else ""
+            tag = " 👑 <b>ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ</b>" if a == primary_owner else " 🛡️ <b>ᴀᴅᴍɪɴ</b>"
+            admin_lines.append(f"• <b>{html.escape(name)}</b>{uname_str}\n  └ 🆔 <code>{a}</code> | {tag}")
+        admins_body = "\n\n".join(admin_lines) if admin_lines else "<i>ɴᴏɴᴇ</i>"
 
         text = (
             "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴍᴜʟᴛɪ-ᴀᴅᴍɪɴ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ</u></b></blockquote>\n\n"
@@ -650,11 +681,13 @@ async def cmd_admins(bot: Client, message: Message):
     primary = Config.BOT_OWNER_ID[0] if Config.BOT_OWNER_ID else None
     lines = []
     for a in admins:
-        tag = " 👑 (ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ)" if a == primary else " 🛡️ (ᴀᴅᴍɪɴ)"
-        lines.append(f"• <code>{a}</code>{tag}")
+        name, uname = await get_admin_display_name(bot, a)
+        uname_str = f" (@{uname})" if uname else ""
+        tag = " 👑 <b>ᴘʀɪᴍᴀʀʏ ᴏᴡɴᴇʀ</b>" if a == primary else " 🛡️ <b>ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴ</b>"
+        lines.append(f"• <b>{html.escape(name)}</b>{uname_str}\n  └ 🆔 <code>{a}</code> | {tag}")
     admin_text = (
         "<blockquote><b>👑 <u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs</u></b></blockquote>\n\n"
-        f"<b>ᴛᴏᴛᴀʟ ᴄᴏᴜɴᴛ:</b> <code>{len(admins)}</code>\n\n" + "\n".join(lines)
+        f"<b>ᴛᴏᴛᴀʟ ᴄᴏᴜɴᴛ:</b> <code>{len(admins)}</code>\n\n" + "\n\n".join(lines)
     )
     await message.reply_text(admin_text, quote=True)
 

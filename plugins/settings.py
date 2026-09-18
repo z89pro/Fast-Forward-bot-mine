@@ -3,11 +3,21 @@ from database import db
 from config import Config
 from translation import Translation
 from pyrogram import Client, filters
+from pyrogram.errors import ListenerTimeout
 from .test import get_configs, update_configs, CLIENT, parse_buttons
 from pyrogram.types import InlineKeyboardButton
 from buttons import StyledMarkup as InlineKeyboardMarkup, btn, btn_url, row, markup, colored_markup
 
 CLIENT = CLIENT()
+
+# label shown in the panel for each transfer mode, in cycle order
+TRANSFER_MODES = {
+    'auto': 'AUTO (sᴍᴀʀᴛ)',
+    'forward': 'FORWARD (ɴᴀᴛɪᴠᴇ)',
+    'copy': 'COPY (sᴇʀᴠᴇʀ-sɪᴅᴇ)',
+    'upload': 'UPLOAD (ᴅᴏᴡɴʟᴏᴀᴅ+ᴜᴘ)',
+}
+TRANSFER_MODE_ORDER = ['auto', 'forward', 'copy', 'upload']
 
 
 @Client.on_message(filters.command('settings'))
@@ -92,25 +102,19 @@ async def settings_query(bot, query):
         reply_markup=speed_buttons(speed_cfg))
        
   elif type=="bots":
-     buttons = [] 
+     buttons = []
      _bot = await db.get_bot(user_id)
      if _bot is not None:
         buttons.append([InlineKeyboardButton(_bot['name'],
                          callback_data=f"settings#editbot")])
-        buttons.append([InlineKeyboardButton('✚ ᴀᴅᴅ ᴜsᴇʀ ʙᴏᴛ ✚', 
-                         callback_data="settings#adduserbot")])
-        buttons.append([InlineKeyboardButton('✚ ʟᴏɢɪɴ ᴜsᴇʀ ʙᴏᴛ ✚', 
-                         callback_data="settings#addlogin")])
-
-
-     else:
-        buttons.append([InlineKeyboardButton('✚ ᴀᴅᴅ ʙᴏᴛ ✚', 
-                         callback_data="settings#addbot")])
-        buttons.append([InlineKeyboardButton('✚ ᴀᴅᴅ ᴜsᴇʀ ʙᴏᴛ ✚', 
-                         callback_data="settings#adduserbot")])
-        buttons.append([InlineKeyboardButton('✚ ʟᴏɢɪɴ ᴜsᴇʀ ʙᴏᴛ ✚', 
-                         callback_data="settings#addlogin")])
-     buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ', 
+     # Always offered: a connected userbot must not hide the option to add a bot token.
+     buttons.append([InlineKeyboardButton('✚ ᴀᴅᴅ ʙᴏᴛ ✚',
+                      callback_data="settings#addbot")])
+     buttons.append([InlineKeyboardButton('✚ ᴀᴅᴅ ᴜsᴇʀ ʙᴏᴛ ✚',
+                      callback_data="settings#adduserbot")])
+     buttons.append([InlineKeyboardButton('✚ ʟᴏɢɪɴ ᴜsᴇʀ ʙᴏᴛ ✚',
+                      callback_data="settings#addlogin")])
+     buttons.append([InlineKeyboardButton('• ʙᴀᴄᴋ',
                       callback_data="settings#main")])
      await query.message.edit_text(
        "<blockquote><b>🤖 <u>ᴍʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ʙᴏᴛs & ᴜsᴇʀʙᴏᴛs</u></b></blockquote>\n\n"
@@ -201,7 +205,7 @@ async def settings_query(bot, query):
           await text.edit_text(
              "<b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴜᴘᴅᴀᴛᴇᴅ ✅</b>" if chat else "<b>ᴛʜɪs ᴄʜᴀɴɴᴇʟ ɪs ᴀʟʀᴇᴀᴅʏ ᴀᴅᴅᴇᴅ</b>",
              reply_markup=InlineKeyboardMarkup(buttons))
-      except asyncio.exceptions.TimeoutError:
+      except (asyncio.exceptions.TimeoutError, ListenerTimeout):
           await text.edit_text('ᴘʀᴏᴄᴇss ʜᴀs ʙᴇᴇɴ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴄᴀɴᴄᴇʟʟᴇᴅ.', reply_markup=InlineKeyboardMarkup(buttons))
 
   
@@ -337,7 +341,7 @@ async def settings_query(bot, query):
          await text.edit_text(
             "<b>Successfully Updated</b>",
             reply_markup=InlineKeyboardMarkup(buttons))
-     except asyncio.exceptions.TimeoutError:
+     except (asyncio.exceptions.TimeoutError, ListenerTimeout):
          await text.edit_text('Process has been automatically cancelled', reply_markup=InlineKeyboardMarkup(buttons))
   
   elif type=="button":
@@ -417,9 +421,12 @@ async def settings_query(bot, query):
          reply_markup=InlineKeyboardMarkup(buttons))
   elif type=="addurl":
      await query.message.delete()
-     uri = await bot.ask(user_id, "<b>please send your mongodb url.</b>\n\n<i>get your Mongodb url from [here](https://mongodb.com)</i>", disable_web_page_preview=True)
-     if uri.text=="/cancel":
-        return await uri.reply_text(
+     try:
+        uri = await bot.ask(user_id, "<b>please send your mongodb url.</b>\n\n<i>get your Mongodb url from [here](https://mongodb.com)</i>", disable_web_page_preview=True, timeout=120)
+     except Exception:
+        return await query.message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.</b>", reply_markup=InlineKeyboardMarkup(buttons))
+     if not uri or not uri.text or uri.text.lower() == "/cancel":
+        return await query.message.reply_text(
                   "<b>process canceled !</b>",
                   reply_markup=InlineKeyboardMarkup(buttons))
      if not uri.text.startswith("mongodb+srv://") and not uri.text.endswith("majority"):
@@ -612,9 +619,12 @@ async def settings_query(bot, query):
        reply_markup=size_button(int(size)))
   elif type == "add_extension":
     await query.message.delete() 
-    ext = await bot.ask(user_id, text="**please send your extensions (seperete by space)**")
-    if ext.text == '/cancel':
-       return await ext.reply_text(
+    try:
+       ext = await bot.ask(user_id, text="**please send your extensions (seperete by space)**", timeout=120)
+    except Exception:
+       return await query.message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.</b>", reply_markup=InlineKeyboardMarkup(buttons))
+    if not ext or not ext.text or ext.text.lower() == '/cancel':
+       return await query.message.reply_text(
                   "<b>process canceled</b>",
                   reply_markup=InlineKeyboardMarkup(buttons))
     extensions = ext.text.split(" ")
@@ -644,11 +654,14 @@ async def settings_query(bot, query):
                                    reply_markup=InlineKeyboardMarkup(buttons))
   elif type == "add_keyword":
     await query.message.delete()
-    ask = await bot.ask(user_id, text="<b>ᴘʟᴇᴀsᴇ sᴇɴᴅ ᴋᴇʏᴡᴏʀᴅs (sᴇᴘᴀʀᴀᴛᴇᴅ ʙʏ sᴘᴀᴄᴇ)\n/cancel - ᴄᴀɴᴄᴇʟ</b>")
-    if ask.text == '/cancel':
-       return await ask.reply_text(
-                  "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ ✅</b>",
-                  reply_markup=InlineKeyboardMarkup(buttons))
+    try:
+        ask = await bot.ask(user_id, text="<b>ᴘʟᴇᴀsᴇ sᴇɴᴅ ᴋᴇʏᴡᴏʀᴅs (sᴇᴘᴀʀᴀᴛᴇᴅ ʙʏ sᴘᴀᴄᴇ)\n/cancel - ᴄᴀɴᴄᴇʟ</b>", timeout=120)
+    except Exception:
+        return await query.message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ.</b>", reply_markup=InlineKeyboardMarkup(buttons))
+    if not ask or not ask.text or ask.text.lower() == '/cancel':
+        return await query.message.reply_text(
+                   "<b>ᴘʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ ✅</b>",
+                   reply_markup=InlineKeyboardMarkup(buttons))
     keywords = ask.text.split(" ")
     keyword = (await get_configs(user_id))['keywords']
     if keyword:
@@ -902,6 +915,17 @@ async def settings_query(bot, query):
      await query.answer(f"Upload Type: {next_mode.upper()}")
      await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
 
+  elif type == "ftm_cycle_transfer":
+     configs = await get_configs(user_id)
+     curr = str(configs.get('transfer_mode', 'auto')).lower()
+     if curr not in TRANSFER_MODE_ORDER:
+        curr = 'auto'
+     nxt = TRANSFER_MODE_ORDER[(TRANSFER_MODE_ORDER.index(curr) + 1) % len(TRANSFER_MODE_ORDER)]
+     configs['transfer_mode'] = nxt
+     await db.update_configs(user_id, configs)
+     await query.answer(f"Transfer Mode: {TRANSFER_MODES[nxt]}")
+     await query.message.edit_text(ftm_text(configs), reply_markup=ftm_buttons(configs))
+
   elif type == "ftm_set_user_rep":
      await query.message.delete()
      ask = await bot.ask(user_id, text="<b>👤 Send your replacement username (e.g. <code>@MyBrandCourses</code>):</b>\n\nSend <code>none</code> to clear\n/cancel - Cancel", timeout=120)
@@ -1053,8 +1077,9 @@ def ftm_text(cfg):
     hid_rem = "✅ ᴏɴ" if cfg.get('hidden_link_remover') else "❌ ᴏғғ"
     replacements = cfg.get('replace_words', {})
     up_type = str(cfg.get('upload_type', 'media')).upper()
+    tr_mode = TRANSFER_MODES.get(str(cfg.get('transfer_mode', 'auto')).lower(), TRANSFER_MODES['auto'])
     tag_status = "❌ ʀᴇᴍᴏᴠᴇᴅ (ᴄʟᴇᴀɴ)" if not cfg.get('forward_tag') else "✅ ᴘʀᴇsᴇʀᴠᴇᴅ"
-    
+
     return (
         "<blockquote><b>🛠 <u>sᴋɪɴᴇᴛ ᴛᴇxᴛ & ᴍᴇᴅɪᴀ ᴍᴏᴅɪғɪᴇʀ ⚡️</u></b></blockquote>\n\n"
         "<b>Skinet Verse Content Sanitization & Re-Branding Suite:</b>\n\n"
@@ -1066,9 +1091,16 @@ def ftm_text(cfg):
         f"🔍 <b>Hidden Link Sanitizer:</b> <code>{hid_rem}</code>\n"
         f"🔤 <b>Active Word Replacements:</b> <code>{len(replacements)} rules</code>\n"
         f"📦 <b>Upload Stream Mode:</b> <code>{up_type}</code>\n"
+        f"🚚 <b>Transfer Mode:</b> <code>{tr_mode}</code>\n"
         f"🏷 <b>Forward Tag:</b> <code>{tag_status}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>Toggle switches or configure custom replacement phrases using the buttons below.</i>"
+        "💡 <i>Transfer mode picks how content moves to the target:</i>\n"
+        "• <b>FORWARD</b> — native forward, fastest, keeps the source header\n"
+        "• <b>COPY</b> — server-side copy, no download, header removed\n"
+        "• <b>UPLOAD</b> — always download &amp; re-upload (works on protected sources)\n"
+        "• <b>AUTO</b> — server-side first, re-upload only if Telegram refuses\n\n"
+        "⚠️ <i>Protected / forward-restricted sources refuse both forward and copy, "
+        "so AUTO silently switches to download &amp; re-upload for those.</i>"
     )
 
 def ftm_buttons(cfg):
@@ -1098,6 +1130,10 @@ def ftm_buttons(cfg):
         [
             InlineKeyboardButton(f"📦 ᴜᴘʟᴏᴀᴅ ᴛʏᴘᴇ: {up_type}", callback_data="settings#ftm_cycle_upload")
         ],
+        [
+            InlineKeyboardButton(f"🚚 ᴛʀᴀɴsғᴇʀ: {TRANSFER_MODES.get(str(cfg.get('transfer_mode', 'auto')).lower(), TRANSFER_MODES['auto'])}",
+                                 callback_data="settings#ftm_cycle_transfer")
+        ],
         [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -1105,7 +1141,7 @@ def ftm_buttons(cfg):
 def main_buttons(user_id=None):
   is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
   buttons = [[
-       InlineKeyboardButton('🤖 ʙᴏᴛs',
+       InlineKeyboardButton('➕ ᴀᴅᴅ ʙᴏᴛ',
                     callback_data=f'settings#bots'),
        InlineKeyboardButton('🏷 ᴄʜᴀɴɴᴇʟs',
                     callback_data=f'settings#channels')

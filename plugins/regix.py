@@ -4,7 +4,8 @@ import sys
 import math
 import time
 import random
-import asyncio 
+import datetime
+import asyncio
 import logging
 from .utils import STS
 from database import db 
@@ -38,51 +39,59 @@ async def pub_(bot, message):
     frwd_id = message.data.split("_")[2]
     if temp.lock.get(user) and str(temp.lock.get(user))=="True":
       return await message.answer("ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ ᴜɴᴛɪʟʟ ᴘʀᴇᴠɪᴏᴜs ᴛᴀsᴋ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.", show_alert=True)
-    sts = STS(frwd_id)
-    if not sts.verify():
-      await message.answer("ʏᴏᴜ ᴀʀᴇ ᴄʟɪᴄᴋɪɴɢ ᴏɴ ᴍʏ ᴏɴᴇ ᴏғ ᴏʟᴅ ʙᴜᴛᴛᴏɴ.", show_alert=True)
-      return await message.message.delete()
-    sts.data[sts.id]['user_id'] = user
-    temp.PAUSE[user] = False
-    i = sts.get(full=True)
-    if i.TO in temp.IS_FRWD_CHAT:
-      return await message.answer("ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀᴛ ᴛᴀsᴋ ɪs ɪɴ ᴘʀᴏɢʀᴇss. ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ ᴜɴᴛɪʟʟ ᴘʀᴇᴠɪᴏᴜs ᴛᴀsᴋ ɪs ᴄᴏᴍᴘʟᴇᴛᴇᴅ.", show_alert=True)
-    m = await msg_edit(message.message, "<i><b>vᴇʀɪғʏɪɴɢ ʏᴏᴜʀ ᴅᴀᴛᴀ ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.</b></i>")
-    _bot, caption, forward_tag, data, protect, button = await sts.get_data(user)
-    if not _bot:
-      return await msg_edit(m, "<code>ʏᴏᴜ ᴅɪᴅ ɴᴏᴛ ᴀᴅᴅᴇᴅ ᴀɴʏ ʙᴏᴛ ʏᴇᴛ ᴜsᴇ /settings</code>", wait=True)
+    # Claim the lock here rather than in execute_forward_task: several awaits
+    # sit between the guard above and that assignment, so a double-tap would
+    # pass both checks and run two forwards over the same range. pub_ awaits the
+    # whole task, so clearing it in the finally below is enough.
+    temp.lock[user] = True
     try:
-      client = await start_clone_bot(CLIENT.client(_bot))
-    except Exception as e:  
-      return await m.edit(e)
-    await msg_edit(m, "<b>ᴘʀᴏᴄᴇssɪɴɢ..</b>")
-    try: 
-       await client.get_messages(sts.get("FROM"), sts.get("limit"))
-    except:
-       await msg_edit(m, f"**sᴏᴜʀᴄᴇ ᴄʜᴀᴛ ᴍᴀʏ ʙᴇ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ / ɢʀᴏᴜᴘ. ᴜsᴇ ᴜsᴇʀ ʙᴏᴛ (ᴜsᴇʀ ᴍᴜsᴛ ʙᴇ ᴍᴇᴍʙᴇʀ ᴏᴠᴇʀ ᴛʜᴇʀᴇ) ᴏʀ ɪғ ᴍᴀᴋᴇ ʏᴏᴜʀ ʙᴏᴛ [Bot](t.me/{_bot['username']}) ᴀɴ ᴀᴅᴍɪɴ ᴏᴠᴇʀ ᴛʜᴇʀᴇ**", retry_btn(frwd_id), True)
-       return await stop(client, user)
-    try:
-       k = await client.send_message(i.TO, "Testing")
-       await k.delete()
-    except:
-       await msg_edit(m, f"**ᴘʟᴇᴀsᴇ [ᴜsᴇʀʙᴏᴛ / ʙᴏᴛ](t.me/{_bot['username']}) ᴀᴅᴍɪɴ ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ғᴜʟʟ ᴘᴇʀᴍɪssɪᴏɴ.**", retry_btn(frwd_id), True)
-       return await stop(client, user)
-    task_id = f"fwd_{user}_{frwd_id}"
-    user_configs = await db.get_configs(user)
-    return await execute_forward_task(
-        client=client,
-        user=user,
-        m=m,
-        sts=sts,
-        task_id=task_id,
-        _bot=_bot,
-        caption=caption,
-        forward_tag=forward_tag,
-        protect=protect,
-        button=button,
-        user_configs=user_configs,
-        is_resumed=False
-    )
+        sts = STS(frwd_id)
+        if not sts.verify():
+          await message.answer("ʏᴏᴜ ᴀʀᴇ ᴄʟɪᴄᴋɪɴɢ ᴏɴ ᴍʏ ᴏɴᴇ ᴏғ ᴏʟᴅ ʙᴜᴛᴛᴏɴ.", show_alert=True)
+          return await message.message.delete()
+        sts.data[sts.id]['user_id'] = user
+        temp.PAUSE[user] = False
+        i = sts.get(full=True)
+        if i.TO in temp.IS_FRWD_CHAT:
+          return await message.answer("ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀᴛ ᴛᴀsᴋ ɪs ɪɴ ᴘʀᴏɢʀᴇss. ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ ᴜɴᴛɪʟʟ ᴘʀᴇᴠɪᴏᴜs ᴛᴀsᴋ ɪs ᴄᴏᴍᴘʟᴇᴛᴇᴅ.", show_alert=True)
+        m = await msg_edit(message.message, "<i><b>vᴇʀɪғʏɪɴɢ ʏᴏᴜʀ ᴅᴀᴛᴀ ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.</b></i>")
+        _bot, caption, forward_tag, data, protect, button = await sts.get_data(user)
+        if not _bot:
+          return await msg_edit(m, "<code>ʏᴏᴜ ᴅɪᴅ ɴᴏᴛ ᴀᴅᴅᴇᴅ ᴀɴʏ ʙᴏᴛ ʏᴇᴛ ᴜsᴇ /settings</code>", wait=True)
+        try:
+          client = await start_clone_bot(CLIENT.client(_bot))
+        except Exception as e:  
+          return await m.edit(e)
+        await msg_edit(m, "<b>ᴘʀᴏᴄᴇssɪɴɢ..</b>")
+        try: 
+           await client.get_messages(sts.get("FROM"), sts.get("limit"))
+        except:
+           await msg_edit(m, f"**sᴏᴜʀᴄᴇ ᴄʜᴀᴛ ᴍᴀʏ ʙᴇ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ / ɢʀᴏᴜᴘ. ᴜsᴇ ᴜsᴇʀ ʙᴏᴛ (ᴜsᴇʀ ᴍᴜsᴛ ʙᴇ ᴍᴇᴍʙᴇʀ ᴏᴠᴇʀ ᴛʜᴇʀᴇ) ᴏʀ ɪғ ᴍᴀᴋᴇ ʏᴏᴜʀ ʙᴏᴛ [Bot](t.me/{_bot['username']}) ᴀɴ ᴀᴅᴍɪɴ ᴏᴠᴇʀ ᴛʜᴇʀᴇ**", retry_btn(frwd_id), True)
+           return await stop(client, user)
+        try:
+           k = await client.send_message(i.TO, "Testing")
+           await k.delete()
+        except:
+           await msg_edit(m, f"**ᴘʟᴇᴀsᴇ [ᴜsᴇʀʙᴏᴛ / ʙᴏᴛ](t.me/{_bot['username']}) ᴀᴅᴍɪɴ ɪɴ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ғᴜʟʟ ᴘᴇʀᴍɪssɪᴏɴ.**", retry_btn(frwd_id), True)
+           return await stop(client, user)
+        task_id = f"fwd_{user}_{frwd_id}"
+        user_configs = await db.get_configs(user)
+        return await execute_forward_task(
+            client=client,
+            user=user,
+            m=m,
+            sts=sts,
+            task_id=task_id,
+            _bot=_bot,
+            caption=caption,
+            forward_tag=forward_tag,
+            protect=protect,
+            button=button,
+            user_configs=user_configs,
+            is_resumed=False,
+        )
+    finally:
+        temp.lock[user] = False
 
 async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, forward_tag, protect, button, user_configs, is_resumed=False):
     i = sts.get(full=True)
@@ -95,6 +104,17 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
     clean_caption = user_configs.get('clean_caption', False)
     replace_words = user_configs.get('replace_words', {})
     dump_target = await db.get_effective_dump_channel()
+    upload_type = user_configs.get('upload_type', 'media')
+    transfer_mode = str(user_configs.get('transfer_mode', 'auto')).lower()
+    # 'forward' forces the native batched forward; 'copy'/'upload' force the
+    # per-message path; 'auto' keeps the existing forward_tag behaviour and
+    # falls back to a download+re-upload whenever Telegram refuses the transfer.
+    if transfer_mode == 'forward':
+        use_native_forward = True
+    elif transfer_mode in ('copy', 'upload'):
+        use_native_forward = False
+    else:
+        use_native_forward = bool(forward_tag)
     speed_cfg = user_configs.get('speed_cfg') or {'mode': 'fast', 'delay': 1.0, 'jitter': True, 'batch_size': 100}
     base_delay = float(speed_cfg.get('delay', 1.0 if _bot['is_bot'] else 5.0))
     jitter_enabled = bool(speed_cfg.get('jitter', True))
@@ -205,12 +225,12 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 sts.add('deleted')
                 continue
 
-            if forward_tag:
+            if use_native_forward:
                 MSG.append(message.id)
                 notcompleted = len(MSG)
                 completed = sts.get('total') - sts.get('fetched')
-                if (notcompleted >= batch_size or completed <= batch_size): 
-                    await forward(client, MSG, m, sts, protect, dump_target=dump_target)
+                if (notcompleted >= batch_size or completed <= batch_size):
+                    await forward(client, MSG, m, sts, protect, dump_target=dump_target, upload_type=upload_type)
                     sts.add('total_files', notcompleted)
                     b_del = (adaptive_delay if adaptive_enabled else base_delay) * 2
                     b_sleep = human_delay(b_del) if jitter_enabled else b_del
@@ -223,7 +243,7 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 sticky_raw = user_configs.get('course_sticky_button')
                 sticky_btn = build_universal_button(sticky_raw) if sticky_raw else None
                 lec_button = merge_sticky_button(button, sticky_btn)
-                details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': lec_button, "protect": protect, "upload_type": user_configs.get('upload_type', 'media')}
+                details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': lec_button, "protect": protect, "upload_type": upload_type, "transfer_mode": transfer_mode}
                 sent_id = await copy(client, details, m, sts, dump_target=dump_target)
                 sts.add('total_files')
                 if sent_id:
@@ -251,7 +271,7 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 await asyncio.sleep(sleep_time)
 
         # Flush any remaining messages in buffer for native forward_tag mode
-        if forward_tag and MSG:
+        if use_native_forward and MSG:
             await forward(client, MSG, m, sts, protect, dump_target=dump_target)
             sts.add('total_files', len(MSG))
             MSG = []
@@ -407,54 +427,132 @@ async def _resume_single_task(bot_app, task_data):
         is_resumed=True
     )
 
+_RESTRICTED_NAMES = {
+    "ChatForwardsRestricted", "MessageAuthorRequired", "ChatRestricted",
+    "ChatWriteForbidden", "ChatAdminRequired",
+}
+_RESTRICTED_MARKERS = (
+    "FORWARDS_RESTRICTED", "FORWARDSRESTRICTED", "AUTHOR_REQUIRED",
+    "MESSAGE_AUTHOR_REQUIRED", "PROTECTED_CONTENT",
+)
+
+def is_restricted_error(e: BaseException) -> bool:
+    """True when Telegram refused the transfer because the source is protected.
+
+    Such a source refuses both forwardMessages and copyMessage, so the only way
+    to move the file is to download it and upload it as a fresh file.
+    """
+    if type(e).__name__ in _RESTRICTED_NAMES:
+        return True
+    text = str(e).upper()
+    return any(m in text for m in _RESTRICTED_MARKERS)
+
+# media kind -> (send method, name of its file argument). send_video_note and
+# send_sticker take no caption, handled by the caller.
+_UPLOAD_METHOD = {
+    "photo": ("send_photo", "photo"),
+    "video": ("send_video", "video"),
+    "animation": ("send_animation", "animation"),
+    "audio": ("send_audio", "audio"),
+    "voice": ("send_voice", "voice"),
+    "video_note": ("send_video_note", "video_note"),
+    "sticker": ("send_sticker", "sticker"),
+    "document": ("send_document", "document"),
+}
+_NO_CAPTION = {"send_video_note", "send_sticker"}
+_DOWNGRADE_TO_FILE = {"send_video", "send_audio", "send_animation", "send_voice"}
+
+
+async def download_and_reupload(bot, from_chat_id, message_id, to_chat, caption=None,
+                                button=None, protect=None, upload_type="media"):
+    """Move one message by downloading its media and uploading it fresh.
+
+    Fallback for protected sources where forward_messages and copy_message are
+    both refused. `upload_type` decides the wire format: 'document' downgrades
+    video/audio to a plain file, 'video' promotes video documents back.
+    """
+    src = await bot.get_messages(from_chat_id, message_id)
+    if src is None or getattr(src, 'empty', False):
+        return None
+
+    kind = src.media.value if src.media else None
+    if not kind:
+        return await bot.send_message(
+            chat_id=to_chat,
+            text=caption if caption is not None else (src.text or ""),
+            reply_markup=button,
+            protect_content=protect,
+            disable_web_page_preview=True,
+        )
+
+    method_name, file_arg = _UPLOAD_METHOD.get(kind, ("send_document", "document"))
+    if upload_type == "document" and method_name in _DOWNGRADE_TO_FILE:
+        method_name, file_arg = "send_document", "document"
+    elif upload_type == "video" and method_name == "send_document" and kind in ("video", "animation"):
+        method_name, file_arg = "send_video", "video"
+
+    path = None
+    try:
+        path = await bot.download_media(src)
+        if not path:
+            return None
+        kwargs = {"chat_id": to_chat, "protect_content": protect}
+        if method_name not in _NO_CAPTION:
+            kwargs["caption"] = caption
+            kwargs["reply_markup"] = button
+        kwargs[file_arg] = path
+        return await getattr(bot, method_name)(**kwargs)
+    finally:
+        if path:
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
+
+async def _copy_once(bot, msg, from_chat_id, to_chat, protect):
+   """One server-side transfer attempt. Never downloads anything."""
+   if msg.get("media") and msg.get("caption"):
+      return await bot.send_cached_media(
+            chat_id=to_chat,
+            file_id=msg.get("media"),
+            caption=msg.get("caption"),
+            reply_markup=msg.get('button'),
+            protect_content=protect)
+   if msg.get("caption") and not msg.get("media"):
+      return await bot.send_message(
+            chat_id=to_chat,
+            text=msg.get("caption"),
+            reply_markup=msg.get('button'),
+            protect_content=protect)
+   return await bot.copy_message(
+         chat_id=to_chat,
+         from_chat_id=from_chat_id,
+         caption=msg.get("caption"),
+         message_id=msg.get("msg_id"),
+         reply_markup=msg.get('button'),
+         protect_content=protect)
+
+
+async def _transfer(bot, msg, sts, to_chat, transfer_mode, upload_type, protect):
+   if transfer_mode == "upload":
+      return await download_and_reupload(
+            bot, sts.get('FROM'), msg.get("msg_id"), to_chat,
+            caption=msg.get("caption"), button=msg.get('button'),
+            protect=protect, upload_type=upload_type)
+   return await _copy_once(bot, msg, sts.get('FROM'), to_chat, protect)
+
+
 async def copy(bot, msg, m, sts, dump_target=None):
-   try:                                  
-     sent = None
-     if msg.get("media") and msg.get("caption"):
-        sent = await bot.send_cached_media(
-              chat_id=sts.get('TO'),
-              file_id=msg.get("media"),
-              caption=msg.get("caption"),
-              reply_markup=msg.get('button'),
-              protect_content=msg.get("protect"))
-        if dump_target and str(dump_target) != str(sts.get('TO')):
-           try:
-              await bot.send_cached_media(
-                    chat_id=dump_target,
-                    file_id=msg.get("media"),
-                    caption=msg.get("caption"))
-           except Exception:
-              pass
-     elif msg.get("caption") and not msg.get("media"):
-        sent = await bot.send_message(
-              chat_id=sts.get('TO'),
-              text=msg.get("caption"),
-              reply_markup=msg.get('button'),
-              protect_content=msg.get("protect"))
-        if dump_target and str(dump_target) != str(sts.get('TO')):
-           try:
-              await bot.send_message(
-                    chat_id=dump_target,
-                    text=msg.get("caption"))
-           except Exception:
-              pass
-     else:
-        sent = await bot.copy_message(
-              chat_id=sts.get('TO'),
-              from_chat_id=sts.get('FROM'),    
-              caption=msg.get("caption"),
-              message_id=msg.get("msg_id"),
-              reply_markup=msg.get('button'),
-              protect_content=msg.get("protect"))
-        if dump_target and str(dump_target) != str(sts.get('TO')):
-           try:
-              await bot.copy_message(
-                    chat_id=dump_target,
-                    from_chat_id=sts.get('FROM'),
-                    caption=msg.get("caption"),
-                    message_id=msg.get("msg_id"))
-           except Exception:
-              pass
+   transfer_mode = str(msg.get("transfer_mode") or "auto").lower()
+   upload_type = msg.get("upload_type") or "media"
+   try:
+     sent = await _transfer(bot, msg, sts, sts.get('TO'), transfer_mode, upload_type, msg.get("protect"))
+     if dump_target and str(dump_target) != str(sts.get('TO')):
+        try:
+           await _transfer(bot, msg, sts, dump_target, transfer_mode, upload_type, False)
+        except Exception:
+           pass
      return getattr(sent, 'id', None)
    except FloodWait as e:
      sts.add('floodwaits', 1)
@@ -465,6 +563,20 @@ async def copy(bot, msg, m, sts, dump_target=None):
      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
      return await copy(bot, msg, m, sts, dump_target=dump_target)
    except Exception as e:
+     if is_restricted_error(e):
+        # Protected source: Telegram refused the server-side transfer, so the
+        # file has to be downloaded and uploaded as a fresh one.
+        try:
+           sent = await _transfer(bot, msg, sts, sts.get('TO'), "upload", upload_type, msg.get("protect"))
+           if sent is not None:
+              if dump_target and str(dump_target) != str(sts.get('TO')):
+                 try:
+                    await _transfer(bot, msg, sts, dump_target, "upload", upload_type, False)
+                 except Exception:
+                    pass
+              return getattr(sent, 'id', None)
+        except Exception as inner:
+           logger.warning(f"Re-upload fallback failed for msg {msg.get('msg_id')}: {inner}")
      print(e)
      sts.add('deleted')
      return None
@@ -683,11 +795,11 @@ async def send_course_index_list(client, user, sts, course_items, user_configs=N
          logger.warning(f"Failed to export course syllabus document: {exp_err}")
 
 
-async def forward(bot, msg, m, sts, protect, dump_target=None):
-   try:                             
+async def forward(bot, msg, m, sts, protect, dump_target=None, upload_type="media"):
+   try:
      await bot.forward_messages(
            chat_id=sts.get('TO'),
-           from_chat_id=sts.get('FROM'), 
+           from_chat_id=sts.get('FROM'),
            protect_content=protect,
            message_ids=msg)
      if dump_target and str(dump_target) != str(sts.get('TO')):
@@ -705,7 +817,27 @@ async def forward(bot, msg, m, sts, protect, dump_target=None):
       await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', e.value, sts)
       await asyncio.sleep(e.value + 1)
       await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
-      await forward(bot, msg, m, sts, protect, dump_target=dump_target)
+      await forward(bot, msg, m, sts, protect, dump_target=dump_target, upload_type=upload_type)
+   except Exception as e:
+      if not is_restricted_error(e):
+         raise
+      # Protected source: forwardMessages is refused, so re-upload each message
+      # in the batch. Text-only messages survive; media is downloaded and sent.
+      for mid in (msg if isinstance(msg, (list, tuple)) else [msg]):
+         try:
+            await download_and_reupload(
+                  bot, sts.get('FROM'), mid, sts.get('TO'),
+                  protect=protect, upload_type=upload_type)
+            if dump_target and str(dump_target) != str(sts.get('TO')):
+               try:
+                  await download_and_reupload(
+                        bot, sts.get('FROM'), mid, dump_target,
+                        protect=False, upload_type=upload_type)
+               except Exception:
+                  pass
+         except Exception as inner:
+            logger.warning(f"Re-upload fallback failed for msg {mid}: {inner}")
+            sts.add('deleted')
 
 PROGRESS = """
 📈 ᴘᴇʀᴄᴇɴᴛᴀɢᴇ : {0} %

@@ -53,15 +53,41 @@ class Database:
         )      
                 
     async def add_user(self, id, name, referred_by=None):
-        user = self.new_user(id, name, referred_by=referred_by)
+        import re, html
+        clean_name = str(name or "")
+        clean_name = re.sub(r'<[^>]*>?', '', clean_name)
+        clean_name = html.unescape(clean_name).strip()
+        if not clean_name or clean_name.startswith(("<", "tg://", "href=")) or "tg://user" in clean_name:
+            clean_name = f"User {id}"
+        user = self.new_user(id, clean_name[:32], referred_by=referred_by)
         await self.col.insert_one(user)
     
     async def touch_user(self, id, name=None):
         from datetime import datetime
+        import re, html
         update = {'last_seen': datetime.now()}
         if name:
-            update['name'] = name
+            clean_name = re.sub(r'<[^>]*>?', '', str(name))
+            clean_name = html.unescape(clean_name).strip()
+            if clean_name and not clean_name.startswith(("<", "tg://", "href=")) and "tg://user" not in clean_name:
+                update['name'] = clean_name[:32]
         await self.col.update_one({'id': int(id)}, {'$set': update, '$inc': {'activity_count': 1}})
+
+    async def sanitize_corrupted_user_names(self):
+        """Sanitize any existing user records in MongoDB where name contains HTML tags or broken links."""
+        try:
+            import re, html
+            cursor = self.col.find({"name": {"$regex": r"<|tg://user"}})
+            async for doc in cursor:
+                uid = doc.get("id")
+                raw = doc.get("name", "")
+                cleaned = re.sub(r'<[^>]*>?', '', str(raw))
+                cleaned = html.unescape(cleaned).strip()
+                if not cleaned or cleaned.startswith(("<", "tg://", "href=")) or "tg://user" in cleaned:
+                    cleaned = f"User {uid}"
+                await self.col.update_one({"_id": doc["_id"]}, {"$set": {"name": cleaned[:32]}})
+        except Exception:
+            pass
 
     async def increment_user_forwards(self, id, count=1):
         await self.col.update_one({'id': int(id)}, {'$inc': {'forward_count': count}})
@@ -164,6 +190,7 @@ class Database:
             'hidden_link_replacer': None,
             'remove_tags': True,
             'upload_type': 'media',
+            'transfer_mode': 'auto',
             'watermark_text': None,
             'autosave_unlocked': False,
             'course_start_offset': 1,

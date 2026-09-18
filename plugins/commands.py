@@ -19,24 +19,24 @@ def get_main_buttons(user_id=None):
     is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
     rows = [
         row(
-            btn('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', 'autosave#main', 'green'),
+            btn('➕ ᴀᴅᴅ ʙᴏᴛ', 'settings#bots', 'green'),
             btn('⚙️ sᴇᴛᴛɪɴɢs', 'settings#main', 'blue')
         ),
         row(
-            btn('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ', 'settings#courseseller', 'yellow'),
-            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green')
+            btn('🚀 sᴍᴀʀᴛ ᴀᴜᴛᴏsᴀᴠᴇ', 'autosave#main', 'green'),
+            btn('🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ', 'settings#courseseller', 'yellow')
         ),
         row(
-            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue'),
-            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue')
+            btn('💎 ᴠɪᴘ ᴘʀᴇᴍɪᴜᴍ', 'prem_plans', 'green'),
+            btn('🎁 ʀᴇғᴇʀ & ᴇᴀʀɴ', 'referral#main', 'blue')
         ),
         row(
-            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green'),
-            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue')
+            btn('📚 ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue'),
+            btn('🛡️ ᴠᴇʀɪғʏ ᴘᴀss', 'verify_menu_btn', 'green')
         ),
         row(
-            btn('🧭 ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ', 'cmd_tab_all', 'blue'),
-            btn('ℹ️ ᴀʙᴏᴜᴛ', 'about', 'blue')
+            btn('📊 sᴛᴀᴛᴜs', 'status', 'blue'),
+            btn('🧭 ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ', 'cmd_tab_all', 'blue')
         )
     ]
     if is_admin:
@@ -98,7 +98,10 @@ async def start(client, message):
 
     is_new = not await db.is_user_exist(user.id)
     if is_new:
-        await db.add_user(user.id, message.from_user.mention, referred_by=ref_id)
+        # Store plain text. `mention` is raw HTML (<a href="tg://user?id=...">) and
+        # downstream panels escape+truncate the stored name, which rendered the tag literally.
+        _plain_name = (message.from_user.first_name or message.from_user.username or str(user.id))
+        await db.add_user(user.id, _plain_name, referred_by=ref_id)
         if ref_id:
             credited, pts = await db.handle_referral_join(user.id, ref_id)
             if credited:
@@ -122,7 +125,8 @@ async def start(client, message):
             except Exception:
                 pass
     else:
-        await db.touch_user(user.id, message.from_user.mention)
+        _plain_name = (message.from_user.first_name or message.from_user.username or str(user.id))
+        await db.touch_user(user.id, _plain_name)
 
     reply_markup = get_main_buttons(user.id)
     extra_welcome = "\n\n🎁 <i>You joined via an invite link! Claim your welcome bonus in /referral!</i>" if (is_new and ref_id) else ""
@@ -440,6 +444,41 @@ async def clone_cmd(client, message):
         quote=True
     )
 
+#===================Add Bot Command===================#
+
+@Client.on_message(filters.private & filters.command(['addbot', 'connectbot']))
+async def addbot_cmd(client: Client, message: Message):
+    user_id = message.from_user.id
+    _bot = await db.get_bot(user_id)
+    if _bot:
+        status_str = f"✅ <b>ᴄᴜʀʀᴇɴᴛ ʙᴏᴛ:</b> <code>{_bot['name']}</code> (@{_bot.get('username', 'bot')})"
+    else:
+        status_str = "❌ <b>ᴄᴜʀʀᴇɴᴛ ʙᴏᴛ:</b> <i>ɴᴏ ʙᴏᴛ ᴏʀ ᴜsᴇʀʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ</i>"
+
+    buttons = [
+        [
+            InlineKeyboardButton("🤖 ᴀᴅᴅ ʙᴏᴛ ᴛᴏᴋᴇɴ", callback_data="settings#addbot"),
+            InlineKeyboardButton("⚡ ᴀᴅᴅ ᴜsᴇʀʙᴏᴛ (sᴇssɪᴏɴ)", callback_data="settings#adduserbot")
+        ],
+        [
+            InlineKeyboardButton("📱 ʟᴏɢɪɴ ᴜsᴇʀʙᴏᴛ (ᴏᴛᴘ)", callback_data="settings#addlogin"),
+            InlineKeyboardButton("⚙️ ᴍʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ ʙᴏᴛs", callback_data="settings#bots")
+        ],
+        [
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ]
+    ]
+    await message.reply_text(
+        "<blockquote><b>🤖 <u>ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ ʙᴏᴛ ᴏʀ ᴜsᴇʀʙᴏᴛ</u></b></blockquote>\n\n"
+        "<i>ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ ᴏᴡɴ ʙᴏᴛ ᴛᴏᴋᴇɴ ғʀᴏᴍ @BotFather ᴏʀ ᴀ ᴘʏʀᴏɢʀᴀᴍ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ ᴛᴏ ғᴏʀᴡᴀʀᴅ ᴍᴇssᴀɢᴇs ᴀᴛ ᴜʟᴛʀᴀ-ғᴀsᴛ sᴘᴇᴇᴅs!</i>\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{status_str}\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👇 <b>sᴇʟᴇᴄᴛ ʜᴏᴡ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ:</b>",
+        reply_markup=InlineKeyboardMarkup(buttons),
+        quote=True
+    )
+
 #===================Verify Menu Callback===================#
 
 @Client.on_callback_query(filters.regex(r'^verify_menu_btn'))
@@ -588,12 +627,13 @@ async def viewbranding_cmd(client: Client, message: Message):
 
 COMMAND_CATEGORIES = {
     "all": {
-        "title": "🧭 <b><u>ᴀʟʟ sʏsᴛᴇᴍ ᴄᴏᴍᴍᴀɴᴅs (𝟹𝟿)</u></b>",
+        "title": "🧭 <b><u>ᴀʟʟ sʏsᴛᴇᴍ ᴄᴏᴍᴍᴀɴᴅs</u></b>",
         "desc": (
             "⏣ <code>/start</code> — Start bot & view main card\n"
             "⏣ <code>/help</code> — Detailed feature guide\n"
             "⏣ <code>/commands</code> — Interactive command navigator\n"
             "⏣ <code>/menu</code> — Quick action menu\n"
+            "⏣ <code>/addbot</code> — Connect your bot token or UserBot\n"
             "⏣ <code>/settings</code> — Complete bot customization menu\n"
             "⏣ <code>/status</code> — System & forward statistics\n"
             "⏣ <code>/forward</code> — Interactive channel forward wizard\n"
@@ -633,6 +673,7 @@ COMMAND_CATEGORIES = {
             "⏣ <code>/fwd &lt;link1&gt; &lt;link2&gt;</code> — Range forward start to end\n"
             "⏣ <code>/fwd &lt;ranges...&gt;</code> — Multi-range batch forwarding\n"
             "   <i>Example: <code>/fwd 10-20, 30-40, 50-60</code></i>\n"
+            "⏣ <code>/addbot</code> — Connect your bot token or UserBot session\n"
             "⏣ <code>/pause</code> — Temporarily pause current forwarding task\n"
             "⏣ <code>/resume</code> — Resume paused forwarding task\n"
             "⏣ <code>/stop</code> — Gracefully terminate running forward task\n"
@@ -911,7 +952,7 @@ KNOWN_COMMANDS = {
     "admintrack", "verify", "setverify", "config", "env", "vars", "addadmin",
     "deladmin", "admins", "cancel", "yes", "no", "setbanner", "setheader", "delbanner",
     "clearbanner", "delheader", "setfooter", "setbrandfooter", "delfooter", "clearfooter",
-    "viewbranding", "branding", "status", "stats"
+    "viewbranding", "branding", "status", "stats", "addbot", "connectbot"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)

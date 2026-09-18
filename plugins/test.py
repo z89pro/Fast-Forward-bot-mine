@@ -527,7 +527,7 @@ async def update_configs(user_id, key, value):
       'course_seller_mode', 'auto_course_list', 'auto_numbering',
       'username_remover', 'username_replacer', 'link_remover', 'link_replacer',
       'hidden_link_remover', 'hidden_link_replacer', 'remove_tags',
-      'upload_type', 'watermark_text', 'autosave_unlocked',
+      'upload_type', 'transfer_mode', 'watermark_text', 'autosave_unlocked',
       'course_start_offset', 'course_number_style', 'course_sticky_button',
       'course_detect_missing', 'course_export_txt', 'course_telegraph_export',
       'course_brand_header', 'course_brand_footer', 'adaptive_flood_enabled'

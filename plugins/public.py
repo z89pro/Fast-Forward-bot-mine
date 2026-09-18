@@ -77,8 +77,11 @@ async def run(bot, message):
           buttons.append([KeyboardButton(f"{channel['title']}")])
           btn_data[channel['title']] = channel['chat_id']
        buttons.append([KeyboardButton("cancel")]) 
-       _toid = await bot.ask(message.chat.id, Translation.TO_MSG.format(_bot['name'], _bot['username']), reply_markup=ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True))
-       if _toid.text and _toid.text.startswith(('/', 'cancel')):
+       try:
+           _toid = await bot.ask(message.chat.id, Translation.TO_MSG.format(_bot['name'], _bot['username']), reply_markup=ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True), timeout=180)
+       except Exception:
+           return await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>", reply_markup=ReplyKeyboardRemove())
+       if not _toid or not _toid.text or _toid.text.lower().startswith(('/', 'cancel')):
           return await message.reply_text(Translation.CANCEL, reply_markup=ReplyKeyboardRemove())
        to_title = _toid.text
        toid = btn_data.get(to_title)
@@ -87,10 +90,16 @@ async def run(bot, message):
     else:
        toid = channels[0]['chat_id']
        to_title = channels[0]['title']
-    fromid = await bot.ask(message.chat.id, Translation.FROM_MSG, reply_markup=ReplyKeyboardRemove())
-    if fromid.text and fromid.text.startswith('/'):
-        await message.reply(Translation.CANCEL)
-        return 
+    try:
+        fromid = await bot.ask(message.chat.id, Translation.FROM_MSG, reply_markup=ReplyKeyboardRemove(), timeout=180)
+    except Exception:
+        return await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>", reply_markup=ReplyKeyboardRemove())
+    if not fromid or not fromid.text or fromid.text.lower().startswith(('/', 'cancel')):
+        if fromid and fromid.forward_date or getattr(fromid, "forward_origin", None):
+            pass  # forwarded message without caption is valid
+        else:
+            await message.reply(Translation.CANCEL)
+            return 
 
     detected_ranges = None
     res = {}
@@ -161,8 +170,11 @@ async def run(bot, message):
         STS(forward_id).store(chat_id, toid, skip=skip_count, limit=last_msg_id, ranges=detected_ranges)
         return
 
-    skipno = await bot.ask(message.chat.id, Translation.SKIP_MSG)
-    if not skipno.text or skipno.text.startswith('/'):
+    try:
+        skipno = await bot.ask(message.chat.id, Translation.SKIP_MSG, timeout=180)
+    except Exception:
+        return await message.reply_text("⏰ <b>ᴛɪᴍᴇᴏᴜᴛ: ɴᴏ ʀᴇsᴘᴏɴsᴇ ʀᴇᴄᴇɪᴠᴇᴅ. ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ.</b>")
+    if not skipno or not skipno.text or skipno.text.lower().startswith(('/', 'cancel')):
         await message.reply(Translation.CANCEL)
         return
     skip_val = skipno.text.strip()

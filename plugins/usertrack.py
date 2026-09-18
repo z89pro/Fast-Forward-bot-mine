@@ -1,4 +1,5 @@
 import html
+import re
 import logging
 from datetime import datetime, timedelta
 from config import Config
@@ -12,6 +13,39 @@ PAGE_SIZE = 8
 
 def is_owner(user_id: int) -> bool:
     return bool(user_id and user_id in Config.BOT_OWNER_ID)
+
+_HTML_TAG = re.compile(r'<[^>]*>?')
+_HTML_ENTITY = re.compile(r'&[a-zA-Z0-9#]+;')
+
+def display_name(doc) -> str:
+    """Plain, display-safe name for a user document.
+
+    Strips any markup, unclosed HTML tags, and ensures fragments like
+    `<a href="tg://user?...` never leak into the display.
+    """
+    if not doc or not isinstance(doc, dict):
+        return "User"
+    uid = doc.get("id") or doc.get("user_id")
+    raw = doc.get("name")
+    if raw:
+        cleaned = _HTML_TAG.sub('', str(raw))
+        cleaned = _HTML_ENTITY.sub('', cleaned)
+        cleaned = html.unescape(cleaned).strip()
+        # Verify it doesn't still contain broken tag remnants
+        if cleaned and not cleaned.startswith(("<", "tg://", "href=")) and "tg://user" not in cleaned:
+            return cleaned[:24]
+    uname = doc.get("username")
+    if uname:
+        return f"@{uname.lstrip('@')}"
+    return f"User {uid}" if uid else "User"
+
+def user_mention(doc) -> str:
+    """Clickable mention built from the id, so it never depends on stored HTML."""
+    uid = doc.get("id") or doc.get("user_id")
+    name = html.escape(display_name(doc))
+    if not uid:
+        return f"<b>{name}</b>"
+    return f'<a href="tg://user?id={int(uid)}">{name}</a>'
 
 def fmt_dt(dt):
     if not dt:
@@ -92,7 +126,8 @@ async def build_user_profile(user_id: int):
     if not user:
         return f"<b>❌ ᴜsᴇʀ <code>{user_id}</code> ɴᴏᴛ ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ.</b>", None
 
-    name = html.escape(str(user.get("name", "User")))
+    name = html.escape(display_name(user))
+    owner_badge = " 👑 ᴏᴡɴᴇʀ" if is_owner(user_id) else ""
     first_seen = fmt_dt(user.get("first_seen"))
     last_seen = fmt_dt(user.get("last_seen"))
     forwards = user.get("forward_count", 0)
@@ -119,9 +154,9 @@ async def build_user_profile(user_id: int):
         vip_btn_text = "💎 ɢʀᴀɴᴛ ᴠɪᴘ"
 
     text = (
-        f"<blockquote><b>👤 <u>ᴜsᴇʀ ᴘʀᴏғɪʟᴇ: {name}</u></b></blockquote>\n\n"
+        f"<blockquote><b>👤 <u>ᴜsᴇʀ ᴘʀᴏғɪʟᴇ: {name}{owner_badge}</u></b></blockquote>\n\n"
         f"🆔 <b>ᴛᴇʟᴇɢʀᴀᴍ ID:</b> <code>{user_id}</code>\n"
-        f"👤 <b>ɴᴀᴍᴇ / ᴍᴇɴᴛɪᴏɴ:</b> {name}\n"
+        f"👤 <b>ɴᴀᴍᴇ:</b> <b>{name}</b>{owner_badge}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📅 <b>ғɪʀsᴛ sᴇᴇɴ:</b> <code>{first_seen}</code>\n"
         f"🕒 <b>ʟᴀsᴛ ᴀᴄᴛɪᴠᴇ:</b> <code>{last_seen}</code>\n"
@@ -220,9 +255,10 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
         item_buttons = []
         for u in chunk:
             uid = u.get("id")
-            name = html.escape(str(u.get("name", "User"))[:18])
+            name = html.escape(display_name(u)[:18])
             date_val = fmt_dt(u.get(sort_key))
-            lines.append(f"• <b>{name}</b> (<code>{uid}</code>)\n  └ <i>{date_val}</i> | ғᴏʀᴡᴀʀᴅs: <code>{u.get('forward_count', 0)}</code>")
+            badge = " 👑" if is_owner(uid) else ""
+            lines.append(f"• {user_mention(u)}{badge} (<code>{uid}</code>)\n  └ <i>{date_val}</i> | ғᴏʀᴡᴀʀᴅs: <code>{u.get('forward_count', 0)}</code>")
             item_buttons.append([InlineKeyboardButton(f"👤 ᴠɪᴇᴡ {name}", callback_data=f"utr_user_{uid}")])
 
         lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
