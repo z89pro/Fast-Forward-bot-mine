@@ -1,6 +1,7 @@
 import os
 import re
 import sys 
+import html
 import math
 import time
 import random
@@ -466,8 +467,8 @@ async def execute_forward_task(client, user, m, sts, task_id, _bot, caption, for
                 lec_button = merge_sticky_button(button, sticky_btn)
                 details = {"msg_id": message.id, "media": media(message), "caption": new_caption, 'button': lec_button, "protect": protect, "upload_type": upload_type, "transfer_mode": transfer_mode}
                 sent_id = await copy(client, details, m, sts, dump_target=dump_target)
-                sts.add('total_files')
                 if sent_id:
+                    sts.add('total_files')
                     media_obj = getattr(message, message.media.value, None) if message.media else None
                     fname = getattr(media_obj, 'file_name', '') if media_obj else ''
                     c_title = fname or ((message.caption or message.text or "")[:50].strip() if (message.caption or message.text) else f"Lecture {lec_idx:02d}")
@@ -684,21 +685,25 @@ async def _resume_single_task(bot_app, task_data):
 
     temp.CANCEL[user_id] = False
     temp.PAUSE[user_id] = False
+    temp.lock[user_id] = True
 
-    await execute_forward_task(
-        client=client,
-        user=user_id,
-        m=m,
-        sts=sts,
-        task_id=task_id,
-        _bot=_bot,
-        caption=caption,
-        forward_tag=forward_tag,
-        protect=protect,
-        button=button,
-        user_configs=user_configs,
-        is_resumed=True
-    )
+    try:
+        await execute_forward_task(
+            client=client,
+            user=user_id,
+            m=m,
+            sts=sts,
+            task_id=task_id,
+            _bot=_bot,
+            caption=caption,
+            forward_tag=forward_tag,
+            protect=protect,
+            button=button,
+            user_configs=user_configs,
+            is_resumed=True
+        )
+    finally:
+        temp.lock[user_id] = False
 
 _RESTRICTED_NAMES = {
     "ChatForwardsRestricted", "MessageAuthorRequired", "ChatRestricted",
@@ -789,7 +794,7 @@ async def download_and_reupload(bot, from_chat_id, message_id, to_chat, caption=
 
 async def _copy_once(bot, msg, from_chat_id, to_chat, protect):
    """One server-side transfer attempt. Never downloads anything."""
-   if msg.get("media") and msg.get("caption"):
+   if msg.get("media"):
       return await bot.send_cached_media(
             chat_id=to_chat,
             file_id=msg.get("media"),
@@ -840,7 +845,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
      await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
      return await copy(bot, msg, m, sts, dump_target=dump_target)
    except Exception as e:
-     if is_restricted_error(e):
+     if is_restricted_error(e) or "FILE_REFERENCE" in str(e).upper():
         # Protected source: Telegram refused the server-side transfer, so the
         # file has to be downloaded and uploaded as a fresh one.
         try:
@@ -854,7 +859,7 @@ async def copy(bot, msg, m, sts, dump_target=None):
               return getattr(sent, 'id', None)
         except Exception as inner:
            logger.warning(f"Re-upload fallback failed for msg {msg.get('msg_id')}: {inner}")
-     print(e)
+     logger.warning(f"Copy failed for message {msg.get('msg_id')}: {e}")
      sts.add('deleted')
      return None
 
@@ -1096,25 +1101,74 @@ async def forward(bot, msg, m, sts, protect, dump_target=None, upload_type="medi
       await edit(m, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
       await forward(bot, msg, m, sts, protect, dump_target=dump_target, upload_type=upload_type)
    except Exception as e:
-      if not is_restricted_error(e):
-         raise
-      # Protected source: forwardMessages is refused, so re-upload each message
-      # in the batch. Text-only messages survive; media is downloaded and sent.
-      for mid in (msg if isinstance(msg, (list, tuple)) else [msg]):
-         try:
-            await download_and_reupload(
-                  bot, sts.get('FROM'), mid, sts.get('TO'),
-                  protect=protect, upload_type=upload_type)
-            if dump_target and str(dump_target) != str(sts.get('TO')):
+      if is_restricted_error(e):
+         # Protected source: forwardMessages is refused, so re-upload each message
+         # in the batch. Text-only messages survive; media is downloaded and sent.
+         for mid in (msg if isinstance(msg, (list, tuple)) else [msg]):
+            try:
+               await download_and_reupload(
+                     bot, sts.get('FROM'), mid, sts.get('TO'),
+                     protect=protect, upload_type=upload_type)
+               if dump_target and str(dump_target) != str(sts.get('TO')):
+                  try:
+                     await download_and_reupload(
+                           bot, sts.get('FROM'), mid, dump_target,
+                           protect=False, upload_type=upload_type)
+                  except Exception:
+                     pass
+            except FloodWait as fw:
+               await asyncio.sleep(fw.value + 1)
                try:
                   await download_and_reupload(
-                        bot, sts.get('FROM'), mid, dump_target,
-                        protect=False, upload_type=upload_type)
+                        bot, sts.get('FROM'), mid, sts.get('TO'),
+                        protect=protect, upload_type=upload_type)
                except Exception:
-                  pass
-         except Exception as inner:
-            logger.warning(f"Re-upload fallback failed for msg {mid}: {inner}")
-            sts.add('deleted')
+                  sts.add('deleted')
+            except Exception as inner:
+               logger.warning(f"Re-upload fallback failed for msg {mid}: {inner}")
+               sts.add('deleted')
+      elif isinstance(msg, (list, tuple)) and len(msg) > 1:
+         # Batch forward failed (e.g. invalid/deleted message ID in batch).
+         # Fallback to forwarding messages individually so good messages succeed!
+         for mid in msg:
+            try:
+               await bot.forward_messages(
+                     chat_id=sts.get('TO'),
+                     from_chat_id=sts.get('FROM'),
+                     protect_content=protect,
+                     message_ids=mid)
+               if dump_target and str(dump_target) != str(sts.get('TO')):
+                  try:
+                     await bot.forward_messages(
+                           chat_id=dump_target,
+                           from_chat_id=sts.get('FROM'),
+                           message_ids=mid)
+                  except Exception:
+                     pass
+            except FloodWait as fe:
+               await asyncio.sleep(fe.value + 1)
+               try:
+                  await bot.forward_messages(
+                        chat_id=sts.get('TO'),
+                        from_chat_id=sts.get('FROM'),
+                        protect_content=protect,
+                        message_ids=mid)
+               except Exception:
+                  sts.add('deleted')
+            except Exception as single_err:
+               if is_restricted_error(single_err):
+                  try:
+                     await download_and_reupload(
+                           bot, sts.get('FROM'), mid, sts.get('TO'),
+                           protect=protect, upload_type=upload_type)
+                  except Exception:
+                     sts.add('deleted')
+               else:
+                  logger.warning(f"Skipping failed message {mid}: {single_err}")
+                  sts.add('deleted')
+      else:
+         logger.warning(f"Single message forward failed: {e}")
+         sts.add('deleted')
 
 PROGRESS = """
 📈 ᴘᴇʀᴄᴇɴᴛᴀɢᴇ : {0} %
@@ -1131,6 +1185,8 @@ PROGRESS = """
 """
 
 async def msg_edit(msg, text, button=None, wait=None):
+    if not msg:
+        return None
     try:
         return await msg.edit(text, reply_markup=button)
     except MessageNotModified:
@@ -1139,50 +1195,61 @@ async def msg_edit(msg, text, button=None, wait=None):
         if wait:
            await asyncio.sleep(e.value)
            return await msg_edit(msg, text, button, wait)
+    except Exception as e:
+        logger.debug(f"msg_edit suppressed: {e}")
+        return None
 
 async def edit(msg, title, status, sts):
-   i = sts.get(full=True)
-   owner = getattr(i, 'user_id', None) or (sts.verify().get('user_id') if isinstance(sts.verify(), dict) else None)
-   is_paused = temp.PAUSE.get(owner, False)
-   if is_paused:
-       status = '⏸️ ᴘᴀᴜsᴇᴅ'
-   elif status == 10:
-       status = 'ғᴏʀᴡᴀʀᴅɪɴɢ'
-   elif str(status).isnumeric():
-       status = f"sʟᴇᴇᴘɪɴɢ {status} s"
+    if not msg:
+        return
+    try:
+        i = sts.get(full=True)
+        if not i:
+            return
+        owner = getattr(i, 'user_id', None) or (sts.verify().get('user_id') if isinstance(sts.verify(), dict) else None)
+        is_paused = temp.PAUSE.get(owner, False)
+        if is_paused:
+            status = '⏸️ ᴘᴀᴜsᴇᴅ'
+        elif status == 10:
+            status = 'ғᴏʀᴡᴀʀᴅɪɴɢ'
+        elif str(status).isnumeric():
+            status = f"sʟᴇᴇᴘɪɴɢ {status} s"
 
-   total_val = float(i.total) if i.total else 1.0
-   fetched_val = float(i.fetched) if i.fetched else 0.0
-   pct_val = min(100.0, max(0.0, (fetched_val * 100.0) / total_val)) if total_val > 0 else 0.0
-   percentage = "{:.0f}".format(pct_val)
+        total_val = float(i.total) if i.total else 1.0
+        fetched_val = float(i.fetched) if i.fetched else 0.0
+        pct_val = min(100.0, max(0.0, (fetched_val * 100.0) / total_val)) if total_val > 0 else 0.0
+        percentage = "{:.0f}".format(pct_val)
 
-   now = time.time()
-   diff = int(now - i.start)
-   speed = sts.divide(i.fetched, diff)
-   elapsed_time = round(diff) * 1000
-   time_to_completion = round(sts.divide(i.total - i.fetched, int(speed))) * 1000
-   estimated_total_time = elapsed_time + time_to_completion  
-   
-   progress = "▰{0}{1}".format(
-       ''.join(["▰" for _ in range(math.floor(int(percentage) / 10))]),
-       ''.join(["▱" for _ in range(10 - math.floor(int(percentage) / 10))]))
-   if hasattr(sts, 'data') and i.id in sts.data:
-      sts.data[i.id]['status'] = status
-      sts.data[i.id]['est_time'] = estimated_total_time
-   button = [[InlineKeyboardButton(progress, callback_data=f'fstat#{percentage}#{i.id}')]]
-   estimated_total_time = TimeFormatter(milliseconds=estimated_total_time)
-   estimated_total_time = estimated_total_time if estimated_total_time != '' else '0 s'
+        now = time.time()
+        diff = int(now - (i.start or now))
+        speed = sts.divide(i.fetched, diff)
+        elapsed_time = round(diff) * 1000
+        time_to_completion = round(sts.divide(i.total - i.fetched, int(speed))) * 1000
+        estimated_total_time = elapsed_time + time_to_completion  
+        
+        progress = "▰{0}{1}".format(
+            ''.join(["▰" for _ in range(math.floor(int(percentage) / 10))]),
+            ''.join(["▱" for _ in range(10 - math.floor(int(percentage) / 10))]))
+        if hasattr(sts, 'data') and i.id in sts.data:
+            sts.data[i.id]['status'] = status
+            sts.data[i.id]['est_time'] = estimated_total_time
+        button = [[InlineKeyboardButton(progress, callback_data=f'fstat#{percentage}#{i.id}')]]
+        estimated_total_time = TimeFormatter(milliseconds=estimated_total_time)
+        estimated_total_time = estimated_total_time if estimated_total_time != '' else '0 s'
 
-   text = TEXT.format(i.total, i.fetched, i.total_files, i.duplicate, i.deleted, i.skip, i.filtered, status, percentage, title)
-   if status in ["ᴄᴀɴᴄᴇʟʟᴇᴅ", "ᴄᴏᴍᴘʟᴇᴛᴇᴅ"]:
-      button.append([InlineKeyboardButton('• ᴄʟᴏsᴇ', callback_data='close_btn')])
-   else:
-      pause_btn = InlineKeyboardButton('▶️ ʀᴇsᴜᴍᴇ', callback_data=f'resume_frwd#{i.id}') if is_paused else InlineKeyboardButton('⏸️ ᴘᴀᴜsᴇ', callback_data=f'pause_frwd#{i.id}')
-      button.append([
-         pause_btn,
-         InlineKeyboardButton('🛑 ᴄᴀɴᴄᴇʟ', callback_data='terminate_frwd')
-      ])
-   await msg_edit(msg, text, colored_markup(button))
+        safe_title = html.escape(str(title or ''))
+        text = TEXT.format(i.total, i.fetched, i.total_files, i.duplicate, i.deleted, i.skip, i.filtered, status, percentage, safe_title)
+        if status in ["ᴄᴀɴᴄᴇʟʟᴇᴅ", "ᴄᴏᴍᴘʟᴇᴛᴇᴅ"]:
+            button.append([InlineKeyboardButton('• ᴄʟᴏsᴇ', callback_data='close_btn')])
+        else:
+            pause_btn = InlineKeyboardButton('▶️ ʀᴇsᴜᴍᴇ', callback_data=f'resume_frwd#{i.id}') if is_paused else InlineKeyboardButton('⏸️ ᴘᴀᴜsᴇ', callback_data=f'pause_frwd#{i.id}')
+            button.append([
+                pause_btn,
+                InlineKeyboardButton('🛑 ᴄᴀɴᴄᴇʟ', callback_data='terminate_frwd')
+            ])
+        await msg_edit(msg, text, colored_markup(button))
+    except Exception as e:
+        logger.warning(f"edit() error (ignored to keep task running): {e}")
 
 async def is_cancelled(client, user, msg, sts, task_id=None):
    if temp.CANCEL.get(user) == True:
@@ -1201,7 +1268,7 @@ async def is_cancelled(client, user, msg, sts, task_id=None):
             pass
       if msg:
           try:
-              await edit(msg, "ᴄᴀɴᴄᴇʟʟᴇᴅ", "ᴄᴏᴍᴘʟᴇᴛᴇᴅ", sts)
+              await edit(msg, "ᴄᴀɴᴄᴇʟʟᴇᴅ", "ᴄᴀɴᴄᴇʟʟᴇᴅ", sts)
           except Exception:
               pass
       await send(client, user, "<b>❌ ғᴏʀᴡᴀʀᴅɪɴɢ ᴄᴀɴᴄᴇʟʟᴇᴅ</b>")

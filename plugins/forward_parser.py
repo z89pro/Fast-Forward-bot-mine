@@ -191,13 +191,29 @@ def extract_requested_chat(message: Message):
     """Safely extracts (chat_id, chat_title) from a native Telegram request_chat button message."""
     if not message:
         return None, None
+    cid = None
+    title = None
     chats_shared = getattr(message, "chats_shared", None)
     if chats_shared and getattr(chats_shared, "chats", None):
         rc = chats_shared.chats[0]
-        return rc.chat_id, getattr(rc, "name", None) or "Channel"
-    chat_shared = getattr(message, "chat_shared", None)
-    if chat_shared:
-        return getattr(chat_shared, "chat_id", None), getattr(chat_shared, "title", None) or getattr(chat_shared, "name", None) or "Channel"
+        cid = rc.chat_id
+        title = getattr(rc, "title", None) or getattr(rc, "name", None) or "Channel"
+    else:
+        chat_shared = getattr(message, "chat_shared", None)
+        if chat_shared:
+            cid = getattr(chat_shared, "chat_id", None)
+            title = getattr(chat_shared, "title", None) or getattr(chat_shared, "name", None) or "Channel"
+
+    if cid is not None:
+        try:
+            cid_int = int(cid)
+            if cid_int > 0 and not str(cid_int).startswith("-100"):
+                cid = int(f"-100{cid_int}")
+            else:
+                cid = cid_int
+        except Exception:
+            pass
+        return cid, title
     return None, None
 
 

@@ -36,7 +36,7 @@ SESSION_STRING_SIZE = 351
 
 async def start_clone_bot(FwdBot, data=None):
    await FwdBot.start()
-   #
+
    async def iter_messages(
       self, 
       chat_id: Union[int, str], 
@@ -45,30 +45,8 @@ async def start_clone_bot(FwdBot, data=None):
       search: str = None,
       filter: "types.TypeMessagesFilter" = None,
       ) -> Optional[AsyncGenerator["types.Message", None]]:
-        """Iterate through a chat sequentially.
-        This convenience method does the same as repeatedly calling :meth:`~pyrogram.Client.get_messages` in a loop, thus saving
-        you from the hassle of setting up boilerplate code. It is useful for getting the whole chat messages with a
-        single call.
-        Parameters:
-            chat_id (``int`` | ``str``):
-                Unique identifier (int) or username (str) of the target chat.
-                For your personal cloud (Saved Messages) you can simply use "me" or "self".
-                For a contact that exists in your Telegram address book you can use his phone number (str).
-                
-            limit (``int``):
-                Identifier of the last message to be returned.
-                
-            offset (``int``, *optional*):
-                Identifier of the first message to be returned.
-                Defaults to 0.
-        Returns:
-            ``Generator``: A generator yielding :obj:`~pyrogram.types.Message` objects.
-        Example:
-            .. code-block:: python
-                for message in app.iter_messages("pyrogram", 1, 15000):
-                    print(message.text)
-        """
-        current = offset
+        current = max(1, int(offset or 0))
+        limit = int(limit or 0)
         while current <= limit:
             new_diff = min(200, limit - current + 1)
             if new_diff <= 0:
@@ -77,6 +55,12 @@ async def start_clone_bot(FwdBot, data=None):
             current += new_diff
             try:
                 messages = await self.get_messages(chat_id, ids)
+            except FloodWait as fw:
+                await asyncio.sleep(fw.value + 1)
+                try:
+                    messages = await self.get_messages(chat_id, ids)
+                except Exception:
+                    messages = []
             except Exception:
                 messages = []
             if not messages:
@@ -85,8 +69,9 @@ async def start_clone_bot(FwdBot, data=None):
             valid_messages.sort(key=lambda m: getattr(m, 'id', 0))
             for message in valid_messages:
                 yield message
-   #
+
    FwdBot.iter_messages = iter_messages
+   Client.iter_messages = iter_messages
    return FwdBot
 
 class CLIENT: 
