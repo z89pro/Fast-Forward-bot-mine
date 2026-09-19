@@ -469,8 +469,11 @@ async def reset_cancel_cb(bot, query):
         ])
     )
 
-@Client.on_message(filters.command('resetall') & filters.user(Config.BOT_OWNER_ID))
+@Client.on_message(filters.command('resetall'))
 async def resetall(bot, message):
+  user_id = message.from_user.id if message.from_user else message.chat.id
+  if not await db.is_admin(user_id):
+      return await message.reply_text("⛔ <b>ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ᴏɴʟʏ ғᴏʀ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.</b>", quote=True)
   users = await db.get_all_users()
   sts = await message.reply_text(
       "<blockquote><b>🔄 <u>ʀᴇsᴇᴛᴛɪɴɢ ᴀʟʟ ᴜsᴇʀs...</u></b></blockquote>",

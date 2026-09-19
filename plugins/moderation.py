@@ -227,8 +227,8 @@ async def ban_user_cmd(client: Client, message: Message):
     except ValueError:
         return await message.reply_text("⚠️ <b>ɪɴᴠᴀʟɪᴅ ᴜsᴇʀ ɪᴅ. ᴍᴜsᴛ ʙᴇ ᴀ ɴᴜᴍʙᴇʀ.</b>")
 
-    if target_uid in Config.BOT_OWNER_ID:
-        return await message.reply_text("❌ <b>ᴄᴀɴɴᴏᴛ ʙᴀɴ ʙᴏᴛ ᴏᴡɴᴇʀ.</b>")
+    if await db.is_admin(target_uid):
+        return await message.reply_text("❌ <b>ᴄᴀɴɴᴏᴛ ʙᴀɴ ʙᴏᴛ ᴏᴡɴᴇʀ ᴏʀ ᴀᴅᴍɪɴ.</b>")
 
     reason = " ".join(message.command[2:]).strip() or "Violation of bot usage terms"
     await db.ban_user(target_uid, reason)
@@ -267,8 +267,8 @@ async def ban_callback(client: Client, query: CallbackQuery):
         return await query.answer("⛔ Admin only!", show_alert=True)
 
     target_uid = int(query.matches[0].group(1))
-    if target_uid in Config.BOT_OWNER_ID:
-        return await query.answer("❌ Cannot ban bot owner.", show_alert=True)
+    if await db.is_admin(target_uid):
+        return await query.answer("❌ Cannot ban bot owner or admin.", show_alert=True)
 
     reason = "Infringing content / Moderation flag"
     await db.ban_user(target_uid, reason)
@@ -414,7 +414,9 @@ async def add_blacklist_cmd(client: Client, message: Message):
         )
 
     args = message.command[1:]
-    if args[0].lower() in ("chan", "channel") and len(args) > 1:
+    if args[0].lower() in ("chan", "channel"):
+        if len(args) < 2:
+            return await message.reply_text("<b>ᴜsᴀɢᴇ:</b> <code>/addblacklist chan &lt;channel_id&gt;</code>")
         itype = "channel"
         pat = args[1].strip()
     else:

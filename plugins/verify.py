@@ -493,7 +493,7 @@ async def verify_command(bot: Client, message: Message):
 @Client.on_message(filters.private & filters.command("setverify"))
 async def setverify_command(bot: Client, message: Message):
     user_id = message.from_user.id
-    if user_id not in Config.BOT_OWNER_ID:
+    if not await db.is_admin(user_id):
         return await message.reply_text("⛔ <b>This command is restricted to Bot Administrators only.</b>", quote=True)
 
     args = (message.text or message.caption or "").split()[1:]

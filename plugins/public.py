@@ -121,8 +121,9 @@ async def run(bot, message):
 
     # Direct multi-range or link forwarding: /fwd <link/ranges...>
     raw_args = ""
-    if len(message.command) > 1:
-        raw_args = (message.text or message.caption or "").split(None, 1)[1]
+    cmd_parts = (message.text or message.caption or "").split(None, 1)
+    if len(cmd_parts) > 1:
+        raw_args = cmd_parts[1]
     if raw_args:
         try:
             parsed_chat, parsed_ranges = parse_multi_ranges(raw_args)
@@ -217,7 +218,13 @@ async def run(bot, message):
     keyboard = ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
 
     toid = to_title = None
-    prompt_txt = Translation.TO_MSG.format(_bot['name'], _bot['username'])
+    _worker = _custom_bot or _userbot
+    w_name = _worker.get('name', 'Bot') if _worker else 'Bot'
+    w_user = _worker.get('username', 'Bot') if _worker else 'Bot'
+    try:
+        prompt_txt = Translation.TO_MSG.format(w_name, w_user)
+    except Exception:
+        prompt_txt = Translation.TO_MSG
     if len(channels) == 1:
         prompt_txt += f"\n\n<i>🎯 ᴄᴜʀʀᴇɴᴛ ᴅᴇғᴀᴜʟᴛ:</i> <b>{channels[0]['title']}</b> (ᴛᴀᴘ ʙᴇʟᴏᴡ ᴛᴏ ᴜsᴇ ᴏʀ ᴘɪᴄᴋ ᴀɴᴏᴛʜᴇʀ)"
 

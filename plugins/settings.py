@@ -28,9 +28,10 @@ async def settings(client, message):
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
       "👇 <i>Choose a module below to configure:</i>"
    )
+   is_adm = await db.is_admin(message.from_user.id)
    await message.reply_text(
      text,
-     reply_markup=main_buttons(message.from_user.id),
+     reply_markup=main_buttons(message.from_user.id, is_admin=is_adm),
      quote=True
    )
     
@@ -47,9 +48,10 @@ async def settings_query(bot, query):
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "👇 <i>Choose a module below to configure:</i>"
      )
+     is_adm = await db.is_admin(user_id)
      await query.message.edit_text(
        text,
-       reply_markup=main_buttons(user_id))
+       reply_markup=main_buttons(user_id, is_admin=is_adm))
 
   elif type=="speed":
      configs = await get_configs(user_id)
@@ -472,7 +474,7 @@ async def settings_query(bot, query):
         reply_markup=InlineKeyboardMarkup(buttons))
       
   elif type=="dump":
-     if user_id not in Config.BOT_OWNER_ID:
+     if not await db.is_admin(user_id):
         return await query.answer("⚠️ Dump Channel settings are restricted to Bot Admins only!", show_alert=True)
      dump_chan, dump_enabled = await db.get_admin_dump()
      state_mark = "✅ ᴏɴ" if dump_enabled else "❌ ᴏғғ"
@@ -498,7 +500,7 @@ async def settings_query(bot, query):
      )
 
   elif type=="toggledump":
-     if user_id not in Config.BOT_OWNER_ID:
+     if not await db.is_admin(user_id):
         return await query.answer("⚠️ Dump Channel settings are restricted to Bot Admins only!", show_alert=True)
      dump_chan, dump_enabled = await db.get_admin_dump()
      await db.update_admin_dump(dump_chan, not dump_enabled)
@@ -525,7 +527,7 @@ async def settings_query(bot, query):
      )
 
   elif type=="setdump":
-      if user_id not in Config.BOT_OWNER_ID:
+      if not await db.is_admin(user_id):
          return await query.answer("⚠️ Dump Channel settings are restricted to Bot Admins only!", show_alert=True)
       await query.message.delete()
       try:
@@ -568,7 +570,7 @@ async def settings_query(bot, query):
           await bot.send_message(user_id, f"Process error: {e}", reply_markup=InlineKeyboardMarkup(buttons))
 
   elif type=="deletedump":
-     if user_id not in Config.BOT_OWNER_ID:
+     if not await db.is_admin(user_id):
         return await query.answer("⚠️ Dump Channel settings are restricted to Bot Admins only!", show_alert=True)
      await db.update_admin_dump(None, False)
      await query.answer("Dump Channel removed!", show_alert=True)
@@ -1181,8 +1183,8 @@ def ftm_buttons(cfg):
     ]
     return InlineKeyboardMarkup(buttons)
 
-def main_buttons(user_id=None):
-  is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
+def main_buttons(user_id=None, is_admin=False):
+  is_admin = is_admin or bool(user_id and user_id in Config.BOT_OWNER_ID)
   buttons = [[
        InlineKeyboardButton('➕ ᴀᴅᴅ ʙᴏᴛ',
                     callback_data=f'settings#bots'),

@@ -16,8 +16,8 @@ from translation import Translation
 from pyrogram import Client, filters, enums, __version__ as pyrogram_version
 from pyrogram.errors import ListenerTimeout
 
-def get_main_buttons(user_id=None):
-    is_admin = bool(user_id and user_id in Config.BOT_OWNER_ID)
+def get_main_buttons(user_id=None, is_admin=False):
+    is_admin = is_admin or bool(user_id and user_id in Config.BOT_OWNER_ID)
     rows = [
         row(
             btn('➕ ᴀᴅᴅ ʙᴏᴛ', 'settings#bots', 'green'),
@@ -156,7 +156,8 @@ async def start(client, message):
         f"• 🎯 <b>ᴛᴀʀɢᴇᴛ:</b> {f'<code>{len(chans)} ᴄʜᴀɴɴᴇʟ(s)</code> ✅' if chans else '<code>ɴᴏᴛ sᴇᴛ</code> ⚠️'}</blockquote>"
     )
 
-    reply_markup = get_main_buttons(user.id)
+    is_adm = await db.is_admin(user.id)
+    reply_markup = get_main_buttons(user.id, is_admin=is_adm)
     extra_welcome = "\n\n🎁 <i>You joined via an invite link! Claim your welcome bonus in /referral!</i>" if (is_new and ref_id) else ""
     await message.reply_text(
         text=Translation.START_TXT.format(message.from_user.first_name) + extra_welcome + readiness,
@@ -310,7 +311,8 @@ async def how_to_fwd(bot, query):
 
 @Client.on_callback_query(filters.regex(r'^back'))
 async def back(bot, query):
-    reply_markup = get_main_buttons(query.from_user.id)
+    is_adm = await db.is_admin(query.from_user.id)
+    reply_markup = get_main_buttons(query.from_user.id, is_admin=is_adm)
     await query.message.edit_text(
        reply_markup=reply_markup,
        text=Translation.START_TXT.format(
@@ -565,7 +567,8 @@ async def setlecstart_cmd(client: Client, message: Message):
 @Client.on_message(filters.command(['setcoursebutton', 'coursebutton']))
 async def setcoursebutton_cmd(client: Client, message: Message):
     user_id = message.from_user.id if message.from_user else message.chat.id
-    if len(message.command) < 2:
+    parts = (message.text or message.caption or "").split(None, 1)
+    if len(parts) < 2 or not parts[1].strip():
         return await message.reply_text(
             "🔘 <b><u>sᴇᴛ sᴛɪᴄᴋʏ ᴄᴏᴜʀsᴇ ʙᴜᴛᴛᴏɴ</u></b>\n\n"
             "<b>Usage:</b> <code>/setcoursebutton &lt;Button Text | URL&gt;</code>\n"
@@ -573,7 +576,7 @@ async def setcoursebutton_cmd(client: Client, message: Message):
             "<i>To remove the button, send: <code>/setcoursebutton none</code></i>",
             quote=True
         )
-    raw_arg = (message.text or message.caption or "").split(None, 1)[1].strip()
+    raw_arg = parts[1].strip()
     configs = await db.get_configs(user_id)
     if raw_arg.lower() in ('none', 'off', 'clear', 'delete', 'remove'):
         configs['course_sticky_button'] = None
@@ -590,7 +593,8 @@ async def setcoursebutton_cmd(client: Client, message: Message):
 @Client.on_message(filters.command(['setbanner', 'setheader']))
 async def setbanner_cmd(client: Client, message: Message):
     user_id = message.from_user.id if message.from_user else message.chat.id
-    if len(message.command) < 2:
+    parts = (message.text or message.caption or "").split(None, 1)
+    if len(parts) < 2 or not parts[1].strip():
         return await message.reply_text(
             "🎨 <b><u>sᴇᴛ ʜᴇᴀᴅᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ</u></b>\n\n"
             "<b>ᴜsᴀɢᴇ:</b> <code>/setbanner &lt;banner text&gt;</code>\n"
@@ -598,7 +602,7 @@ async def setbanner_cmd(client: Client, message: Message):
             "<i>ᴛʜɪs ʙᴀɴɴᴇʀ ɪs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴘʀᴇᴘᴇɴᴅᴇᴅ ᴛᴏ ᴇᴠᴇʀʏ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ & ᴡᴇʙ sʏʟʟᴀʙᴜs!</i>",
             quote=True
         )
-    banner_text = (message.text or message.caption or "").split(None, 1)[1].strip()
+    banner_text = parts[1].strip()
     configs = await db.get_configs(user_id)
     configs['course_brand_header'] = banner_text
     await db.update_configs(user_id, configs)
@@ -620,7 +624,8 @@ async def delbanner_cmd(client: Client, message: Message):
 @Client.on_message(filters.command(['setfooter', 'setbrandfooter']))
 async def setfooter_cmd(client: Client, message: Message):
     user_id = message.from_user.id if message.from_user else message.chat.id
-    if len(message.command) < 2:
+    parts = (message.text or message.caption or "").split(None, 1)
+    if len(parts) < 2 or not parts[1].strip():
         return await message.reply_text(
             "🎨 <b><u>sᴇᴛ ғᴏᴏᴛᴇʀ ʙʀᴀɴᴅɪɴɢ ʙᴀɴɴᴇʀ</u></b>\n\n"
             "<b>ᴜsᴀɢᴇ:</b> <code>/setfooter &lt;footer text&gt;</code>\n"
@@ -628,7 +633,7 @@ async def setfooter_cmd(client: Client, message: Message):
             "<i>ᴛʜɪs ʙᴀɴɴᴇʀ ɪs ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴀᴘᴘᴇɴᴅᴇᴅ ᴛᴏ ᴇᴠᴇʀʏ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ & ᴡᴇʙ sʏʟʟᴀʙᴜs!</i>",
             quote=True
         )
-    footer_text = (message.text or message.caption or "").split(None, 1)[1].strip()
+    footer_text = parts[1].strip()
     configs = await db.get_configs(user_id)
     configs['course_brand_footer'] = footer_text
     await db.update_configs(user_id, configs)
@@ -663,6 +668,30 @@ async def viewbranding_cmd(client: Client, message: Message):
         f"✏️ <i>ᴜsᴇ <code>/setbanner</code>, <code>/setfooter</code>, <code>/setcoursebutton</code> ᴛᴏ ᴍᴏᴅɪғʏ.</i>",
         quote=True
     )
+
+@Client.on_message(filters.command(['exportindex']))
+async def exportindex_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    configs = await db.get_configs(user_id)
+    enabled = configs.get('course_export_txt', True)
+    status_str = "🟢 <b>ᴇɴᴀʙʟᴇᴅ</b>" if enabled else "🔴 <b>ᴅɪsᴀʙʟᴇᴅ</b>"
+    text = (
+        "📄 <b><u>ᴄᴏᴜʀsᴇ sʏʟʟᴀʙᴜs / ɪɴᴅᴇx ᴇxᴘᴏʀᴛ</u></b>\n\n"
+        f"• <b>ᴀᴜᴛᴏ .TXT ᴇxᴘᴏʀᴛ:</b> {status_str}\n\n"
+        "<i>ᴡʜᴇɴ ᴇɴᴀʙʟᴇᴅ, ᴛʜᴇ ʙᴏᴛ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ɢᴇɴᴇʀᴀᴛᴇs ᴀɴᴅ sᴇɴᴅs ᴀ <code>.txt</code> sʏʟʟᴀʙᴜs "
+        "ᴅᴏᴄᴜᴍᴇɴᴛ ᴡɪᴛʜ ᴅɪʀᴇᴄᴛ ʟᴇᴄᴛᴜʀᴇ ʟɪɴᴋs ᴀғᴛᴇʀ ᴇᴠᴇʀʏ ᴄᴏᴜʀsᴇ ғᴏʀᴡᴀʀᴅɪɴɢ ʙᴀᴛᴄʜ.</i>\n\n"
+        "💡 <i>ʏᴏᴜ ᴄᴀɴ ᴛᴏɢɢʟᴇ ᴛʜɪs sᴇᴛᴛɪɴɢ ᴏʀ ᴄᴏɴғɪɢᴜʀᴇ ʏᴏᴜʀ ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ sᴜɪᴛᴇ ᴠɪᴀ <code>/courseseller</code>.</i>"
+    )
+    kb = markup(
+        row(
+            btn("🎓 ᴄᴏᴜʀsᴇ sᴇʟʟᴇʀ", "settings#courseseller", "yellow"),
+            btn("⚙️ sᴇᴛᴛɪɴɢs", "settings#main", "blue")
+        ),
+        row(
+            btn("❌ ᴄʟᴏsᴇ", "close_btn", "red")
+        )
+    )
+    await message.reply_text(text, reply_markup=kb, quote=True)
 
 #===================Interactive Commands & Menu Browser===================#
 
@@ -842,8 +871,9 @@ async def id_command(client: Client, message: Message):
             return await message.reply_text(text, reply_markup=kb, quote=True)
 
     # 2. Argument passed? e.g. /id -1001234567890 or /id @mychannel
-    if len(message.command) > 1:
-        arg = (message.text or message.caption or "").split(None, 1)[1].strip()
+    cmd_parts = (message.text or message.caption or "").split(None, 1)
+    if len(cmd_parts) > 1 and cmd_parts[1].strip():
+        arg = cmd_parts[1].strip()
         res = await resolve_channel_input(arg, client)
         if res.get("chat_id"):
             fwd_info = {
@@ -885,7 +915,7 @@ async def id_command(client: Client, message: Message):
 @Client.on_message(filters.command(['setdump', 'dump']) & filters.private)
 async def setdump_command(client: Client, message: Message):
     user_id = message.from_user.id if message.from_user else message.chat.id
-    if user_id not in Config.BOT_OWNER_ID:
+    if not await db.is_admin(user_id):
         return await message.reply_text("⚠️ <b>ᴀᴄᴄᴇss ᴅᴇɴɪᴇᴅ:</b> ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.", quote=True)
 
     from plugins.forward_parser import resolve_channel_input
@@ -908,8 +938,9 @@ async def setdump_command(client: Client, message: Message):
             )
 
     # 2. Command argument
-    if len(message.command) > 1:
-        arg = (message.text or message.caption or "").split(None, 1)[1].strip()
+    cmd_parts = (message.text or message.caption or "").split(None, 1)
+    if len(cmd_parts) > 1 and cmd_parts[1].strip():
+        arg = cmd_parts[1].strip()
         if arg == "0":
             Config.DUMP_CHANNEL = 0
             await db.update_system_config("DUMP_CHANNEL", 0)
@@ -1135,7 +1166,7 @@ async def fwd_add_callback(client: Client, query: CallbackQuery):
 @Client.on_callback_query(filters.regex(r"^fwd_dump_(-?\d+)$"))
 async def fwd_dump_callback(client: Client, query: CallbackQuery):
     user_id = query.from_user.id
-    if user_id not in Config.BOT_OWNER_ID:
+    if not await db.is_admin(user_id):
         return await query.answer("⚠️ Admin only!", show_alert=True)
     cid = int(query.matches[0].group(1))
     Config.DUMP_CHANNEL = cid
@@ -1147,7 +1178,7 @@ async def fwd_dump_callback(client: Client, query: CallbackQuery):
 @Client.on_callback_query(filters.regex(r"^fwd_log_(-?\d+)$"))
 async def fwd_log_callback(client: Client, query: CallbackQuery):
     user_id = query.from_user.id
-    if user_id not in Config.BOT_OWNER_ID:
+    if not await db.is_admin(user_id):
         return await query.answer("⚠️ Admin only!", show_alert=True)
     cid = int(query.matches[0].group(1))
     Config.LOG_CHANNEL = cid

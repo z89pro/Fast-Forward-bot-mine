@@ -44,8 +44,8 @@ REDEEM_PERKS = [
     }
 ]
 
-def is_owner(user_id: int) -> bool:
-    return bool(user_id and user_id in Config.BOT_OWNER_ID)
+async def is_owner(user_id: int) -> bool:
+    return await db.is_admin(user_id)
 
 async def get_bot_username(client: Client) -> str:
     me = getattr(client, "me", None)
@@ -112,7 +112,7 @@ async def build_referral_keyboard(client: Client, user_id: int):
         InlineKeyboardButton("🔗 sʜᴀʀᴇ ɪɴᴠɪᴛᴇ ʟɪɴᴋ", url=share_url)
     ])
     
-    if is_owner(user_id):
+    if await is_owner(user_id):
         buttons.append([
             InlineKeyboardButton("👑 ʀᴇғᴇʀʀᴀʟ ᴀᴅᴍɪɴ ᴘᴀɴᴇʟ", callback_data="referral#admin")
         ])
@@ -129,31 +129,36 @@ async def build_referral_keyboard(client: Client, user_id: int):
 @Client.on_message(filters.private & filters.command(["referral", "refer", "earn"]))
 async def referral_cmd(client: Client, message: Message):
     user_id = message.from_user.id
-    text, _, _ = await build_referral_text(client, user_id)
-    reply_markup = await build_referral_keyboard(client, user_id)
-    await message.reply_text(text, reply_markup=reply_markup, disable_web_page_preview=True, quote=True)
+    text, ref_link, data = await build_referral_text(client, user_id)
+    kb = await build_referral_keyboard(client, user_id)
+    await message.reply_text(text, reply_markup=kb, disable_web_page_preview=True, quote=True)
 
 @Client.on_message(filters.private & filters.command(["topref", "leaderboard"]))
 async def topref_cmd(client: Client, message: Message):
     leaders = await db.get_top_referrers(limit=10)
-    lines = ["<b>🏆 <u>ᴛᴏᴘ 10 ʀᴇғᴇʀʀᴀʟ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ</u></b>\n"]
+    lines = [
+        "🏆 <b><u>sᴋɪɴᴇᴛ ᴠᴇʀsᴇ — ᴛᴏᴘ ʀᴇғᴇʀʀᴀʟ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ</u></b>\n",
+        "Rank | User | Invites | Lifetime Points\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ]
     if not leaders:
-        lines.append("<i>No referrals recorded yet. Be the first to invite!</i>")
+        lines.append("<i>No referral leaders yet! Be the first to invite friends.</i>")
     else:
-        medals = ["🥇", "🥈", "🥉"] + [f"<b>#{i+1}</b>" for i in range(3, 10)]
-        for i, doc in enumerate(leaders):
+        for idx, doc in enumerate(leaders, start=1):
             ref = doc.get("referral", {})
-            name = doc.get("name", str(doc.get("id")))
+            name = doc.get("name", "User")
             count = ref.get("referral_count", 0)
             pts = ref.get("referral_points", 0)
-            lines.append(f"{medals[i]} <b>{name}</b> — <code>{count} invites</code> ({pts} pts)")
+            medal = "🥇" if idx == 1 else "🥈" if idx == 2 else "🥉" if idx == 3 else f"#{idx}"
+            lines.append(f"{medal} <b>{name}</b> — <code>{count}</code> invites (<code>{pts}</code> pts)")
     
     lines.append("\n<i>💡 Invite friends using /referral to climb the ranks!</i>")
     buttons = InlineKeyboardMarkup([[InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]])
     await message.reply_text("\n".join(lines), reply_markup=buttons, disable_web_page_preview=True, quote=True)
 
-@Client.on_message(filters.private & filters.command(["refadmin"]) & filters.user(Config.BOT_OWNER_ID))
+@Client.on_message(filters.private & filters.command(["refadmin"]))
 async def refadmin_cmd(client: Client, message: Message):
+    if not await db.is_admin(message.from_user.id):
+        return await message.reply_text("⛔ <b>ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ᴏɴʟʏ ғᴏʀ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.</b>", quote=True)
     ledger = await db.get_referral_ledger(limit=10)
     leaders = await db.get_top_referrers(limit=5)
     
@@ -303,7 +308,7 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
                 from plugins import verify as _verify
                 _verify._VERIFIED_CACHE[user_id] = float(ref_data['vip_until'])
                 try:
-                    from datetime import timedelta
+                    from datetime import datetime, timedelta
                     now = datetime.now()
                     expire = (now + timedelta(days=7)).strftime("%Y-%m-%d")
                     await db.set_vip(user_id, True, expire)
@@ -313,28 +318,25 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
                 configs = await db.get_configs(user_id)
                 if perk["key"] == "speed_cfg":
                     configs['speed_cfg'] = perk["val"]
-                elif perk["key"] == "course_seller_mode":
-                    configs['course_seller_mode'] = True
-                    configs['auto_course_list'] = True
-                    configs['auto_numbering'] = True
-                elif perk["key"] == "clean_caption":
-                    configs['clean_caption'] = True
+                elif perk["key"] == "custom_caption":
+                    configs['caption'] = "✨ <b>Forwarded via VIP Mode</b>\n\n{caption}"
+                elif perk["key"] == "ad_remover":
+                    configs['ad_remover'] = True
+                elif perk["key"] == "verify_bypass":
+                    configs['verify_bypass'] = True
                 await db.update_configs(user_id, configs)
-        except Exception as e:
-            return await query.answer(f"⚠️ ᴄᴏᴜʟᴅ ɴᴏᴛ ᴀᴘᴘʟʏ ᴛʜᴀᴛ ᴘᴇʀᴋ: {e}", show_alert=True)
+        except Exception as claim_err:
+            logger.error(f"Failed to apply referral perk {perk['key']} for {user_id}: {claim_err}")
+            return await query.answer("❌ Failed to activate perk. Points have not been deducted.", show_alert=True)
 
-        success, res = await db.redeem_referral_points(user_id, perk["cost"], perk["title"])
-        if not success:
-            return await query.answer(f"⚠️ {res}", show_alert=True)
+        # Deduct points and log only after successful application
+        await db.update_referral_points(user_id, -perk["cost"], f"Claimed perk: {perk['name']}")
 
-        await query.answer("🎉 Perk unlocked successfully!", show_alert=True)
-        
         success_text = (
-            "✅ <b><u>ʀᴇᴅᴇᴍᴘᴛɪᴏɴ sᴜᴄᴄᴇssғᴜʟ!</u></b> 🎉\n\n"
-            f"Unlocked: <b>{perk['title']}</b>\n"
-            f"Deducted: <b>{perk['cost']} Points</b>\n"
-            f"Remaining Balance: <b>{res} Points</b>\n\n"
-            "<i>Your new privileges are active immediately! Check /settings to view your updated parameters.</i>"
+            f"🎉 <b><u>ᴘᴇʀᴋ ᴄʟᴀɪᴍᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ!</u></b>\n\n"
+            f"• <b>Perk:</b> <code>{perk['name']}</code>\n"
+            f"• <b>Points Deducted:</b> <code>-{perk['cost']} pts</code>\n\n"
+            f"<i>{perk['desc']}</i>"
         )
         buttons = [
             [InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")],
@@ -343,7 +345,7 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         await query.message.edit_text(success_text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
 
     elif data == "admin":
-        if not is_owner(user_id):
+        if not await is_owner(user_id):
             return await query.answer("Admins only!", show_alert=True)
         leaders = await db.get_top_referrers(limit=5)
         ledger = await db.get_referral_ledger(limit=5)
@@ -365,7 +367,7 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
 
     elif data == "admin_add":
-        if not is_owner(user_id):
+        if not await is_owner(user_id):
             return await query.answer("Admins only!", show_alert=True)
         await query.message.delete()
         try:
