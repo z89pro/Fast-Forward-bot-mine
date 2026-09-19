@@ -1166,7 +1166,10 @@ async def edit(msg, title, status, sts):
    progress = "▰{0}{1}".format(
        ''.join(["▰" for _ in range(math.floor(int(percentage) / 10))]),
        ''.join(["▱" for _ in range(10 - math.floor(int(percentage) / 10))]))
-   button = [[InlineKeyboardButton(progress, callback_data=f'fwrdstatus#{status}#{estimated_total_time}#{percentage}#{i.id}')]]
+   if hasattr(sts, 'data') and i.id in sts.data:
+      sts.data[i.id]['status'] = status
+      sts.data[i.id]['est_time'] = estimated_total_time
+   button = [[InlineKeyboardButton(progress, callback_data=f'fstat#{percentage}#{i.id}')]]
    estimated_total_time = TimeFormatter(milliseconds=estimated_total_time)
    estimated_total_time = estimated_total_time if estimated_total_time != '' else '0 s'
 
@@ -1484,9 +1487,20 @@ async def resume_callback(bot, query):
     if sts.verify():
         await edit(query.message, 'ᴘʀᴏɢʀᴇssɪɴɢ', 10, sts)
 
-@Client.on_callback_query(filters.regex(r'^fwrdstatus'))
+@Client.on_callback_query(filters.regex(r'^(fwrdstatus|fstat)'))
 async def status_msg(bot, msg):
-    _, status, est_time, percentage, frwd_id = msg.data.split("#")
+    parts = msg.data.split("#")
+    if len(parts) == 5:
+        _, status, est_time, percentage, frwd_id = parts
+        try:
+            est_time = int(est_time)
+        except Exception:
+            est_time = 0
+    else:
+        _, percentage, frwd_id = parts
+        sts = STS(frwd_id)
+        status = sts.get('status') or 'ғᴏʀᴡᴀʀᴅɪɴɢ'
+        est_time = sts.get('est_time') or 0
     sts = STS(frwd_id)
     if not sts.verify():
        fetched = forwarded = remaining = skipped = 0
@@ -1495,9 +1509,14 @@ async def status_msg(bot, msg):
        skipped = sts.get('skip') or 0
        fetched, forwarded = sts.get('fetched') or 0, sts.get('total_files') or 0
        remaining = max(0, total - forwarded - skipped)
-    est_time = TimeFormatter(milliseconds=est_time)
-    est_time = est_time if (est_time != '' or status not in ['completed', 'cancelled']) else '0 s'
-    return await msg.answer(PROGRESS.format(percentage, fetched, forwarded, remaining, status, est_time), show_alert=True)
+       if not est_time:
+           est_time = sts.get('est_time') or 0
+    try:
+        est_time_str = TimeFormatter(milliseconds=int(est_time))
+    except Exception:
+        est_time_str = '0 s'
+    est_time_str = est_time_str if (est_time_str != '' or str(status).lower() not in ['completed', 'cancelled', 'ᴄᴏᴍᴘʟᴇᴛᴇᴅ', 'ᴄᴀɴᴄᴇʟʟᴇᴅ']) else '0 s'
+    return await msg.answer(PROGRESS.format(percentage, fetched, forwarded, remaining, status, est_time_str), show_alert=True)
 
 @Client.on_message(filters.command("stop"))
 async def stop_forwarding(bot, message):

@@ -88,7 +88,15 @@ class StyledKeyboardButtonCallback(TLObject):
 
     def __init__(self, *, text, data, requires_password=None, style=None):
         self.text = text
-        self.data = data
+        if isinstance(data, str):
+            b_data = data.encode('utf-8', 'replace')
+        elif isinstance(data, bytes):
+            b_data = data
+        else:
+            b_data = str(data or "").encode('utf-8', 'replace')
+        if len(b_data) > 64:
+            b_data = b_data[:64]
+        self.data = b_data
         self.requires_password = requires_password
         self.style = style
 
@@ -102,7 +110,8 @@ class StyledKeyboardButtonCallback(TLObject):
         if self.style is not None:
             b.write(self.style.write())
         b.write(String(str(self.text or "")))
-        b.write(Bytes(self.data if isinstance(self.data, bytes) else str(self.data or "").encode('utf-8', 'replace')))
+        cb_bytes = self.data if isinstance(self.data, bytes) else str(self.data or "").encode('utf-8', 'replace')
+        b.write(Bytes(cb_bytes[:64]))
         return b.getvalue()
 
 
@@ -163,7 +172,12 @@ class _Btn:
         raw_text = str(text or "")
         self.text = style_button(raw_text)
         if isinstance(data, str):
-            data = data.encode("utf-8", "replace")
+            b_data = data.encode("utf-8", "replace")
+            if len(b_data) > 64:
+                b_data = b_data[:64]
+            data = b_data
+        elif isinstance(data, bytes) and len(data) > 64:
+            data = data[:64]
         self.data = data
         self.url = str(url) if url else None
         self.color = color or auto_color(raw_text, data or url)
@@ -171,7 +185,7 @@ class _Btn:
     def high_level(self):
         if self.url is not None:
             return InlineKeyboardButton(self.text, url=self.url)
-        cb_data = self.data.decode('utf-8', 'replace') if isinstance(self.data, bytes) else str(self.data or "")
+        cb_data = self.data.decode('utf-8', 'ignore') if isinstance(self.data, bytes) else str(self.data or "")
         return InlineKeyboardButton(self.text, callback_data=cb_data)
 
     def raw(self):
@@ -200,6 +214,13 @@ class StyledMarkup(InlineKeyboardMarkup):
                 elif isinstance(item, InlineKeyboardButton):
                     from font_styler import style_button
                     item.text = style_button(item.text)
+                    if item.callback_data is not None:
+                        if isinstance(item.callback_data, str):
+                            cb_b = item.callback_data.encode('utf-8', 'replace')
+                            if len(cb_b) > 64:
+                                item.callback_data = cb_b[:64].decode('utf-8', 'ignore')
+                        elif isinstance(item.callback_data, bytes) and len(item.callback_data) > 64:
+                            item.callback_data = item.callback_data[:64]
                     btn_color = auto_color(item.text, item.callback_data or item.url)
                     btn_spec = _Btn(item.text, data=item.callback_data, url=item.url, color=btn_color)
                     norm_row.append(btn_spec)
@@ -267,3 +288,20 @@ def colored_markup(keyboard_grid) -> StyledMarkup:
     Layer 223 color styling.
     """
     return StyledMarkup(keyboard_grid)
+
+
+# ── Global MTProto 64-byte Callback Safeguard ───────────────────────────────
+_orig_ikb_write = InlineKeyboardButton.write
+
+async def _safe_ikb_write(self, client):
+    if self.callback_data is not None:
+        if isinstance(self.callback_data, str):
+            b = self.callback_data.encode("utf-8", "replace")
+            if len(b) > 64:
+                self.callback_data = b[:64].decode("utf-8", "ignore")
+        elif isinstance(self.callback_data, bytes) and len(self.callback_data) > 64:
+            self.callback_data = self.callback_data[:64]
+    return await _orig_ikb_write(self, client)
+
+InlineKeyboardButton.write = _safe_ikb_write
+
