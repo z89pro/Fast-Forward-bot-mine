@@ -49,6 +49,9 @@ def get_main_buttons(user_id=None):
             btn('📈 ᴜsᴇʀ ᴛʀᴀᴄᴋɪɴɢ', 'utr_overview', 'blue'),
             btn('⚙️ sʏsᴛᴇᴍ ᴄᴏɴғɪɢ', 'config#main', 'green')
         ))
+    rows.append(row(
+        btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red')
+    ))
     return markup(*rows)
 
 main_buttons = get_main_buttons()
@@ -233,7 +236,8 @@ def get_help_buttons():
             btn('🔒 ᴘʀɪᴠᴀᴄʏ', 'privacy_btn', 'blue')
         ),
         row(
-            btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red')
+            btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'blue'),
+            btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red')
         )
     )
 
@@ -255,7 +259,7 @@ async def terms_command(client, message):
         text=Translation.TERMS_TXT,
         reply_markup=markup(
             row(btn('🔒 ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ', 'privacy_btn', 'blue')),
-            row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red'))
+            row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))
         ),
         disable_web_page_preview=True,
         quote=True
@@ -267,7 +271,7 @@ async def privacy_command(client, message):
         text=Translation.PRIVACY_TXT,
         reply_markup=markup(
             row(btn('📜 ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ', 'terms_btn', 'blue')),
-            row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'red'))
+            row(btn('🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ', 'back', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))
         ),
         disable_web_page_preview=True,
         quote=True
@@ -291,7 +295,7 @@ async def how_to_use(bot, query):
                 btn('📡 ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ', 'settings#addchannel', 'green')),
             row(btn('▶️ sᴛᴀʀᴛ ғᴏʀᴡᴀʀᴅɪɴɢ', 'how_to_fwd', 'green')),
             row(btn('📚 ꜰᴜʟʟ ᴛᴜᴛᴏʀɪᴀʟ ʜᴜʙ', 'tutorial#menu', 'blue')),
-            row(btn('🔙 ʙᴀᴄᴋ', 'help', 'red'))
+            row(btn('🔙 ʙᴀᴄᴋ', 'help', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))
         ),
         disable_web_page_preview=True
     )
@@ -321,7 +325,7 @@ async def about(bot, query):
                 btn('📜 ᴛᴇʀᴍs', 'terms_btn', 'blue'),
                 btn('🔒 ᴘʀɪᴠᴀᴄʏ', 'privacy_btn', 'blue')
             ),
-            row(btn('🔙 ʙᴀᴄᴋ', 'back', 'red'))
+            row(btn('🔙 ʙᴀᴄᴋ', 'back', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))
         ),
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML,
@@ -333,7 +337,7 @@ async def terms_cb(bot, query):
         text=Translation.TERMS_TXT,
         reply_markup=markup(
             row(btn('🔒 ᴘʀɪᴠᴀᴄʏ ᴘᴏʟɪᴄʏ', 'privacy_btn', 'blue')),
-            row(btn('🔙 ʙᴀᴄᴋ', 'about', 'red'))
+            row(btn('🔙 ʙᴀᴄᴋ', 'about', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))
         ),
         disable_web_page_preview=True
     )
@@ -344,7 +348,7 @@ async def privacy_cb(bot, query):
         text=Translation.PRIVACY_TXT,
         reply_markup=markup(
             row(btn('📜 ᴛᴇʀᴍs ᴏғ sᴇʀᴠɪᴄᴇ', 'terms_btn', 'blue')),
-            row(btn('🔙 ʙᴀᴄᴋ', 'about', 'red'))
+            row(btn('🔙 ʙᴀᴄᴋ', 'about', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))
         ),
         disable_web_page_preview=True
     )
@@ -353,7 +357,7 @@ async def privacy_cb(bot, query):
 async def donate(bot, query):
     await query.message.edit_text(
         text=Translation.DONATE_TXT,
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='back')]]),
+        reply_markup=markup(row(btn('• ʙᴀᴄᴋ', 'back', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))),
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML,
     )
@@ -396,8 +400,9 @@ async def status(bot, query):
         status_rows.append(row(btn('🔄 ʀᴇsᴛᴀʀᴛ ʙᴏᴛ (ᴀᴅᴍɪɴ)', 'config#restart', 'red')))
     status_rows.append(
         row(
-            btn('• ʙᴀᴄᴋ', 'help', 'red'),
-            btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue')
+            btn('• ʙᴀᴄᴋ', 'help', 'blue'),
+            btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue'),
+            btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red')
         )
     )
 
@@ -423,7 +428,7 @@ async def status_command(client: Client, message: Message):
             btn('• sᴇʀᴠᴇʀ sᴛᴀᴛs', 'server_status', 'blue')
         )
     )
-    status_rows.append(row(btn('🔙 ʜᴏᴍᴇ', 'back', 'red')))
+    status_rows.append(row(btn('🔙 ʜᴏᴍᴇ', 'back', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red')))
 
     await message.reply_text(
         text=Translation.STATUS_TXT.format(users_count, bots_count, temp.forwardings, total_channels),
@@ -440,7 +445,7 @@ async def server_status(bot, query):
 
     await query.message.edit_text(
         text=Translation.SERVER_TXT.format(cpu, ram),
-        reply_markup=markup(row(btn('• ʙᴀᴄᴋ', 'status', 'red'))),
+        reply_markup=markup(row(btn('• ʙᴀᴄᴋ', 'status', 'blue'), btn('❌ ᴄʟᴏsᴇ', 'close_btn', 'red'))),
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
     )

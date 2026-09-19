@@ -118,7 +118,8 @@ async def build_referral_keyboard(client: Client, user_id: int):
         ])
         
     buttons.append([
-        InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back")
+        InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back"),
+        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
     ])
     return InlineKeyboardMarkup(buttons)
 
@@ -148,7 +149,8 @@ async def topref_cmd(client: Client, message: Message):
             lines.append(f"{medals[i]} <b>{name}</b> — <code>{count} invites</code> ({pts} pts)")
     
     lines.append("\n<i>💡 Invite friends using /referral to climb the ranks!</i>")
-    await message.reply_text("\n".join(lines), disable_web_page_preview=True, quote=True)
+    buttons = InlineKeyboardMarkup([[InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]])
+    await message.reply_text("\n".join(lines), reply_markup=buttons, disable_web_page_preview=True, quote=True)
 
 @Client.on_message(filters.private & filters.command(["refadmin"]) & filters.user(Config.BOT_OWNER_ID))
 async def refadmin_cmd(client: Client, message: Message):
@@ -176,7 +178,7 @@ async def refadmin_cmd(client: Client, message: Message):
     
     buttons = InlineKeyboardMarkup([
         [InlineKeyboardButton("➕ ᴀᴅᴅ ᴘᴏɪɴᴛs ᴛᴏ ᴜsᴇʀ", callback_data="referral#admin_add")],
-        [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ʀᴇғᴇʀʀᴀʟ", callback_data="referral#main")]
+        [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ʀᴇғᴇʀʀᴀʟ", callback_data="referral#main"), InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]
     ])
     await message.reply_text(text, reply_markup=buttons, disable_web_page_preview=True, quote=True)
 
@@ -218,7 +220,10 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
                 lines.append(f"{medals[i]} <b>{name}</b> — <code>{count} invites</code> ({pts} pts)")
         
         lines.append("\n<i>💡 Invite friends using /referral to climb the ranks!</i>")
-        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#main")]])
+        buttons = InlineKeyboardMarkup([[
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ]])
         await query.message.edit_text("\n".join(lines), reply_markup=buttons, disable_web_page_preview=True)
 
     elif data == "redeem":
@@ -242,7 +247,10 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
                 )
             ])
             
-        buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#main")])
+        buttons.append([
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ])
         await query.message.edit_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
 
     elif data.startswith("buy_"):
@@ -270,7 +278,7 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         )
         buttons = [
             [InlineKeyboardButton("✅ ᴄᴏɴғɪʀᴍ & ᴜɴʟᴏᴄᴋ", callback_data=f"referral#conf_{perk_id}")],
-            [InlineKeyboardButton("• ᴄᴀɴᴄᴇʟ", callback_data="referral#redeem")]
+            [InlineKeyboardButton("• ᴄᴀɴᴄᴇʟ", callback_data="referral#redeem"), InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]
         ]
         await query.message.edit_text(confirm_text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
 
@@ -290,12 +298,17 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         # points and granted nothing.
         try:
             if perk["key"] == "vip_pass_7d":
-                # verify.py reads vip_until off the referral record — nothing
-                # ever wrote it, so this perk could never actually bypass.
                 ref_data['vip_until'] = int(time.time()) + int(perk["val"])
                 await db.update_referral_data(user_id, ref_data)
                 from plugins import verify as _verify
                 _verify._VERIFIED_CACHE[user_id] = float(ref_data['vip_until'])
+                try:
+                    from datetime import timedelta
+                    now = datetime.now()
+                    expire = (now + timedelta(days=7)).strftime("%Y-%m-%d")
+                    await db.set_vip(user_id, True, expire)
+                except Exception:
+                    pass
             else:
                 configs = await db.get_configs(user_id)
                 if perk["key"] == "speed_cfg":
@@ -325,7 +338,7 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         )
         buttons = [
             [InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")],
-            [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ʀᴇғᴇʀʀᴀʟ", callback_data="referral#main")]
+            [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ʀᴇғᴇʀʀᴀʟ", callback_data="referral#main"), InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]
         ]
         await query.message.edit_text(success_text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
 
@@ -347,7 +360,7 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
             
         buttons = [
             [InlineKeyboardButton("➕ ᴀᴅᴅ ᴘᴏɪɴᴛs ᴛᴏ ᴜsᴇʀ", callback_data="referral#admin_add")],
-            [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#main")]
+            [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#main"), InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]
         ]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
 
@@ -390,5 +403,5 @@ async def referral_callbacks(client: Client, query: CallbackQuery):
         await client.send_message(
             user_id,
             f"✅ Successfully granted <b>+{grant_pts} points</b> to User <code>{target_id}</code>!",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#admin")]])
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="referral#admin"), InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]])
         )

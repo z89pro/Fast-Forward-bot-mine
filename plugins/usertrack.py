@@ -136,7 +136,8 @@ async def build_userstats_overview():
             InlineKeyboardButton("📥 ᴊsᴏɴ ᴇxᴘᴏʀᴛ", callback_data="utr_export_json")
         ],
         [
-            InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back")
+            InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
         ]
     ])
     return text, buttons
@@ -231,7 +232,10 @@ async def build_user_profile(user_id: int):
     ]
     if action_buttons:
         btn_rows.append(action_buttons)
-    btn_rows.append([InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview")])
+    btn_rows.append([
+        InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview"),
+        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+    ])
 
     return text, InlineKeyboardMarkup(btn_rows)
 
@@ -323,7 +327,10 @@ async def utr_callbacks(client: Client, query: CallbackQuery):
         if page < total_pages - 1:
             nav_row.append(InlineKeyboardButton("ɴᴇxᴛ ➡️", callback_data=f"{prefix}_{page + 1}"))
 
-        markup_rows = item_buttons + [nav_row, [InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview")]]
+        markup_rows = item_buttons + [nav_row, [
+            InlineKeyboardButton("🔙 ᴅᴀsʜʙᴏᴀʀᴅ", callback_data="utr_overview"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ]]
         await query.message.edit_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(markup_rows), disable_web_page_preview=True)
 
     elif data.startswith("utr_user_"):

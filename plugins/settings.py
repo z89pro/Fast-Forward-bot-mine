@@ -38,7 +38,7 @@ async def settings(client, message):
 async def settings_query(bot, query):
   user_id = query.from_user.id
   i, type = query.data.split("#")
-  buttons = [[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data="settings#main")]]
+  buttons = [[InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data="settings#main"), InlineKeyboardButton('❌ ᴄʟᴏsᴇ', callback_data="close_btn")]]
   
   if type=="main":
      text = (
@@ -1101,7 +1101,8 @@ def course_seller_buttons(cfg):
         ],
         [
             InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ", callback_data="settings#ftm"),
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
         ]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -1171,7 +1172,10 @@ def ftm_buttons(cfg):
             InlineKeyboardButton(f"🚚 ᴛʀᴀɴsғᴇʀ: {TRANSFER_MODES.get(str(cfg.get('transfer_mode', 'auto')).lower(), TRANSFER_MODES['auto'])}",
                                  callback_data="settings#ftm_cycle_transfer")
         ],
-        [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")]
+        [
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ]
     ]
     return InlineKeyboardMarkup(buttons)
 
@@ -1216,7 +1220,8 @@ def main_buttons(user_id=None):
           InlineKeyboardButton('ᴇxᴛʀᴀ sᴇᴛᴛɪɴɢs 🧪', callback_data='settings#nextfilters')
       ])
   buttons.append([
-      InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='help')
+      InlineKeyboardButton('• ʙᴀᴄᴋ', callback_data='help'),
+      InlineKeyboardButton('❌ ᴄʟᴏsᴇ', callback_data='close_btn')
   ])
   return InlineKeyboardMarkup(buttons)
 
@@ -1253,7 +1258,8 @@ def speed_buttons(cfg):
       InlineKeyboardButton(f"🎲 ᴀɴᴛɪ-ʙᴀɴ ᴊɪᴛᴛᴇʀ: {jitter_mark}", callback_data="settings#speed_toggle_jitter"),
     ],
     [
-      InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")
+      InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main"),
+      InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
     ]
   ]
   return InlineKeyboardMarkup(buttons)
@@ -1348,9 +1354,11 @@ def size_button(size):
        InlineKeyboardButton('-100',
                     callback_data=f'settings#update_size-{max(0, size - 100)}')
        ],[
-       InlineKeyboardButton('↩ ʙᴀᴄᴋ',
-                    callback_data="settings#main")
-     ]]
+        InlineKeyboardButton('↩ ʙᴀᴄᴋ',
+                     callback_data="settings#main"),
+        InlineKeyboardButton('❌ ᴄʟᴏsᴇ',
+                     callback_data="close_btn")
+      ]]
   return InlineKeyboardMarkup(buttons)
 async def filters_buttons(user_id):
   filter = await get_configs(user_id)
@@ -1407,7 +1415,9 @@ async def filters_buttons(user_id):
                     callback_data=f'settings#updatefilter-duplicate-{filter["duplicate"]}')
        ],[
        InlineKeyboardButton('• ʙᴀᴄᴋ',
-                    callback_data="settings#main")
+                    callback_data="settings#main"),
+       InlineKeyboardButton('❌ ᴄʟᴏsᴇ',
+                    callback_data="close_btn")
        ]]
   return InlineKeyboardMarkup(buttons) 
 async def next_filters_buttons(user_id):
@@ -1434,7 +1444,9 @@ async def next_filters_buttons(user_id):
                     callback_data='settings#get_keyword')
        ],[
        InlineKeyboardButton('• ʙᴀᴄᴋ', 
-                    callback_data="settings#main")
+                    callback_data="settings#main"),
+       InlineKeyboardButton('❌ ᴄʟᴏsᴇ', 
+                    callback_data="close_btn")
        ]]
   return InlineKeyboardMarkup(buttons) 
    

@@ -26,7 +26,8 @@ def get_autosave_markup(is_running: bool, count: int):
             InlineKeyboardButton("📤 ᴜᴘʟᴏᴀᴅ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ", callback_data="autosave#destinations")
         ],
         [
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main")
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="settings#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
         ]
     ]
     return colored_markup(buttons)
@@ -226,7 +227,10 @@ async def autosave_callback(bot, query: CallbackQuery):
                 InlineKeyboardButton(f"{active} {title}", callback_data=f"autosave#toggle_chan_{f_chat}"),
                 InlineKeyboardButton("🗑️", callback_data=f"autosave#del_chan_{f_chat}")
             ])
-        buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")])
+        buttons.append([
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ])
         await query.message.edit_text(
             "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
@@ -251,7 +255,10 @@ async def autosave_callback(bot, query: CallbackQuery):
                 InlineKeyboardButton(f"{active} {title}", callback_data=f"autosave#toggle_chan_{fc}"),
                 InlineKeyboardButton("🗑️", callback_data=f"autosave#del_chan_{fc}")
             ])
-        buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")])
+        buttons.append([
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ])
         await query.message.edit_text(
             "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
@@ -259,9 +266,14 @@ async def autosave_callback(bot, query: CallbackQuery):
 
     elif data.startswith("toggle_chan_"):
         f_chat = data.split("toggle_chan_")[1]
-        new_val = await db.toggle_live_status(user_id, f_chat)
-        status_txt = "ᴀᴄᴛɪᴠᴇ 🟢" if new_val else "ᴘᴀᴜsᴇᴅ 🔴"
-        await query.answer(f"ᴄʜᴀɴɴᴇʟ ɪs ɴᴏᴡ {status_txt}", show_alert=True)
+        channels = await db.get_user_live_forwards(user_id)
+        for ch in channels:
+            if str(ch.get('from_chat')) == str(f_chat):
+                curr = ch.get('active', True)
+                await db.toggle_live_forward_active(user_id, f_chat, not curr)
+                break
+        if user_id in temp.LIVE_TASKS:
+            await start_autosave_monitor(user_id, bot)
         channels = await db.get_user_live_forwards(user_id)
         buttons = []
         for ch in channels:
@@ -272,18 +284,19 @@ async def autosave_callback(bot, query: CallbackQuery):
                 InlineKeyboardButton(f"{active} {title}", callback_data=f"autosave#toggle_chan_{fc}"),
                 InlineKeyboardButton("🗑️", callback_data=f"autosave#del_chan_{fc}")
             ])
-        buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")])
+        buttons.append([
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ])
         await query.message.edit_text(
             "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
     elif data == "filters":
-        configs = await db.get_configs(user_id)
-        filters_cfg = configs.get('filters', {})
-        
-        def mark(key):
-            return "✅" if filters_cfg.get(key, True) else "❌"
+        user_filters = await db.get_user_live_filters(user_id)
+        def mark(ftype):
+            return "✅" if user_filters.get(ftype, True) else "❌"
 
         buttons = [
             [
@@ -299,11 +312,12 @@ async def autosave_callback(bot, query: CallbackQuery):
                 InlineKeyboardButton(f"🎞️ ɢɪғs {mark('animation')}", callback_data="autosave#toggle_filter_animation")
             ],
             [
-                InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")
+                InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
             ]
         ]
         await query.message.edit_text(
-            "🎯 **sᴍᴀʀᴛ ᴍᴇᴅɪᴀ ғɪʟᴛᴇʀs**\n\nChoose what types of media you want AutoSave to automatically capture and forward:",
+            "🎯 **sᴍᴀʀᴛ ᴍᴇᴅɪᴀ ғɪʟᴛᴇʀs**\n\nᴄʜᴏᴏsᴇ ᴡʜᴀᴛ ᴛʏᴘᴇs ᴏғ ᴍᴇᴅɪᴀ ʏᴏᴜ ᴡᴀɴᴛ ᴀᴜᴛᴏsᴀᴠᴇ ᴛᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴄᴀᴘᴛᴜʀᴇ ᴀɴᴅ ғᴏʀᴡᴀʀᴅ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
@@ -334,7 +348,8 @@ async def autosave_callback(bot, query: CallbackQuery):
                 InlineKeyboardButton(f"🎞️ ɢɪғs {mark('animation')}", callback_data="autosave#toggle_filter_animation")
             ],
             [
-                InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")
+                InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
             ]
         ]
         await query.message.edit_text(
@@ -350,7 +365,10 @@ async def autosave_callback(bot, query: CallbackQuery):
         else:
             for ch in channels:
                 text += f"• **{ch.get('from_title', 'sᴏᴜʀᴄᴇ')}** ➡️ `{ch.get('to_title', 'ᴛᴀʀɢᴇᴛ')}`\n"
-        buttons = [[InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main")]]
+        buttons = [[
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ]]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
 # ================= BACKGROUND MONITOR ENGINE =================

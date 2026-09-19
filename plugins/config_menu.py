@@ -147,7 +147,8 @@ def build_config_buttons(vcfg=None) -> InlineKeyboardMarkup:
             InlineKeyboardButton("⚙️ ᴏᴘᴇɴ sᴇᴛᴛɪɴɢs", callback_data="settings#main")
         ],
         [
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="back")
+            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="back"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
         ]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -229,7 +230,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
             query.message,
             txt,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#main")]
+                [
+                    InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="config#main"),
+                    InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+                ]
             ]),
             disable_web_page_preview=True
         )
@@ -408,7 +412,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
         if primary_owner and user_id == primary_owner:
             btn_list.append([InlineKeyboardButton("➕ ᴀᴅᴅ ᴀᴅᴍɪɴ (ʙᴀᴛᴄʜ)", callback_data="config#set_admins")])
         
-        btn_list.append([InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")])
+        btn_list.append([
+            InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+        ])
         btns = InlineKeyboardMarkup(btn_list)
         await safe_edit_message(query.message, text, reply_markup=btns)
 
@@ -730,7 +737,8 @@ async def config_callback(bot: Client, query: CallbackQuery):
             ])
         rows.append([
             InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="config#tasks"),
-            InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")
+            InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main"),
+            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
         ])
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(rows), disable_web_page_preview=True)
 
@@ -751,7 +759,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
         await query.message.edit_text(
             text,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]
+                [
+                    InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main"),
+                    InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+                ]
             ])
         )
 
@@ -762,7 +773,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
                 "<blockquote><b>🚫 <u>ʙᴀɴɴᴇᴅ ᴜsᴇʀs</u></b></blockquote>\n\n"
                 "✨ <b>ɴᴏ ᴜsᴇʀs ᴀʀᴇ ᴄᴜʀʀᴇɴᴛʟʏ ʙᴀɴɴᴇᴅ.</b>"
             )
-            rows = [[InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")]]
+            rows = [[
+                InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main"),
+                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+            ]]
         else:
             text = f"<blockquote><b>🚫 <u>ʙᴀɴɴᴇᴅ ᴜsᴇʀs ({len(banned_docs)})</u></b></blockquote>\n\n"
             rows = []
@@ -771,7 +785,10 @@ async def config_callback(bot: Client, query: CallbackQuery):
                 reason = b.get("ban_status", {}).get("ban_reason", "No reason")
                 text += f"• <code>{uid}</code>: <i>{reason}</i>\n"
                 rows.append([InlineKeyboardButton(f"🔓 ᴜɴʙᴀɴ {uid}", callback_data=f"mod_unban_{uid}")])
-            rows.append([InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main")])
+            rows.append([
+                InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴄᴏɴғɪɢ", callback_data="config#main"),
+                InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+            ])
 
         await query.message.edit_text(
             text,

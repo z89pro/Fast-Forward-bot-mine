@@ -259,7 +259,8 @@ def tutorial_menu_keyboard():
         InlineKeyboardButton("🛠 sᴋɪɴᴇᴛ ᴍᴏᴅɪғɪᴇʀ 🛠", callback_data="settings#ftm")
     ])
     buttons.append([
-        InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back")
+        InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ", callback_data="back"),
+        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
     ])
     return InlineKeyboardMarkup(buttons)
 
@@ -275,7 +276,10 @@ def tutorial_page_keyboard(mod_id: int):
     action = TUTORIAL_MODULES[mod_id].get("action_btn")
     if action:
         buttons.append([action])
-    buttons.append([InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴇɴᴜ", callback_data="back")])
+    buttons.append([
+        InlineKeyboardButton("• ʙᴀᴄᴋ ᴛᴏ ᴍᴇɴᴜ", callback_data="back"),
+        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+    ])
     return InlineKeyboardMarkup(buttons)
 
 

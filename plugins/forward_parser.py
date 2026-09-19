@@ -187,14 +187,29 @@ def extract_forward_info(message: Message) -> dict:
     return info
 
 
+def extract_requested_chat(message: Message):
+    """Safely extracts (chat_id, chat_title) from a native Telegram request_chat button message."""
+    if not message:
+        return None, None
+    chats_shared = getattr(message, "chats_shared", None)
+    if chats_shared and getattr(chats_shared, "chats", None):
+        rc = chats_shared.chats[0]
+        return rc.chat_id, getattr(rc, "name", None) or "Channel"
+    chat_shared = getattr(message, "chat_shared", None)
+    if chat_shared:
+        return getattr(chat_shared, "chat_id", None), getattr(chat_shared, "title", None) or getattr(chat_shared, "name", None) or "Channel"
+    return None, None
+
+
 async def resolve_channel_input(input_obj, bot: Client = None, verify_access: bool = False) -> dict:
     """
     Universal channel input resolver across the entire bot.
     Seamlessly extracts and verifies channel/group targets from:
     1. Forwarded messages (forward_from_chat, forward_origin, sender_chat)
-    2. Direct message links (t.me/c/12345/67, t.me/mychannel/67)
-    3. Channel username links or @handles (@mychannel, https://t.me/mychannel)
-    4. Raw numeric channel IDs (-1001234567890, 1234567890)
+    2. Native Telegram RequestPeer button messages (chats_shared)
+    3. Direct message links (t.me/c/12345/67, t.me/mychannel/67)
+    4. Channel username links or @handles (@mychannel, https://t.me/mychannel)
+    5. Raw numeric channel IDs (-1001234567890, 1234567890)
     """
     res = {
         "chat_id": None,
@@ -212,8 +227,16 @@ async def resolve_channel_input(input_obj, bot: Client = None, verify_access: bo
         res["error"] = "Empty input provided."
         return res
 
-    # 1. If input is a Message object, first check for forward headers
+    # 1. If input is a Message object, check native RequestPeer shared chat or forward headers
     if isinstance(input_obj, Message):
+        req_id, req_title = extract_requested_chat(input_obj)
+        if req_id:
+            res["chat_id"] = req_id
+            res["chat_title"] = req_title
+            res["chat_type"] = "channel"
+            res["is_forward"] = False
+            return res
+
         fwd_info = extract_forward_info(input_obj)
         if fwd_info.get("is_forward") and fwd_info.get("chat_id"):
             res["chat_id"] = fwd_info["chat_id"]

@@ -183,7 +183,7 @@ async def build_plans_view(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
     ]
     if is_owner or await db.is_admin(user_id):
         rows.append(row(btn("👑 ᴠɪᴘ ᴀᴅᴍɪɴ ᴘᴀɴᴇʟ", "vipadmin_main", "yellow")))
-    rows.append(row(btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "red")))
+    rows.append(row(btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "blue"), btn("❌ ᴄʟᴏsᴇ", "close_btn", "red")))
     return text, markup(*rows)
 
 
@@ -280,7 +280,8 @@ async def build_vip_admin_view() -> tuple[str, InlineKeyboardMarkup]:
             btn("⚙️ sʏsᴛᴇᴍ ᴄᴏɴғɪɢ", "config#main", "blue")
         ),
         row(
-            btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "red")
+            btn("🔙 ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ", "back", "blue"),
+            btn("❌ ᴄʟᴏsᴇ", "close_btn", "red")
         )
     ]
     return text, markup(*rows)
@@ -297,7 +298,7 @@ async def build_vip_list_view(page: int = 0) -> tuple[str, InlineKeyboardMarkup]
         )
         buttons = [
             row(btn("➕ ɢʀᴀɴᴛ ᴠɪᴘ", "vipadmin_grant_prompt", "green")),
-            row(btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue"))
+            row(btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue"), btn("❌ ᴄʟᴏsᴇ", "close_btn", "red"))
         ]
         return text, markup(*buttons)
 
@@ -343,7 +344,8 @@ async def build_vip_list_view(page: int = 0) -> tuple[str, InlineKeyboardMarkup]
     action_rows.append(
         row(
             btn("➕ ɢʀᴀɴᴛ ᴠɪᴘ", "vipadmin_grant_prompt", "green"),
-            btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue")
+            btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue"),
+            btn("❌ ᴄʟᴏsᴇ", "close_btn", "red")
         )
     )
     return "".join(lines), markup(*action_rows)
@@ -357,7 +359,7 @@ async def build_vip_orders_view(page: int = 0) -> tuple[str, InlineKeyboardMarku
             "✅ <i>ɴᴏ ᴘᴇɴᴅɪɴɢ ᴏʀ ᴜɴʀᴇᴠɪᴇᴡᴇᴅ ᴏʀᴅᴇʀs ᴀᴛ ᴛʜɪs ᴛɪᴍᴇ.</i>\n\n"
             "ᴀʟʟ sᴜʙᴍɪᴛᴛᴇᴅ ᴘᴀʏᴍᴇɴᴛ ᴘʀᴏᴏғs ʜᴀᴠᴇ ʙᴇᴇɴ ᴘʀᴏᴄᴇssᴇᴅ!"
         )
-        buttons = [row(btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue"))]
+        buttons = [row(btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue"), btn("❌ ᴄʟᴏsᴇ", "close_btn", "red"))]
         return text, markup(*buttons)
 
     order_rows = []
@@ -389,7 +391,7 @@ async def build_vip_orders_view(page: int = 0) -> tuple[str, InlineKeyboardMarku
             )
         )
 
-    order_rows.append(row(btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue")))
+    order_rows.append(row(btn("🔙 ᴠɪᴘ ᴀᴅᴍɪɴ", "vipadmin_main", "blue"), btn("❌ ᴄʟᴏsᴇ", "close_btn", "red")))
     return "".join(lines), markup(*order_rows)
 
 

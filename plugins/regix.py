@@ -114,14 +114,18 @@ async def pub_(bot, message):
                add_ub_btn = InlineKeyboardMarkup([
                    [InlineKeyboardButton("➕ ᴀᴅᴅ ᴜsᴇʀʙᴏᴛ", callback_data="settings#adduserbot")],
                    [InlineKeyboardButton("🔑 ʟᴏɢɪɴ ᴠɪᴀ ᴏᴛᴘ", callback_data="settings#addlogin")],
-                   [InlineKeyboardButton("♻️ ʀᴇᴛʀʏ", callback_data=f"start_public_{frwd_id}")]
+                   [
+                       InlineKeyboardButton("♻️ ʀᴇᴛʀʏ", callback_data=f"start_public_{frwd_id}"),
+                       InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+                   ]
                ])
                await msg_edit(m,
-                  f"**❌ ᴄᴀɴ'ᴛ ʀᴇᴀᴅ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ.**\n\n"
-                  f"<b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>{who}</code> (@{_bot.get('username', '?')})\n"
-                  f"<b>ᴇʀʀᴏʀ:</b> <code>{type(src_err).__name__}: {src_err}</code>\n\n"
-                  f"<i>ɪғ ɪᴛ ɪs ᴀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ, ᴀᴅᴅ ᴀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ (ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴀᴄᴄᴏᴜɴᴛ "
-                  f"ᴛʜᴀᴛ ʜᴀs ᴊᴏɪɴᴇᴅ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ.</i>**",
+                  f"<blockquote><b>❌ <u>ᴄᴀɴ'ᴛ ʀᴇᴀᴅ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ</u></b></blockquote>\n\n"
+                  f"🤖 <b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>{who}</code> (@{_bot.get('username', '?')})\n"
+                  f"⚠️ <b>ᴇʀʀᴏʀ:</b> <code>{type(src_err).__name__}: {src_err}</code>\n\n"
+                  f"💡 <b><u>ʜᴏᴡ ᴛᴏ ғɪx ᴛʜɪs:</u></b>\n"
+                  f"• <b>ɪғ ɪᴛ's ᴀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ:</b> ᴀᴅᴅ ᴀ <b>ᴜsᴇʀʙᴏᴛ</b> (ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴀᴄᴄᴏᴜɴᴛ ᴛʜᴀᴛ ᴊᴏɪɴᴇᴅ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ, ᴏʀ ᴀᴅᴅ <b>@{_bot.get('username', 'bot')}</b> ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ.\n"
+                  f"• <b>ɪғ ɪᴛ's ʀᴇsᴛʀɪᴄᴛᴇᴅ:</b> ᴀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ ɪs ʀᴇǫᴜɪʀᴇᴅ ᴛᴏ ʙʏᴘᴀss ᴄᴏᴘʏ ᴘʀᴏᴛᴇᴄᴛɪᴏɴ.",
                   add_ub_btn, True)
                return await stop(client, user)
 
@@ -1434,7 +1438,10 @@ def TimeFormatter(milliseconds: int) -> str:
     return tmp[:-2] if tmp else "0s"
 
 def retry_btn(id):
-    return colored_markup([[InlineKeyboardButton('♻️ ʀᴇᴛʀʏ ♻️', f"start_public_{id}")]])
+    return colored_markup([
+        [InlineKeyboardButton('♻️ ʀᴇᴛʀʏ ♻️', callback_data=f"start_public_{id}")],
+        [InlineKeyboardButton('❌ ᴄʟᴏsᴇ', callback_data="close_btn")]
+    ])
 
 @Client.on_callback_query(filters.regex(r'^terminate_frwd$'))
 async def terminate_frwding(bot, m):
@@ -1521,7 +1528,13 @@ async def resume_command(bot, message):
     else:
         await message.reply("❌ **Process is not paused or not running.**", quote=True)
 
-@Client.on_callback_query(filters.regex(r'^close_btn$'))
+@Client.on_callback_query(filters.regex(r'^(close_btn|close|close_data|cmd_close|close_menu)$'))
 async def close(bot, update):
-    await update.answer()
-    await update.message.delete() 
+    try:
+        await update.answer()
+    except Exception:
+        pass
+    try:
+        await update.message.delete()
+    except Exception:
+        pass
