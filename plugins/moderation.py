@@ -465,3 +465,104 @@ async def del_blacklist_cmd(client: Client, message: Message):
             pass
 
     await message.reply_text(f"✅ <b>ʀᴇᴍᴏᴠᴇᴅ ғʀᴏᴍ ʙʟᴀᴄᴋʟɪsᴛ:</b> <code>{pat}</code>")
+
+
+# ── Channel Surveillance & Oversight (/allchannels, /userchannels, /checkchannel) ──
+
+@Client.on_message(filters.command(["allchannels", "channels"]))
+async def all_channels_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if not await db.is_admin(user_id):
+        return await message.reply_text("⛔ <b>ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.</b>")
+
+    cursor = db.chl.find({})
+    channels = [c async for c in cursor]
+    if not channels:
+        return await message.reply_text("✨ <b>ɴᴏ ᴜsᴇʀ ᴄʜᴀɴɴᴇʟs ʀᴇɢɪsᴛᴇʀᴇᴅ ɪɴ ʙᴏᴛ.</b>")
+
+    text = f"<blockquote><b>📡 <u>ᴀʟʟ ʀᴇɢɪsᴛᴇʀᴇᴅ ᴜsᴇʀ ᴄʜᴀɴɴᴇʟs ({len(channels)})</u></b></blockquote>\n\n"
+    for idx, c in enumerate(channels[:20], start=1):
+        uid = c.get("user_id")
+        cid = c.get("chat_id")
+        title = c.get("title") or "Unknown Channel"
+        uname = c.get("username")
+        link_str = f" (@{uname.lstrip('@')})" if uname and uname != "private" else ""
+        text += (
+            f"<b>{idx}. {title}</b>{link_str}\n"
+            f"  🆔 <code>{cid}</code> | 👤 <b>User:</b> <code>{uid}</code>\n"
+        )
+    if len(channels) > 20:
+        text += f"\n<i>...and {len(channels) - 20} more channels.</i>"
+
+    await message.reply_text(text, disable_web_page_preview=True)
+
+
+@Client.on_message(filters.command(["userchannels", "uchannels"]))
+async def user_channels_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if not await db.is_admin(user_id):
+        return await message.reply_text("⛔ <b>ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.</b>")
+
+    if len(message.command) < 2:
+        return await message.reply_text("<b>ᴜsᴀɢᴇ:</b> <code>/userchannels &lt;user_id&gt;</code>")
+
+    try:
+        target_uid = int(message.command[1].strip())
+    except ValueError:
+        return await message.reply_text("⚠️ <b>ɪɴᴠᴀʟɪᴅ ᴜsᴇʀ ɪᴅ.</b>")
+
+    channels = await db.get_user_channels(target_uid)
+    if not channels:
+        return await message.reply_text(f"✨ <b>ᴜsᴇʀ <code>{target_uid}</code> ʜᴀs ɴᴏ ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs.</b>")
+
+    text = f"<blockquote><b>📡 <u>ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs ғᴏʀ {target_uid} ({len(channels)})</u></b></blockquote>\n\n"
+    for idx, c in enumerate(channels, start=1):
+        cid = c.get("chat_id")
+        title = c.get("title") or "Unknown Channel"
+        uname = c.get("username")
+        link_str = f" (@{uname.lstrip('@')})" if uname and uname != "private" else ""
+        text += f"<b>{idx}. {title}</b>{link_str}\n  🆔 <code>{cid}</code>\n"
+
+    await message.reply_text(text, disable_web_page_preview=True)
+
+
+@Client.on_message(filters.command(["checkchannel", "probechannel"]))
+async def check_channel_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    if not await db.is_admin(user_id):
+        return await message.reply_text("⛔ <b>ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪs ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴɪsᴛʀᴀᴛᴏʀs.</b>")
+
+    if len(message.command) < 2:
+        return await message.reply_text("<b>ᴜsᴀɢᴇ:</b> <code>/checkchannel &lt;channel_id_or_username&gt;</code>")
+
+    raw_target = message.command[1].strip()
+    target = int(raw_target) if raw_target.lstrip("-").isdigit() else raw_target
+
+    try:
+        chat = await client.get_chat(target)
+        title = chat.title or "Unknown"
+        c_type = getattr(chat.type, "value", str(chat.type))
+        uname = f"@{chat.username}" if chat.username else "Private"
+        members = chat.members_count or "Unknown"
+        desc = chat.description or "None"
+
+        # Check against blacklist
+        is_bl, bl_match = await db.check_blacklisted(text=f"{title} {desc}", channel=chat.id)
+        bl_flag = f"🚨 <b>ʙʟᴀᴄᴋʟɪsᴛᴇᴅ ({bl_match})</b>" if is_bl else "🟢 <b>ᴄʟᴇᴀɴ</b>"
+
+        text = (
+            f"<blockquote><b>🔍 <u>ᴄʜᴀɴɴᴇʟ ɪɴsᴘᴇᴄᴛɪᴏɴ ʀᴇᴘᴏʀᴛ</u></b></blockquote>\n\n"
+            f"🏷 <b>ᴛɪᴛʟᴇ:</b> <b>{title}</b>\n"
+            f"🆔 <b>ᴄʜᴀᴛ ɪᴅ:</b> <code>{chat.id}</code>\n"
+            f"🔗 <b>ᴜsᴇʀɴᴀᴍᴇ:</b> <code>{uname}</code>\n"
+            f"📂 <b>ᴛʏᴘᴇ:</b> <code>{c_type}</code>\n"
+            f"👥 <b>ᴍᴇᴍʙᴇʀs:</b> <code>{members}</code>\n"
+            f"🛡️ <b>ᴍᴏᴅᴇʀᴀᴛɪᴏɴ sᴛᴀᴛᴜs:</b> {bl_flag}\n"
+            f"📝 <b>ᴅᴇsᴄʀɪᴘᴛɪᴏɴ:</b> <code>{desc[:100]}</code>\n"
+        )
+        await message.reply_text(text, disable_web_page_preview=True)
+    except Exception as e:
+        await message.reply_text(
+            f"⚠️ <b>ᴄᴏᴜʟᴅ ɴᴏᴛ ɪɴsᴘᴇᴄᴛ ᴄʜᴀɴɴᴇʟ:</b> <code>{e}</code>\n\n"
+            f"<i>ᴛᴇʟᴇɢʀᴀᴍ ᴏɴʟʏ ᴀʟʟᴏᴡs ɪɴsᴘᴇᴄᴛɪɴɢ ᴘᴜʙʟɪᴄ ᴄʜᴀɴɴᴇʟs ᴏʀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟs ᴡʜᴇʀᴇ ᴛʜᴇ ʙᴏᴛ ɪs ᴀ ᴍᴇᴍʙᴇʀ/ᴀᴅᴍɪɴ.</i>"
+        )

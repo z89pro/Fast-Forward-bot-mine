@@ -179,6 +179,21 @@ async def build_user_profile(user_id: int):
     active_task = await db.get_user_active_task(user_id)
     task_display = f"⚡️ <b>ʀᴜɴɴɪɴɢ</b> (<code>{active_task.get('task_id')}</code>)" if active_task else "💤 <b>ɪᴅʟᴇ</b>"
 
+    ch_list_str = ""
+    if channels:
+        ch_items = []
+        for c in channels[:6]:
+            c_title = html.escape(str(c.get("title") or "Channel"))
+            c_id = c.get("chat_id")
+            c_uname = c.get("username")
+            u_tag = f" (@{c_uname.lstrip('@')})" if c_uname and c_uname != "private" else ""
+            ch_items.append(f"  • <b>{c_title}</b> (<code>{c_id}</code>){u_tag}")
+        ch_list_str = "\n" + "\n".join(ch_items)
+        if len(channels) > 6:
+            ch_list_str += f"\n  <i>...and {len(channels) - 6} more</i>"
+    else:
+        ch_list_str = " <i>(ɴᴏɴᴇ ᴀᴅᴅᴇᴅ)</i>"
+
     text = (
         f"<blockquote><b>👤 <u>ᴜsᴇʀ ᴘʀᴏғɪʟᴇ: {name}{owner_badge}</u></b></blockquote>\n\n"
         f"🆔 <b>ᴛᴇʟᴇɢʀᴀᴍ ID:</b> <code>{user_id}</code>\n"
@@ -190,7 +205,7 @@ async def build_user_profile(user_id: int):
         f"⚡️ <b>ɪɴᴛᴇʀᴀᴄᴛɪᴏɴ ᴄᴏᴜɴᴛ:</b> <code>{activity}</code>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🤖 <b>ʙᴏᴛ ᴇɴɢɪɴᴇ:</b> <code>{bot_status} ({bot_type})</code>\n"
-        f"🏷 <b>ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs:</b> <code>{len(channels)}</code>\n"
+        f"🏷 <b>ᴄᴏɴғɪɢᴜʀᴇᴅ ᴄʜᴀɴɴᴇʟs ({len(channels)}):</b>{ch_list_str}\n"
         f"{vip_status}\n"
         f"🛡️ <b>ᴀᴄᴄᴏᴜɴᴛ sᴛᴀᴛᴜs:</b> {ban_display}\n"
         f"🔄 <b>ғᴏʀᴡᴀʀᴅ ᴛᴀsᴋ:</b> {task_display}\n"

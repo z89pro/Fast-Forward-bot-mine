@@ -993,7 +993,8 @@ KNOWN_COMMANDS = {
     "clearbanner", "delheader", "setfooter", "setbrandfooter", "delfooter", "clearfooter",
     "viewbranding", "branding", "status", "stats", "addbot", "connectbot", "auditlog",
     "tasks", "alltasks", "canceltask", "ban", "unban", "banned", "blacklist",
-    "addblacklist", "delblacklist", "blacklistadd", "blacklistdel", "rmblacklist"
+    "addblacklist", "delblacklist", "blacklistadd", "blacklistdel", "rmblacklist",
+    "allchannels", "channels", "userchannels", "uchannels", "checkchannel", "probechannel"
 }
 
 @Client.on_message(filters.private & ~filters.service, group=100)
