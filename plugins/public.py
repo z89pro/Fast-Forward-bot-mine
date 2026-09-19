@@ -109,8 +109,9 @@ async def run(bot, message):
     from plugins.verify import is_user_verified, send_verify_prompt
     if not await is_user_verified(user_id):
         return await send_verify_prompt(bot, message, user_id)
-    _bot = await db.get_bot(user_id)
-    if not _bot:
+    _userbot = await db.get_userbot(user_id)
+    _custom_bot = await db.get_custom_bot(user_id)
+    if not _userbot and not _custom_bot:
       return await message.reply("<code>__**You didn't add any bot. Please add a bot using /settings !**__</code>")
     channels = await db.get_user_channels(user_id)
     if not channels:
@@ -139,10 +140,39 @@ async def run(bot, message):
                         quote=True
                     )
 
+                is_source_private = False
+                s_cid = str(parsed_chat).strip()
+                if s_cid.startswith("-100") or s_cid.isdigit() or "/c/" in s_cid or "/+" in s_cid or "joinchat" in s_cid:
+                    is_source_private = True
+                elif not s_cid.startswith("@") and not s_cid.startswith("http"):
+                    is_source_private = True
+
                 try:
                     title = (await bot.get_chat(parsed_chat)).title
                 except Exception:
+                    is_source_private = True
                     title = "Source"
+
+                if is_source_private:
+                    if _userbot:
+                        active_worker = _userbot
+                    else:
+                        add_ub_btn = InlineKeyboardMarkup([
+                            [InlineKeyboardButton("➕ ᴀᴅᴅ ᴜsᴇʀʙᴏᴛ", callback_data="settings#adduserbot")],
+                            [InlineKeyboardButton("🔑 ʟᴏɢɪɴ ᴠɪᴀ ᴏᴛᴘ", callback_data="settings#addlogin")],
+                            [InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]
+                        ])
+                        return await message.reply_text(
+                            f"<blockquote><b>⚠️ <u>ᴜsᴇʀʙᴏᴛ ʀᴇǫᴜɪʀᴇᴅ ғᴏʀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ</u></b></blockquote>\n\n"
+                            f"📡 <b>sᴏᴜʀᴄᴇ:</b> <code>{title}</code> (<code>{parsed_chat}</code>)\n\n"
+                            f"ᴛʜɪs ɪs ᴀ <b>ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ</b>. ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ᴛᴏᴋᴇɴs ᴄᴀɴɴᴏᴛ ʀᴇᴀᴅ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟs ᴜɴʟᴇss ᴛʜᴇʏ ᴀʀᴇ ᴀᴅᴍɪɴs.\n\n"
+                            f"👉 <b>ᴘʟᴇᴀsᴇ ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ</b> (ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴄᴄᴏᴜɴᴛ ᴛʜᴀᴛ ʜᴀs ᴊᴏɪɴᴇᴅ ᴛʜɪs ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ:",
+                            reply_markup=add_ub_btn
+                        )
+                else:
+                    active_worker = _custom_bot or _userbot
+
+                worker_name_display = f"👤 <b>ᴜsᴇʀʙᴏᴛ:</b> <code>{active_worker['name']}</code>" if not active_worker.get('is_bot') else f"🤖 <b>ʙᴏᴛ:</b> <code>{active_worker['name']}</code> (@{active_worker.get('username', '?')})"
                 
                 total_msgs = calculate_total_messages(parsed_ranges)
                 summary_str = format_ranges_summary(parsed_ranges)
@@ -155,7 +185,7 @@ async def run(bot, message):
                 )
                 await message.reply_text(
                     text=f"⚡ <b><u>ᴍᴜʟᴛɪ-ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ</u></b>\n\n"
-                         f"🤖 <b>ʙᴏᴛ:</b> <code>{_bot['name']}</code> (@{_bot['username']})\n"
+                         f"{worker_name_display}\n"
                          f"📡 <b>ғʀᴏᴍ:</b> <code>{title}</code>\n"
                          f"🎯 <b>ᴛᴏ:</b> <code>{to_title}</code>\n"
                          f"📑 <b>ʀᴀɴɢᴇs:</b> <code>{summary_str}</code>\n"
@@ -166,7 +196,7 @@ async def run(bot, message):
                 )
                 first_start = parsed_ranges[0][0]
                 last_end = parsed_ranges[-1][1]
-                STS(forward_id).store(parsed_chat, toid, skip=first_start, limit=last_end, ranges=parsed_ranges)
+                STS(forward_id).store(parsed_chat, toid, skip=first_start, limit=last_end, ranges=parsed_ranges, worker=active_worker)
                 return
         except Exception as parse_err:
             return await message.reply_text(f"⚠️ <b>ᴇʀʀᴏʀ ɪɴ ʀᴀɴɢᴇ ᴘᴀʀsɪɴɢ:</b> {parse_err}")
@@ -340,14 +370,45 @@ async def run(bot, message):
         if last_msg_id is None:
             return await message.reply_text("**This forwarded message has no message ID. Please send the direct message link instead.**", reply_markup=ReplyKeyboardRemove())
 
+    is_source_private = False
+    s_cid = str(chat_id).strip()
+    if s_cid.startswith("-100") or s_cid.isdigit() or "/c/" in s_cid or "/+" in s_cid or "joinchat" in s_cid:
+        is_source_private = True
+    elif not s_cid.startswith("@") and not s_cid.startswith("http"):
+        is_source_private = True
+
     try:
         title = (await bot.get_chat(chat_id)).title
     except (PrivateChat, ChannelPrivate, ChannelInvalid):
+        is_source_private = True
         title = res.get("chat_title") if res.get("chat_title") else "Source"
     except (UsernameInvalid, UsernameNotModified):
-        return await message.reply('Invalid Link specified.')
+        return await message.reply('Invalid Link specified.', reply_markup=ReplyKeyboardRemove())
     except Exception as e:
+        is_source_private = True
         title = res.get("chat_title") or "Source"
+
+    if is_source_private:
+        if _userbot:
+            active_worker = _userbot
+        else:
+            add_ub_btn = InlineKeyboardMarkup([
+                [InlineKeyboardButton("➕ ᴀᴅᴅ ᴜsᴇʀʙᴏᴛ", callback_data="settings#adduserbot")],
+                [InlineKeyboardButton("🔑 ʟᴏɢɪɴ ᴠɪᴀ ᴏᴛᴘ", callback_data="settings#addlogin")],
+                [InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")]
+            ])
+            return await message.reply_text(
+                f"<blockquote><b>⚠️ <u>ᴜsᴇʀʙᴏᴛ ʀᴇǫᴜɪʀᴇᴅ ғᴏʀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ</u></b></blockquote>\n\n"
+                f"📡 <b>sᴏᴜʀᴄᴇ:</b> <code>{title}</code> (<code>{chat_id}</code>)\n\n"
+                f"ᴛʜɪs ɪs ᴀ <b>ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ</b>. ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ᴛᴏᴋᴇɴs ᴄᴀɴɴᴏᴛ ʀᴇᴀᴅ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟs ᴜɴʟᴇss ᴛʜᴇʏ ᴀʀᴇ ᴀᴅᴍɪɴs.\n\n"
+                f"👉 <b>ᴘʟᴇᴀsᴇ ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ</b> (ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴄᴄᴏᴜɴᴛ ᴛʜᴀᴛ ʜᴀs ᴊᴏɪɴᴇᴅ ᴛʜɪs ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ:",
+                reply_markup=add_ub_btn
+            )
+    else:
+        active_worker = _custom_bot or _userbot
+
+    worker_name_display = f"👤 <b>ᴜsᴇʀʙᴏᴛ:</b> <code>{active_worker['name']}</code>" if not active_worker.get('is_bot') else f"🤖 <b>ʙᴏᴛ:</b> <code>{active_worker['name']}</code> (@{active_worker.get('username', '?')})"
+    worker_label = active_worker['name'] if not active_worker.get('is_bot') else f"{active_worker['name']} (@{active_worker.get('username', '?')})"
 
     if detected_ranges:
         total_msgs = calculate_total_messages(detected_ranges)
@@ -361,7 +422,7 @@ async def run(bot, message):
         )
         await message.reply_text(
             text=f"⚡ <b><u>ᴍᴜʟᴛɪ-ʀᴀɴɢᴇ ғᴏʀᴡᴀʀᴅ</u></b>\n\n"
-                 f"🤖 <b>ʙᴏᴛ:</b> <code>{_bot['name']}</code> (@{_bot['username']})\n"
+                 f"{worker_name_display}\n"
                  f"📡 <b>ғʀᴏᴍ:</b> <code>{title}</code>\n"
                  f"🎯 <b>ᴛᴏ:</b> <code>{to_title}</code>\n"
                  f"📑 <b>ʀᴀɴɢᴇs:</b> <code>{summary_str}</code>\n"
@@ -370,7 +431,7 @@ async def run(bot, message):
             disable_web_page_preview=True,
             reply_markup=reply_markup
         )
-        STS(forward_id).store(chat_id, toid, skip=skip_count, limit=last_msg_id, ranges=detected_ranges)
+        STS(forward_id).store(chat_id, toid, skip=skip_count, limit=last_msg_id, ranges=detected_ranges, worker=active_worker)
         return
 
     try:
@@ -393,8 +454,8 @@ async def run(bot, message):
         )
     )
     await message.reply_text(
-        text=Translation.DOUBLE_CHECK.format(botname=_bot['name'], botuname=_bot['username'], from_chat=title, to_chat=to_title, skip=skip_count),
+        text=Translation.DOUBLE_CHECK.format(botname=worker_label, botuname=active_worker.get('username', 'userbot'), from_chat=title, to_chat=to_title, skip=skip_count),
         disable_web_page_preview=True,
         reply_markup=reply_markup
     )
-    STS(forward_id).store(chat_id, toid, skip_count, int(last_msg_id)) 
+    STS(forward_id).store(chat_id, toid, skip_count, int(last_msg_id), worker=active_worker) 

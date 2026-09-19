@@ -25,7 +25,7 @@ class STS:
     def verify(self):
         return self.data.get(self.id)
     
-    def store(self, From, to, skip, limit, ranges=None):
+    def store(self, From, to, skip, limit, ranges=None, worker=None):
         total_count = sum((end - start + 1) for start, end in ranges) if ranges else limit
         initial_fetched = 0 if ranges else skip
         self.data[self.id] = {
@@ -41,6 +41,7 @@ class STS:
             'total': total_count,
             'start': 0,
             'ranges': ranges,
+            'worker': worker,
             'last_flood': 0,
             'floodwaits': 0
         }
@@ -68,17 +69,15 @@ class STS:
        return int(no) / by 
     
     async def get_data(self, user_id):
-        # Prefer userbot if source is a private channel/chat
-        from_chat = self.get('FROM')
-        is_private = False
-        if from_chat:
-            sf = str(from_chat)
-            if (sf.isdigit() and int(sf) > 0) or sf.startswith("-100"):
-                is_private = True
-        if is_private:
-            bot = await db.get_userbot(user_id) or await db.get_bot(user_id)
+        # 1. Check if a specific worker was selected during setup
+        worker = self.get('worker')
+        if worker:
+            bot = worker
         else:
-            bot = await db.get_bot(user_id)
+            from_chat = self.get('FROM')
+            bot = await db.get_worker_for_chat(user_id, from_chat, is_source=True)
+            if not bot:
+                bot = await db.get_bot(user_id, prefer_userbot=True)
         k, filters = self, await db.get_filters(user_id)
         size, configs = None, await db.get_configs(user_id)
         if configs['duplicate']:

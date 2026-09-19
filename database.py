@@ -402,16 +402,45 @@ class Database:
        return await self.bot.find_one({'user_id': int(user_id), 'is_bot': True})
 
     async def get_bot(self, user_id: int, prefer_userbot: bool = False):
-       """Fetch active bot. If prefer_userbot=True, prefers userbot."""
-       if prefer_userbot:
-           ubot = await self.get_userbot(user_id)
-           if ubot:
-               return ubot
-           return await self.get_custom_bot(user_id)
-       cbot = await self.get_custom_bot(user_id)
-       if cbot:
-           return cbot
-       return await self.get_userbot(user_id)
+        """Fetch active bot. If prefer_userbot=True, prefers userbot."""
+        ubot = await self.get_userbot(user_id)
+        cbot = await self.get_custom_bot(user_id)
+        if prefer_userbot:
+            return ubot or cbot
+        return cbot or ubot
+
+    async def get_worker_for_chat(self, user_id: int, chat_id, is_source: bool = True):
+        """
+        Smart worker resolver:
+        If source chat is private (or user has a UserBot session),
+        automatically select UserBot so private / restricted content can be read without errors.
+        """
+        ubot = await self.get_userbot(user_id)
+        cbot = await self.get_custom_bot(user_id)
+        if not ubot and not cbot:
+            return None
+
+        # Check if chat_id is private
+        is_private = False
+        if chat_id:
+            s = str(chat_id).strip()
+            if "/c/" in s or "/+" in s or "joinchat" in s:
+                is_private = True
+            elif s.startswith("-") or s.isdigit():
+                is_private = True
+            elif not s.startswith("@") and not s.startswith("http"):
+                is_private = True
+
+        if is_source:
+            if is_private and ubot:
+                return ubot
+            if ubot and not cbot:
+                return ubot
+            if cbot:
+                return cbot
+            return ubot
+        else:
+            return cbot or ubot
 
     async def get_user_bots(self, user_id: int):
        """Fetch all connected bots (both bot token and userbot)."""

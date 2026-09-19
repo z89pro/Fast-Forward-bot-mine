@@ -1160,9 +1160,9 @@ async def fwd_start_callback(client: Client, query: CallbackQuery):
     user_id = query.from_user.id
     cid = int(query.matches[0].group(1))
     mid = int(query.matches[0].group(2))
-    _bot = await db.get_bot(user_id)
+    _bot = await db.get_userbot(user_id) or await db.get_custom_bot(user_id)
     if not _bot:
-        return await query.answer("⚠️ Please add a bot in /settings first!", show_alert=True)
+        return await query.answer("⚠️ Please add a bot or userbot in /settings first!", show_alert=True)
     channels = await db.get_user_channels(user_id)
     if not channels:
         return await query.answer("⚠️ Please set a target channel in /settings first!", show_alert=True)
@@ -1183,8 +1183,8 @@ async def fwd_start_callback(client: Client, query: CallbackQuery):
 async def fwd_clean_callback(client: Client, query: CallbackQuery):
     user_id = query.from_user.id
     cid = int(query.matches[0].group(1))
-    _bot = await db.get_bot(user_id)
-    if not _bot or _bot['is_bot']:
+    _bot = await db.get_userbot(user_id)
+    if not _bot:
         return await query.answer("⚠️ Need a userbot to clean duplicates. Add one in /settings!", show_alert=True)
     await query.answer()
     await query.message.reply_text(

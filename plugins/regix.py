@@ -119,13 +119,26 @@ async def pub_(bot, message):
                        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
                    ]
                ])
+               if who == "ᴜsᴇʀʙᴏᴛ":
+                   worker_line = f"👤 <b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>ᴜsᴇʀʙᴏᴛ</code> ({_bot.get('name', 'UserBot')})"
+                   fix_lines = (
+                       f"• <b>ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ (<code>{_bot.get('name', 'UserBot')}</code>) ʜᴀs ɴᴏᴛ ᴊᴏɪɴᴇᴅ ᴛʜɪs ᴄʜᴀɴɴᴇʟ:</b>\n"
+                       f"  ᴘʟᴇᴀsᴇ ᴊᴏɪɴ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀɴɴᴇʟ ᴡɪᴛʜ ʏᴏᴜʀ ᴜsᴇʀʙᴏᴛ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴄᴄᴏᴜɴᴛ ғɪʀsᴛ, ᴛʜᴇɴ ᴛᴀᴘ ʀᴇᴛʀʏ.\n"
+                       f"• <b>ɪғ ɪᴛ's ʀᴇsᴛʀɪᴄᴛᴇᴅ:</b> ᴍᴀᴋᴇ sᴜʀᴇ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ ɪs ɴᴏᴛ ʀᴇsᴛʀɪᴄᴛᴇᴅ ᴏʀ ʙᴀɴɴᴇᴅ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ."
+                   )
+               else:
+                   worker_line = f"🤖 <b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>ʙᴏᴛ</code> (@{_bot.get('username', '?')})"
+                   fix_lines = (
+                       f"• <b>ɪғ ɪᴛ's ᴀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ:</b> ᴀᴅᴅ ᴀ <b>ᴜsᴇʀʙᴏᴛ</b> (ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴀᴄᴄᴏᴜɴᴛ ᴛʜᴀᴛ ᴊᴏɪɴᴇᴅ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ, ᴏʀ ᴀᴅᴅ <b>@{_bot.get('username', 'bot')}</b> ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ.\n"
+                       f"• <b>ɪғ ɪᴛ's ʀᴇsᴛʀɪᴄᴛᴇᴅ:</b> ᴀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ ɪs ʀᴇǫᴜɪʀᴇᴅ ᴛᴏ ʙʏᴘᴀss ᴄᴏᴘʏ ᴘʀᴏᴛᴇᴄᴛɪᴏɴ."
+                   )
+
                await msg_edit(m,
                   f"<blockquote><b>❌ <u>ᴄᴀɴ'ᴛ ʀᴇᴀᴅ ᴛʜᴇ sᴏᴜʀᴄᴇ ᴄʜᴀᴛ</u></b></blockquote>\n\n"
-                  f"🤖 <b>ᴡᴏʀᴋᴇʀ ᴜsᴇᴅ:</b> <code>{who}</code> (@{_bot.get('username', '?')})\n"
+                  f"{worker_line}\n"
                   f"⚠️ <b>ᴇʀʀᴏʀ:</b> <code>{type(src_err).__name__}: {src_err}</code>\n\n"
                   f"💡 <b><u>ʜᴏᴡ ᴛᴏ ғɪx ᴛʜɪs:</u></b>\n"
-                  f"• <b>ɪғ ɪᴛ's ᴀ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀɴɴᴇʟ:</b> ᴀᴅᴅ ᴀ <b>ᴜsᴇʀʙᴏᴛ</b> (ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴀᴄᴄᴏᴜɴᴛ ᴛʜᴀᴛ ᴊᴏɪɴᴇᴅ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ) ᴠɪᴀ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ, ᴏʀ ᴀᴅᴅ <b>@{_bot.get('username', 'bot')}</b> ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ.\n"
-                  f"• <b>ɪғ ɪᴛ's ʀᴇsᴛʀɪᴄᴛᴇᴅ:</b> ᴀ ᴜsᴇʀʙᴏᴛ sᴇssɪᴏɴ ɪs ʀᴇǫᴜɪʀᴇᴅ ᴛᴏ ʙʏᴘᴀss ᴄᴏᴘʏ ᴘʀᴏᴛᴇᴄᴛɪᴏɴ.",
+                  f"{fix_lines}",
                   add_ub_btn, True)
                return await stop(client, user)
 
@@ -560,10 +573,10 @@ async def _resume_single_task(bot_app, task_data):
     if not user_id or not task_id:
         return
 
-    _bot = await db.get_bot(user_id, prefer_userbot=False)
+    from_chat = task_data.get('from_chat')
+    _bot = await db.get_worker_for_chat(user_id, from_chat, is_source=True)
     if not _bot:
-        # No bot token — try userbot
-        _bot = await db.get_userbot(user_id)
+        _bot = await db.get_userbot(user_id) or await db.get_custom_bot(user_id)
     if not _bot:
         logger.warning(f"Cannot resume task {task_id}: no bot found for user {user_id}")
         await db.delete_active_task(task_id)
@@ -1536,5 +1549,12 @@ async def close(bot, update):
         pass
     try:
         await update.message.delete()
+    except Exception:
+        pass
+
+@Client.on_callback_query(filters.regex(r'^(noop|utr_noop)$'))
+async def noop_callback(bot, update):
+    try:
+        await update.answer()
     except Exception:
         pass
