@@ -26,7 +26,8 @@ async def is_authorized(user_id: int) -> bool:
 def is_owner(user_id: int) -> bool:
     try:
         owners = [int(x) for x in Config.BOT_OWNER_ID if str(x).isdigit()]
-        return int(user_id) in owners
+        admins = [int(x) for x in Config.ADMINS if str(x).isdigit()]
+        return int(user_id) in owners or int(user_id) in admins
     except Exception:
         return False
 

@@ -171,7 +171,7 @@ async def run(bot, message):
                             reply_markup=add_ub_btn
                         )
                 else:
-                    active_worker = _custom_bot or _userbot
+                    active_worker = _userbot or _custom_bot
 
                 worker_name_display = f"👤 <b>ᴜsᴇʀʙᴏᴛ:</b> <code>{active_worker['name']}</code>" if not active_worker.get('is_bot') else f"🤖 <b>ʙᴏᴛ:</b> <code>{active_worker['name']}</code> (@{active_worker.get('username', '?')})"
                 
@@ -218,7 +218,7 @@ async def run(bot, message):
     keyboard = ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
 
     toid = to_title = None
-    _worker = _custom_bot or _userbot
+    _worker = _userbot or _custom_bot
     w_name = _worker.get('name', 'Bot') if _worker else 'Bot'
     w_user = _worker.get('username', 'Bot') if _worker else 'Bot'
     try:
@@ -412,7 +412,7 @@ async def run(bot, message):
                 reply_markup=add_ub_btn
             )
     else:
-        active_worker = _custom_bot or _userbot
+        active_worker = _userbot or _custom_bot
 
     worker_name_display = f"👤 <b>ᴜsᴇʀʙᴏᴛ:</b> <code>{active_worker['name']}</code>" if not active_worker.get('is_bot') else f"🤖 <b>ʙᴏᴛ:</b> <code>{active_worker['name']}</code> (@{active_worker.get('username', '?')})"
     worker_label = active_worker['name'] if not active_worker.get('is_bot') else f"{active_worker['name']} (@{active_worker.get('username', '?')})"

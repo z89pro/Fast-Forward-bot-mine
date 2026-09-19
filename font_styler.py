@@ -91,8 +91,21 @@ def style_button(text: Optional[str]) -> str:
     return ''.join(SMALL_CAPS_MAP.get(c, c) for c in text)
 
 
+def _sanitize_btn(b):
+    if hasattr(b, "text") and b.text:
+        b.text = style_button(b.text)
+    if hasattr(b, "callback_data") and b.callback_data is not None:
+        if isinstance(b.callback_data, str):
+            b_raw = b.callback_data.encode("utf-8", "replace")
+            if len(b_raw) > 64:
+                b.callback_data = b_raw[:64].decode("utf-8", "ignore")
+        elif isinstance(b.callback_data, bytes) and len(b.callback_data) > 64:
+            b.callback_data = b.callback_data[:64]
+    return b
+
+
 def style_reply_markup(markup_obj: Any) -> Any:
-    """Style all buttons inside an InlineKeyboardMarkup or ReplyKeyboardMarkup."""
+    """Style all buttons inside an InlineKeyboardMarkup or ReplyKeyboardMarkup and ensure callback_data <= 64 bytes."""
     if not markup_obj:
         return markup_obj
 
@@ -101,17 +114,14 @@ def style_reply_markup(markup_obj: Any) -> Any:
         for row in getattr(markup_obj, "inline_keyboard", []):
             new_row = []
             for b in row:
-                if hasattr(b, "text") and b.text:
-                    b.text = style_button(b.text)
-                new_row.append(b)
+                new_row.append(_sanitize_btn(b))
             new_keyboard.append(new_row)
         markup_obj.inline_keyboard = new_keyboard
 
         if hasattr(markup_obj, "_spec_rows"):
             for r in markup_obj._spec_rows:
                 for b in r:
-                    if hasattr(b, "text") and b.text:
-                        b.text = style_button(b.text)
+                    _sanitize_btn(b)
 
         return markup_obj
 

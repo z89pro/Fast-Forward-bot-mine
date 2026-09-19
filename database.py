@@ -300,8 +300,12 @@ class Database:
             'active': True
         })
 
-    async def remove_live_forward(self, user_id, from_chat):
-        return await self.live.delete_many({'user_id': int(user_id), 'from_chat': str(from_chat)})
+    async def remove_live_forward(self, user_id, identifier):
+        from bson import ObjectId
+        query = {'user_id': int(user_id)}
+        if ObjectId.is_valid(str(identifier)):
+            return await self.live.delete_many({'$and': [query, {'$or': [{'_id': ObjectId(str(identifier))}, {'from_chat': str(identifier)}]}]})
+        return await self.live.delete_many({'user_id': int(user_id), 'from_chat': str(identifier)})
 
     async def get_user_live_forwards(self, user_id):
         cursor = self.live.find({'user_id': int(user_id)})
@@ -311,16 +315,26 @@ class Database:
         cursor = self.live.find({'active': True})
         return [doc async for doc in cursor]
 
-    async def toggle_live_status(self, user_id, from_chat):
-        doc = await self.live.find_one({'user_id': int(user_id), 'from_chat': str(from_chat)})
+    async def toggle_live_forward_active(self, user_id, identifier, active_val=None):
+        from bson import ObjectId
+        query = {'user_id': int(user_id)}
+        if ObjectId.is_valid(str(identifier)):
+            cond = {'$and': [query, {'$or': [{'_id': ObjectId(str(identifier))}, {'from_chat': str(identifier)}]}]}
+        else:
+            cond = {'user_id': int(user_id), 'from_chat': str(identifier)}
+        doc = await self.live.find_one(cond)
         if not doc:
             return False
-        new_val = not doc.get('active', True)
-        await self.live.update_one(
-            {'user_id': int(user_id), 'from_chat': str(from_chat)},
-            {'$set': {'active': new_val}}
-        )
+        new_val = (not doc.get('active', True)) if active_val is None else bool(active_val)
+        await self.live.update_one({'_id': doc['_id']}, {'$set': {'active': new_val}})
         return new_val
+
+    async def toggle_live_status(self, user_id, from_chat):
+        return await self.toggle_live_forward_active(user_id, from_chat)
+
+    async def get_user_live_filters(self, user_id):
+        configs = await self.get_configs(user_id)
+        return configs.get('filters', {})
 
     async def get_admin_dump(self):
         doc = await self.db.admin_config.find_one({'_id': 'dump_settings'})
@@ -432,13 +446,9 @@ class Database:
                 is_private = True
 
         if is_source:
-            if is_private and ubot:
-                return ubot
-            if ubot and not cbot:
-                return ubot
-            if cbot:
-                return cbot
-            return ubot
+            # Userbot can read both private and public channels (including restricted/copyrighted).
+            # Always prefer userbot for reading source if connected to avoid CHANNEL_INVALID
+            return ubot or cbot
         else:
             return cbot or ubot
 
@@ -609,6 +619,21 @@ class Database:
         await self.update_referral_data(user_id, ref_data)
         await self.log_referral_event('redeem', user_id, -cost, perk_name)
         return True, ref_data['referral_points']
+
+    async def update_referral_points(self, user_id: int, delta: int, detail: str = ""):
+        ref_data = await self.get_referral_data(user_id)
+        current_pts = ref_data.get('referral_points', 0)
+        new_pts = max(0, current_pts + int(delta))
+        ref_data['referral_points'] = new_pts
+        if delta < 0:
+            ref_data['referral_redeemed_total'] = ref_data.get('referral_redeemed_total', 0) + abs(int(delta))
+            evt_type = 'redeem'
+        else:
+            ref_data['referral_earned_total'] = ref_data.get('referral_earned_total', 0) + int(delta)
+            evt_type = 'bonus'
+        await self.update_referral_data(user_id, ref_data)
+        await self.log_referral_event(evt_type, user_id, delta, detail)
+        return True, new_pts
 
     async def log_referral_event(self, evt_type, uid, pts=0, detail=""):
         try:
@@ -817,6 +842,25 @@ class Database:
 
     async def remove_premium_user(self, user_id: int):
         await self.premium.delete_many({'user_id': int(user_id)})
+
+    async def set_vip(self, user_id: int, status: bool = True, expire=None):
+        if status:
+            days = 7
+            if expire:
+                try:
+                    import time
+                    from datetime import datetime
+                    if isinstance(expire, str):
+                        exp_dt = datetime.strptime(expire, "%Y-%m-%d")
+                        diff = exp_dt - datetime.now()
+                        days = max(1, diff.days)
+                    elif isinstance(expire, (int, float)):
+                        days = max(1, int((expire - time.time()) / 86400))
+                except Exception:
+                    days = 7
+            return await self.set_premium_user(user_id, days=days, plan="vip")
+        else:
+            return await self.remove_premium_user(user_id)
 
     async def get_all_premium_users(self):
         import time

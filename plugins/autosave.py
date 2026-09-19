@@ -32,6 +32,24 @@ def get_autosave_markup(is_running: bool, count: int):
     ]
     return colored_markup(buttons)
 
+def get_monitored_channels_markup(channels):
+    buttons = []
+    for ch in channels:
+        cid = str(ch.get('_id', ''))
+        title = ch.get('from_title', str(ch.get('from_chat')))
+        active = "🟢" if ch.get('active', True) else "🔴"
+        cb_toggle = f"autosave#tch_{cid}" if cid else f"autosave#toggle_chan_{str(ch.get('from_chat'))[:20]}"
+        cb_del = f"autosave#dch_{cid}" if cid else f"autosave#del_chan_{str(ch.get('from_chat'))[:20]}"
+        buttons.append([
+            InlineKeyboardButton(f"{active} {title}", callback_data=cb_toggle),
+            InlineKeyboardButton("🗑️", callback_data=cb_del)
+        ])
+    buttons.append([
+        InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
+        InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
+    ])
+    return colored_markup(buttons)
+
 async def build_autosave_text(user_id: int):
     channels = await db.get_user_live_forwards(user_id)
     is_running = user_id in temp.LIVE_TASKS and temp.LIVE_TASKS[user_id].is_connected
@@ -217,28 +235,14 @@ async def autosave_callback(bot, query: CallbackQuery):
         channels = await db.get_user_live_forwards(user_id)
         if not channels:
             return await query.answer("ɴᴏ ᴄʜᴀɴɴᴇʟs ᴄᴜʀʀᴇɴᴛʟʏ ᴍᴏɴɪᴛᴏʀᴇᴅ!", show_alert=True)
-        
-        buttons = []
-        for ch in channels:
-            f_chat = ch.get('from_chat')
-            title = ch.get('from_title', str(f_chat))
-            active = "🟢" if ch.get('active', True) else "🔴"
-            buttons.append([
-                InlineKeyboardButton(f"{active} {title}", callback_data=f"autosave#toggle_chan_{f_chat}"),
-                InlineKeyboardButton("🗑️", callback_data=f"autosave#del_chan_{f_chat}")
-            ])
-        buttons.append([
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
-            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
-        ])
         await query.message.edit_text(
             "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
-            reply_markup=InlineKeyboardMarkup(buttons)
+            reply_markup=get_monitored_channels_markup(channels)
         )
 
-    elif data.startswith("del_chan_"):
-        f_chat = data.split("del_chan_")[1]
-        await db.remove_live_forward(user_id, f_chat)
+    elif data.startswith("del_chan_") or data.startswith("dch_"):
+        target_id = data.split("del_chan_")[1] if data.startswith("del_chan_") else data.split("dch_")[1]
+        await db.remove_live_forward(user_id, target_id)
         await query.answer("ᴄʜᴀɴɴᴇʟ ʀᴇᴍᴏᴠᴇᴅ ғʀᴏᴍ ᴍᴏɴɪᴛᴏʀɪɴɢ!", show_alert=True)
         if user_id in temp.LIVE_TASKS:
             await start_autosave_monitor(user_id, bot)
@@ -246,51 +250,20 @@ async def autosave_callback(bot, query: CallbackQuery):
         if not channels:
             text, is_running, count = await build_autosave_text(user_id)
             return await query.message.edit_text(text, reply_markup=get_autosave_markup(is_running, count))
-        buttons = []
-        for ch in channels:
-            fc = ch.get('from_chat')
-            title = ch.get('from_title', str(fc))
-            active = "🟢" if ch.get('active', True) else "🔴"
-            buttons.append([
-                InlineKeyboardButton(f"{active} {title}", callback_data=f"autosave#toggle_chan_{fc}"),
-                InlineKeyboardButton("🗑️", callback_data=f"autosave#del_chan_{fc}")
-            ])
-        buttons.append([
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
-            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
-        ])
         await query.message.edit_text(
             "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
-            reply_markup=InlineKeyboardMarkup(buttons)
+            reply_markup=get_monitored_channels_markup(channels)
         )
 
-    elif data.startswith("toggle_chan_"):
-        f_chat = data.split("toggle_chan_")[1]
-        channels = await db.get_user_live_forwards(user_id)
-        for ch in channels:
-            if str(ch.get('from_chat')) == str(f_chat):
-                curr = ch.get('active', True)
-                await db.toggle_live_forward_active(user_id, f_chat, not curr)
-                break
+    elif data.startswith("toggle_chan_") or data.startswith("tch_"):
+        target_id = data.split("toggle_chan_")[1] if data.startswith("toggle_chan_") else data.split("tch_")[1]
+        await db.toggle_live_forward_active(user_id, target_id)
         if user_id in temp.LIVE_TASKS:
             await start_autosave_monitor(user_id, bot)
         channels = await db.get_user_live_forwards(user_id)
-        buttons = []
-        for ch in channels:
-            fc = ch.get('from_chat')
-            title = ch.get('from_title', str(fc))
-            active = "🟢" if ch.get('active', True) else "🔴"
-            buttons.append([
-                InlineKeyboardButton(f"{active} {title}", callback_data=f"autosave#toggle_chan_{fc}"),
-                InlineKeyboardButton("🗑️", callback_data=f"autosave#del_chan_{fc}")
-            ])
-        buttons.append([
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="autosave#main"),
-            InlineKeyboardButton("❌ ᴄʟᴏsᴇ", callback_data="close_btn")
-        ])
         await query.message.edit_text(
             "📋 **ᴍᴏɴɪᴛᴏʀᴇᴅ ᴄʜᴀɴɴᴇʟs**\n\nᴄʟɪᴄᴋ ᴏɴ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ON/OFF ᴏʀ ᴄʟɪᴄᴋ 🗑️ ᴛᴏ ᴅᴇʟᴇᴛᴇ:",
-            reply_markup=InlineKeyboardMarkup(buttons)
+            reply_markup=get_monitored_channels_markup(channels)
         )
 
     elif data == "filters":
@@ -374,7 +347,7 @@ async def autosave_callback(bot, query: CallbackQuery):
 # ================= BACKGROUND MONITOR ENGINE =================
 
 async def start_autosave_monitor(user_id: int, bot_client: Client):
-    _bot = await db.get_bot(user_id)
+    _bot = await db.get_bot(user_id, prefer_userbot=True)
     if not _bot:
         return False, "ᴘʟᴇᴀsᴇ ᴀᴅᴅ ᴀ ʙᴏᴛ ᴏʀ ᴜsᴇʀʙᴏᴛ ɪɴ /settings ғɪʀsᴛ."
 

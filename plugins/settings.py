@@ -1312,15 +1312,18 @@ def extract_btn(datas):
     i = 0
     btn = []
     if datas:
+       prefix = b'settings#alert_'
+       max_payload_bytes = 64 - len(prefix)  # 49 bytes
        for data in datas:
          if i >= 5:
             i = 0
+         cb_data = (prefix + str(data).encode('utf-8')[:max_payload_bytes]).decode('utf-8', errors='ignore')
          if i == 0:
-            btn.append([InlineKeyboardButton(data, callback_data=f'settings#alert_{data[:40]}')])
+            btn.append([InlineKeyboardButton(data, callback_data=cb_data)])
             i += 1
             continue
          elif i > 0:
-            btn[-1].append(InlineKeyboardButton(data, callback_data=f'settings#alert_{data[:40]}'))
+            btn[-1].append(InlineKeyboardButton(data, callback_data=cb_data))
             i += 1
     return btn 
 
